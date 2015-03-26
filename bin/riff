@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+# Inspired by http://timelessrepo.com/making-ruby-gems
+begin
+  require 'riff'
+rescue LoadError
+  require 'rubygems'
+  require 'mygem'
+end
+
+Riff.hi()
