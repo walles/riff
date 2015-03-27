@@ -5,6 +5,8 @@
 # Note that changes in the inspected code, or installation of new
 # versions of RuboCop, may require this file to be generated again.
 
-# I *like* these parentheses, kill the warning /johan.walles@gmail.com
+# I *like* these parentheses, kill the warnings /johan.walles@gmail.com
 Style/MethodCallParentheses:
+  Enabled: false
+Style/DefWithParentheses:
   Enabled: false
