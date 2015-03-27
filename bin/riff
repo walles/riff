@@ -4,8 +4,8 @@
 begin
   require 'riff'
 rescue LoadError
-  require 'rubygems'
-  require 'mygem'
+  $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../lib"
+  require 'riff'
 end
 
 Riff.hi()
