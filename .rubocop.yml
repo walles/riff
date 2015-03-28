@@ -14,3 +14,5 @@ Style/DefWithParentheses:
 # Johan doesn't like the single-line form of if()
 Style/IfUnlessModifier:
   Enabled: false
+Style/GuardClause:
+  Enabled: false
