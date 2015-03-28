@@ -3,9 +3,31 @@
 class Riff
   DIFF_HEADER = /^diff /
   DIFF_HUNK_HEADER = /^@@ /
+
   ADDED = /^\+ /
   REMOVED = /^- /
   CONTEXT = /^ /
+
+  ESC = 27.chr
+  R = "#{ESC}[7m"  # REVERSE
+  N = "#{ESC}[27m" # NORMAL
+
+  BOLD = "#{ESC}[1m"
+  CYAN = "#{ESC}[36m"
+  GREEN = "#{ESC}[32m"
+  RED = "#{ESC}[31m"
+
+  RESET = "#{ESC}[0m"
+
+  LINE_PREFIX = {
+    initial:          '',
+    diff_header:      BOLD,
+    diff_hunk_header: CYAN,
+    diff_hunk:        '',
+    diff_add:         GREEN,
+    diff_remove:      RED,
+    diff_context:     ''
+  }
 
   def initialize()
     @state = :initial
@@ -43,6 +65,6 @@ class Riff
 
     send(method_name, line)
 
-    puts "<#{@state}>#{line}"
+    puts "#{RESET}#{LINE_PREFIX.fetch(@state)}#{line}"
   end
 end
