@@ -4,9 +4,9 @@ class Riff
   DIFF_HEADER = /^diff /
   DIFF_HUNK_HEADER = /^@@ /
 
-  ADDED = /^\+ /
-  REMOVED = /^- /
-  CONTEXT = /^ /
+  DIFF_ADDED = /^\+/
+  DIFF_REMOVED = /^-/
+  DIFF_CONTEXT = /^ /
 
   ESC = 27.chr
   R = "#{ESC}[7m"  # REVERSE
@@ -24,8 +24,8 @@ class Riff
     diff_header:      BOLD,
     diff_hunk_header: CYAN,
     diff_hunk:        '',
-    diff_add:         GREEN,
-    diff_remove:      RED,
+    diff_added:       GREEN,
+    diff_removed:     RED,
     diff_context:     ''
   }
 
@@ -45,8 +45,8 @@ class Riff
     end
   end
 
-  def handle_diff_hunk_header_line(_line)
-    @state = :diff_hunk
+  def handle_diff_hunk_header_line(line)
+    handle_diff_hunk_line(line)
   end
 
   def handle_diff_hunk_line(line)
@@ -55,7 +55,25 @@ class Riff
       @state = :diff_hunk_header
     when DIFF_HEADER
       @state = :diff_header
+    when DIFF_ADDED
+      @state = :diff_added
+    when DIFF_REMOVED
+      @state = :diff_removed
+    when DIFF_CONTEXT
+      @state = :diff_context
     end
+  end
+
+  def handle_diff_added_line(line)
+    handle_diff_hunk_line(line)
+  end
+
+  def handle_diff_removed_line(line)
+    handle_diff_hunk_line(line)
+  end
+
+  def handle_diff_context_line(line)
+    handle_diff_hunk_line(line)
   end
 
   def handle_diff_line(line)
