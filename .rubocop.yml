@@ -10,3 +10,7 @@ Style/MethodCallParentheses:
   Enabled: false
 Style/DefWithParentheses:
   Enabled: false
+
+# Johan doesn't like the single-line form of if()
+Style/IfUnlessModifier:
+  Enabled: false
