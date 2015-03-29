@@ -17,7 +17,7 @@ class Riff
   GREEN = "#{ESC}[32m"
   RED = "#{ESC}[31m"
 
-  RESET = "#{ESC}[0m"
+  RESET = "#{ESC}[m"
 
   LINE_PREFIX = {
     initial:          '',
@@ -77,12 +77,16 @@ class Riff
   end
 
   def handle_diff_line(line)
+    line.chomp!
+
     method_name = "handle_#{@state}_line"
     fail "Unknown state: <:#{@state}>" unless
       self.respond_to? method_name
 
     send(method_name, line)
 
-    puts "#{RESET}#{LINE_PREFIX.fetch(@state)}#{line}"
+    style = LINE_PREFIX.fetch(@state)
+    reset = (style.empty? ? '' : RESET)
+    puts "#{style}#{line}#{reset}"
   end
 end
