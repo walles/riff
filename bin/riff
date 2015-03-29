@@ -8,7 +8,4 @@ rescue LoadError
   require 'riff'
 end
 
-riff = Riff.new()
-STDIN.each do |line|
-  riff.handle_diff_line(line)
-end
+Riff.new().do_stream(STDIN)

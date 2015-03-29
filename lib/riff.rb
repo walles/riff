@@ -1,4 +1,4 @@
-# Feed Riff a number of lines output from some diff-like tool (diff,
+# Call do_stream() with the output of some diff-like tool (diff,
 # diff3, git diff, ...) and it will highlight that output for you.
 class Riff
   DIFF_HEADER = /^diff /
@@ -88,5 +88,12 @@ class Riff
     style = LINE_PREFIX.fetch(@state)
     reset = (style.empty? ? '' : RESET)
     puts "#{style}#{line}#{reset}"
+  end
+
+  # Read diff from a stream and output a highlighted version to stdout
+  def do_stream(diff_stream)
+    diff_stream.each do |line|
+      handle_diff_line(line)
+    end
   end
 end
