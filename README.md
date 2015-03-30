@@ -13,14 +13,16 @@ The refinement algorithm will be inspired by
 You can do `git diff | riff` and get reasonable output.
 
 # TODO
-* Make the main program identify blocks of lines that have been
-replaced by another block of lines.
 * Refine each pair of blocks, make sure both added characters and
   removed characters are highlighted in a readable fashion, both in
   added blocks and removed blocks.
+* See if we can get Riff to transparently insert itself as "git riff"
+  and treat that as git diff | riff | $PAGER.
 
 # DONE
 * Make a main program that can read input from stdin and print it to
 stdout.
 * Make the main program identify different kinds of lines by prefix
 and color them accordingly. Use the same color scheme as `git`.
+* Make the main program identify blocks of lines that have been
+replaced by another block of lines.

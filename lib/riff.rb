@@ -4,8 +4,8 @@ class Riff
   DIFF_HEADER = /^diff /
   DIFF_HUNK_HEADER = /^@@ /
 
-  DIFF_ADDED = /^\+/
-  DIFF_REMOVED = /^-/
+  DIFF_ADDED = /^\+(.*)/
+  DIFF_REMOVED = /^-(.*)/
   DIFF_CONTEXT = /^ /
 
   ESC = 27.chr
@@ -31,6 +31,9 @@ class Riff
 
   def initialize()
     @state = :initial
+
+    @replace_old = ""
+    @replace_new = ""
   end
 
   def handle_initial_line(line)
@@ -76,6 +79,40 @@ class Riff
     handle_diff_hunk_line(line)
   end
 
+  # If we have stored adds / removes, calling this method will flush
+  # those.
+  def consume_replacement()
+    return if @replace_old.empty? && @replace_new.empty?
+
+    if @replace_new.empty?
+      style = LINE_PREFIX.fetch(:diff_removed)
+      @replace_old.lines.each { |line| print_styled_line(style, line.chomp) }
+    elsif @replace_old.empty?
+      style = LINE_PREFIX.fetch(:diff_added)
+      @replace_new.lines.each { |line| print_styled_line(style, line.chomp) }
+    else
+      # FIXME: Highlight differences between @replace_old and @replace_new
+
+      removed_style = '-' + LINE_PREFIX.fetch(:diff_removed)
+      @replace_old.lines.each do |line|
+        print_styled_line(removed_style, line.chomp)
+      end
+
+      added_style = '+' + LINE_PREFIX.fetch(:diff_added)
+      @replace_new.lines.each do |line|
+        print_styled_line(added_style, line.chomp)
+      end
+    end
+
+    @replace_old = ''
+    @replace_new = ''
+  end
+
+  def print_styled_line(style, line)
+    reset = (style.empty? ? '' : RESET)
+    puts "#{style}#{line}#{reset}"
+  end
+
   def handle_diff_line(line)
     line.chomp!
 
@@ -85,9 +122,16 @@ class Riff
 
     send(method_name, line)
 
-    style = LINE_PREFIX.fetch(@state)
-    reset = (style.empty? ? '' : RESET)
-    puts "#{style}#{line}#{reset}"
+    case @state
+    when :diff_added
+      @replace_new += DIFF_ADDED.match(line)[1] + "\n"
+    when :diff_removed
+      @replace_old += DIFF_REMOVED.match(line)[1] + "\n"
+    else
+      consume_replacement()
+
+      print_styled_line(LINE_PREFIX.fetch(@state), line)
+    end
   end
 
   # Read diff from a stream and output a highlighted version to stdout
@@ -95,5 +139,6 @@ class Riff
     diff_stream.each do |line|
       handle_diff_line(line)
     end
+    consume_replacement()
   end
 end
