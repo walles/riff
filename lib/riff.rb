@@ -1,3 +1,5 @@
+require 'longest_common_substring'
+
 # Call do_stream() with the output of some diff-like tool (diff,
 # diff3, git diff, ...) and it will highlight that output for you.
 class Riff
@@ -79,6 +81,11 @@ class Riff
     handle_diff_hunk_line(line)
   end
 
+  # FIXME: Highlight differences between @replace_old and @replace_new
+  def print_refined_diff(old, new)
+    LongestCommonSubstring.new(old, new).print_diff()
+  end
+
   # If we have stored adds / removes, calling this method will flush
   # those.
   def consume_replacement()
@@ -91,17 +98,7 @@ class Riff
       style = LINE_PREFIX.fetch(:diff_added)
       @replace_new.lines.each { |line| print_styled_line(style, line.chomp) }
     else
-      # FIXME: Highlight differences between @replace_old and @replace_new
-
-      removed_style = '-' + LINE_PREFIX.fetch(:diff_removed)
-      @replace_old.lines.each do |line|
-        print_styled_line(removed_style, line.chomp)
-      end
-
-      added_style = '+' + LINE_PREFIX.fetch(:diff_added)
-      @replace_new.lines.each do |line|
-        print_styled_line(added_style, line.chomp)
-      end
+      print_refined_diff(@replace_old, @replace_new)
     end
 
     @replace_old = ''
