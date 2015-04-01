@@ -16,3 +16,7 @@ Style/IfUnlessModifier:
   Enabled: false
 Style/GuardClause:
   Enabled: false
+
+# Johan thinks return statements improve readability
+Style/RedundantReturn:
+  Enabled: false
