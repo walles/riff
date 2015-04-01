@@ -51,6 +51,21 @@ class LongestCommonSubstring
     return matrix
   end
 
+  # FIXME: Add char to both old and new
+  def add_context_char(char)
+    print '=' + char + ' '
+  end
+
+  # FIXME: Highlight this in new
+  def add_added_char(char)
+    print '+' + char + ' '
+  end
+
+  # FIXME: Highlight this in old
+  def add_removed_char
+    print '-' + char + ' '
+  end
+
   def print_diff_helper(old_index, new_index)
     old_char = @old[old_index - 1]
     new_char = @new[new_index - 1]
@@ -58,24 +73,19 @@ class LongestCommonSubstring
     if (old_index > 0 && new_index > 0) && (old_char == new_char)
       print_diff_helper(old_index - 1, new_index - 1)
 
-      # FIXME: Add char to both old and new
-      print '=' + old_char + ' '
+      add_context_char(old_char)
     elsif (new_index > 0) &&
           (old_index == 0 || @matrix[old_index, new_index - 1] >=
                              @matrix[old_index - 1, new_index])
       print_diff_helper(old_index, new_index - 1)
 
-      # FIXME: Highlight this in new
-      print '+' + new_char + ' '
+      add_added_char(new_char)
     elsif (old_index > 0) &&
           (new_index == 0 || @matrix[old_index, new_index - 1] <
                              @matrix[old_index - 1, new_index])
       print_diff_helper(old_index - 1, new_index)
 
-      # FIXME: Highlight this in old
-      print '-' + old_char + ' '
-    else
-      print ''
+      add_removed_char(old_char)
     end
   end
 
