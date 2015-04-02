@@ -13,6 +13,8 @@ The refinement algorithm will be inspired by
 You can do `git diff | riff` and get reasonable output.
 
 # TODO
+* Diffing <x "hej"> vs <x 'hej'> shows the first space as a
+difference.
 * Refine each pair of blocks, make sure both added characters and
   removed characters are highlighted in a readable fashion, both in
   added blocks and removed blocks.

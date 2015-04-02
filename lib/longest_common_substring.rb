@@ -1,4 +1,5 @@
 require 'matrix'
+require 'diff_string'
 
 # Inspired by
 # http://stackoverflow.com/questions/12683772/how-to-modify-a-matrix-ruby-std-lib-matrix-class
@@ -22,8 +23,11 @@ end
 # https://en.wikipedia.org/wiki/Longest_common_subsequence_problem#Print_the_diff
 class LongestCommonSubstring
   def initialize(old, new)
-    @old = old
-    @new = new
+    @old = old.chomp
+    @new = new.chomp
+
+    @refined_old = DiffString.new('-', DiffString::RED)
+    @refined_new = DiffString.new('+', DiffString::GREEN)
 
     @matrix = compute_matrix()
   end
@@ -51,19 +55,17 @@ class LongestCommonSubstring
     return matrix
   end
 
-  # FIXME: Add char to both old and new
   def add_context_char(char)
-    print '=' + char + ' '
+    @refined_old.add_char(char, false)
+    @refined_new.add_char(char, false)
   end
 
-  # FIXME: Highlight this in new
   def add_added_char(char)
-    print '+' + char + ' '
+    @refined_new.add_char(char, true)
   end
 
-  # FIXME: Highlight this in old
-  def add_removed_char
-    print '-' + char + ' '
+  def add_removed_char(char)
+    @refined_old.add_char(char, true)
   end
 
   def print_diff_helper(old_index, new_index)
@@ -91,5 +93,8 @@ class LongestCommonSubstring
 
   def print_diff()
     print_diff_helper(@old.length, @new.length)
+
+    puts @refined_old
+    puts @refined_new
   end
 end

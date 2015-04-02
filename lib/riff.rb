@@ -11,8 +11,6 @@ class Riff
   DIFF_CONTEXT = /^ /
 
   ESC = 27.chr
-  R = "#{ESC}[7m"  # REVERSE
-  N = "#{ESC}[27m" # NORMAL
 
   BOLD = "#{ESC}[1m"
   CYAN = "#{ESC}[36m"
@@ -81,7 +79,7 @@ class Riff
     handle_diff_hunk_line(line)
   end
 
-  # FIXME: Highlight differences between @replace_old and @replace_new
+  # Highlight differences between @replace_old and @replace_new
   def print_refined_diff(old, new)
     LongestCommonSubstring.new(old, new).print_diff()
   end
