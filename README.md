@@ -18,6 +18,7 @@ difference.
 * Refine each pair of blocks, make sure both added characters and
   removed characters are highlighted in a readable fashion, both in
   added blocks and removed blocks.
+* Test that we work as expected when "gem install"ed system-wide
 * See if we can get Riff to transparently insert itself as "git riff"
   and treat that as git diff | riff | $PAGER.
 
