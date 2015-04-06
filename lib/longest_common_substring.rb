@@ -1,6 +1,8 @@
 require 'matrix'
 require 'diff_string'
 
+FIXME: write tests for this class
+
 # Inspired by
 # http://stackoverflow.com/questions/12683772/how-to-modify-a-matrix-ruby-std-lib-matrix-class
 class Matrix
