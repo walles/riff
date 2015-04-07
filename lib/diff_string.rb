@@ -1,17 +1,10 @@
 # coding: utf-8
+require 'colors'
 
 # An added or removed part of a diff, which can contain both
 # highlighted and not highlighted characters.
 class DiffString
-  ESC = 27.chr
-
-  RED = "#{ESC}[31m"
-  GREEN = "#{ESC}[32m"
-
-  REVERSE = "#{ESC}[7m"
-  NORMAL = "#{ESC}[27m"
-
-  RESET = "#{ESC}[m"
+  include Colors
 
   def initialize(prefix, color)
     @reverse = false

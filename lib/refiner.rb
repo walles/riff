@@ -22,6 +22,8 @@ end
 # The algorithm is inspired by:
 # https://en.wikipedia.org/wiki/Longest_common_subsequence_problem#Print_the_diff
 class Refiner
+  include Colors
+
   attr_reader :refined_old
   attr_reader :refined_new
 
@@ -29,8 +31,8 @@ class Refiner
     @old = old.chomp
     @new = new.chomp
 
-    @refined_old = DiffString.new('-', DiffString::RED)
-    @refined_new = DiffString.new('+', DiffString::GREEN)
+    @refined_old = DiffString.new('-', RED)
+    @refined_new = DiffString.new('+', GREEN)
 
     @matrix = compute_matrix()
 

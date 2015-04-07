@@ -1,3 +1,4 @@
+require 'colors'
 require 'refiner'
 
 # Call do_stream() with the output of some diff-like tool (diff,
@@ -10,14 +11,7 @@ class Riff
   DIFF_REMOVED = /^-(.*)/
   DIFF_CONTEXT = /^ /
 
-  ESC = 27.chr
-
-  BOLD = "#{ESC}[1m"
-  CYAN = "#{ESC}[36m"
-  GREEN = "#{ESC}[32m"
-  RED = "#{ESC}[31m"
-
-  RESET = "#{ESC}[m"
+  include Colors
 
   LINE_PREFIX = {
     initial:          '',
