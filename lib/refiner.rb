@@ -1,8 +1,6 @@
 require 'matrix'
 require 'diff_string'
 
-FIXME: write tests for this class
-
 # Inspired by
 # http://stackoverflow.com/questions/12683772/how-to-modify-a-matrix-ruby-std-lib-matrix-class
 class Matrix
@@ -23,7 +21,10 @@ end
 #
 # The algorithm is inspired by:
 # https://en.wikipedia.org/wiki/Longest_common_subsequence_problem#Print_the_diff
-class LongestCommonSubstring
+class Refiner
+  attr_reader :refined_old
+  attr_reader :refined_new
+
   def initialize(old, new)
     @old = old.chomp
     @new = new.chomp
@@ -32,6 +33,8 @@ class LongestCommonSubstring
     @refined_new = DiffString.new('+', DiffString::GREEN)
 
     @matrix = compute_matrix()
+
+    refine(@old.length, @new.length)
   end
 
   # Inspired by:
@@ -70,32 +73,30 @@ class LongestCommonSubstring
     @refined_old.add_char(char, true)
   end
 
-  def print_diff_helper(old_index, new_index)
+  def refine(old_index, new_index)
     old_char = @old[old_index - 1]
     new_char = @new[new_index - 1]
 
     if (old_index > 0 && new_index > 0) && (old_char == new_char)
-      print_diff_helper(old_index - 1, new_index - 1)
+      refine(old_index - 1, new_index - 1)
 
       add_context_char(old_char)
     elsif (new_index > 0) &&
           (old_index == 0 || @matrix[old_index, new_index - 1] >=
                              @matrix[old_index - 1, new_index])
-      print_diff_helper(old_index, new_index - 1)
+      refine(old_index, new_index - 1)
 
       add_added_char(new_char)
     elsif (old_index > 0) &&
           (new_index == 0 || @matrix[old_index, new_index - 1] <
                              @matrix[old_index - 1, new_index])
-      print_diff_helper(old_index - 1, new_index)
+      refine(old_index - 1, new_index)
 
       add_removed_char(old_char)
     end
   end
 
   def print_diff()
-    print_diff_helper(@old.length, @new.length)
-
     puts @refined_old
     puts @refined_new
   end

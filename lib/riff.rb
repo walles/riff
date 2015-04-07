@@ -1,4 +1,4 @@
-require 'longest_common_substring'
+require 'refiner'
 
 # Call do_stream() with the output of some diff-like tool (diff,
 # diff3, git diff, ...) and it will highlight that output for you.
@@ -81,7 +81,7 @@ class Riff
 
   # Highlight differences between @replace_old and @replace_new
   def print_refined_diff(old, new)
-    LongestCommonSubstring.new(old, new).print_diff()
+    Refiner.new(old, new).print_diff()
   end
 
   # If we have stored adds / removes, calling this method will flush
