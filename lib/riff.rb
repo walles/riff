@@ -75,7 +75,9 @@ class Riff
 
   # Highlight differences between @replace_old and @replace_new
   def print_refined_diff(old, new)
-    Refiner.new(old, new).print_diff()
+    refiner = Refiner.new(old, new)
+    puts refiner.refined_old
+    puts refiner.refined_new
   end
 
   # If we have stored adds / removes, calling this method will flush

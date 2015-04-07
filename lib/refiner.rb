@@ -97,9 +97,4 @@ class Refiner
       add_removed_char(old_char)
     end
   end
-
-  def print_diff()
-    puts @refined_old
-    puts @refined_new
-  end
 end
