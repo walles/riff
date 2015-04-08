@@ -20,4 +20,5 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  diff-lcs (~> 1.2.5)
   rspec (~> 3.0)
