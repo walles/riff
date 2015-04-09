@@ -25,4 +25,17 @@ RSpec.describe DiffString, '#add_char' do
         "#{GREEN}+#{REVERSE}1#{NORMAL}234#{REVERSE}5#{RESET}")
     end
   end
+
+  context 'multiline' do
+    it 'colors both lines' do
+      diff_string = DiffString.new('+', GREEN)
+      diff_string.add_char('a', false)
+      diff_string.add_char("\n", false)
+      diff_string.add_char('b', false)
+
+      expect(diff_string.to_s).to eq(
+        "#{GREEN}+a\n" +
+        "#{GREEN}+b#{RESET}")
+    end
+  end
 end

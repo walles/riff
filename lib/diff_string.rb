@@ -22,6 +22,7 @@ class DiffString
     @string += char
 
     if char == "\n"
+      @string += @color
       @string += @prefix
     end
   end
