@@ -6,6 +6,7 @@ have changed, but also which parts of the lines that have changed.
 You can do `git diff | riff` and get reasonable output.
 
 # TODO
+* All context lines must be prefixed by ' ', currently they aren't
 * Diffing <x "hej"> vs <x 'hej'> shows the first space as a
 difference.
 * Refine each pair of blocks, make sure both added characters and

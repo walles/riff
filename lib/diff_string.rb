@@ -13,15 +13,15 @@ class DiffString
     @string = prefix
   end
 
-  def add_char(char, reverse)
+  def add(string, reverse)
     if reverse != @reverse
       @string += reverse ? REVERSE : NORMAL
     end
     @reverse = reverse
 
-    @string += char
+    @string += string
 
-    if char == "\n"
+    if string == "\n"
       @string += @color
       @string += @prefix
     end

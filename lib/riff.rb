@@ -1,5 +1,6 @@
 require 'colors'
 require 'refiner'
+require 'diff_string'
 
 # Call do_stream() with the output of some diff-like tool (diff,
 # diff3, git diff, ...) and it will highlight that output for you.
@@ -86,11 +87,13 @@ class Riff
     return if @replace_old.empty? && @replace_new.empty?
 
     if @replace_new.empty?
-      style = LINE_PREFIX.fetch(:diff_removed)
-      @replace_old.lines.each { |line| print_styled_line(style, line.chomp) }
+      diff_string = DiffString.new('-', RED)
+      diff_string.add(@replace_old, false)
+      puts diff_string.to_s
     elsif @replace_old.empty?
-      style = LINE_PREFIX.fetch(:diff_added)
-      @replace_new.lines.each { |line| print_styled_line(style, line.chomp) }
+      diff_string = DiffString.new('+', GREEN)
+      diff_string.add(@replace_new, false)
+      puts diff_string.to_s
     else
       print_refined_diff(@replace_old, @replace_new)
     end

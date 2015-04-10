@@ -37,12 +37,12 @@ class Refiner
 
     @refined_old = DiffString.new('-', RED)
     old.each_char.with_index do |char, index|
-      @refined_old.add_char(char, old_highlights.include?(index))
+      @refined_old.add(char, old_highlights.include?(index))
     end
 
     @refined_new = DiffString.new('+', GREEN)
     new.each_char.with_index do |char, index|
-      @refined_new.add_char(char, new_highlights.include?(index))
+      @refined_new.add(char, new_highlights.include?(index))
     end
   end
 end
