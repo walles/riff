@@ -8,7 +8,7 @@ module Colors
   RED = "#{ESC}[31m"
 
   REVERSE = "#{ESC}[7m"
-  NORMAL = "#{ESC}[27m"
+  NOT_REVERSE = "#{ESC}[27m"
 
   RESET = "#{ESC}[m"
 end

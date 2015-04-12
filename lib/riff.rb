@@ -27,8 +27,8 @@ class Riff
   def initialize()
     @state = :initial
 
-    @replace_old = ""
-    @replace_new = ""
+    @replace_old = ''
+    @replace_new = ''
   end
 
   def handle_initial_line(line)
@@ -77,8 +77,8 @@ class Riff
   # Highlight differences between @replace_old and @replace_new
   def print_refined_diff(old, new)
     refiner = Refiner.new(old, new)
-    puts refiner.refined_old
-    puts refiner.refined_new
+    print refiner.refined_old
+    print refiner.refined_new
   end
 
   # If we have stored adds / removes, calling this method will flush
@@ -89,11 +89,11 @@ class Riff
     if @replace_new.empty?
       diff_string = DiffString.new('-', RED)
       diff_string.add(@replace_old, false)
-      puts diff_string.to_s
+      print diff_string.to_s
     elsif @replace_old.empty?
       diff_string = DiffString.new('+', GREEN)
       diff_string.add(@replace_new, false)
-      puts diff_string.to_s
+      print diff_string.to_s
     else
       print_refined_diff(@replace_old, @replace_new)
     end

@@ -6,6 +6,14 @@ have changed, but also which parts of the lines that have changed.
 You can do `git diff | riff` and get reasonable output.
 
 # TODO
+* Make the Refiner not highlight anything if either old or new is
+empty
+* Ask the Refiner even if either old or new is empty
+* Use DiffString for context lines?
+* Refine added line endings properly
+* Refine removed line endings properly
+* Handle missing linefeed at end of file properly
+* Preserve linefeeds when sending lines to the Refiner
 * All context lines must be prefixed by ' ', currently they aren't
 * Diffing <x "hej"> vs <x 'hej'> shows the first space as a
 difference.
@@ -25,3 +33,5 @@ and color them accordingly. Use the same color scheme as `git`.
 replaced by another block of lines.
 * Use http://www.rubydoc.info/github/halostatue/diff-lcs rather
 than our own refinement algorithm
+* Make it possible to print rather than puts Refiner output
+* "print" rather than "puts" the Refiner output
