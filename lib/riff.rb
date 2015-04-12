@@ -74,29 +74,14 @@ class Riff
     handle_diff_hunk_line(line)
   end
 
-  # Highlight differences between @replace_old and @replace_new
-  def print_refined_diff(old, new)
-    refiner = Refiner.new(old, new)
-    print refiner.refined_old
-    print refiner.refined_new
-  end
-
   # If we have stored adds / removes, calling this method will flush
   # those.
   def consume_replacement()
     return if @replace_old.empty? && @replace_new.empty?
 
-    if @replace_new.empty?
-      diff_string = DiffString.new('-', RED)
-      diff_string.add(@replace_old, false)
-      print diff_string.to_s
-    elsif @replace_old.empty?
-      diff_string = DiffString.new('+', GREEN)
-      diff_string.add(@replace_new, false)
-      print diff_string.to_s
-    else
-      print_refined_diff(@replace_old, @replace_new)
-    end
+    refiner = Refiner.new(@replace_old, @replace_new)
+    print refiner.refined_old
+    print refiner.refined_new
 
     @replace_old = ''
     @replace_new = ''
