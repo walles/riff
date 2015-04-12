@@ -23,4 +23,30 @@ RSpec.describe Refiner, '#new' do
         %(#{GREEN}+#{REVERSE}"#{NOT_REVERSE}quoted#{REVERSE}"#{NOT_REVERSE}#{RESET}\n))
     end
   end
+
+  context 'with empty old' do
+    refiner = Refiner.new('', "something\n")
+
+    it 'refines old to the empty string' do
+      expect(refiner.refined_old.to_s).to eq('')
+    end
+
+    it 'does not highlight anything in new' do
+      expect(refiner.refined_new.to_s).to eq(
+        %(#{GREEN}+something#{RESET}\n))
+    end
+  end
+
+  context 'with empty new' do
+    refiner = Refiner.new("something\n", '')
+
+    it 'does not highlight anything in old' do
+      expect(refiner.refined_old.to_s).to eq(
+        %(#{RED}-something#{RESET}\n))
+    end
+
+    it 'refines new to the empty string' do
+      expect(refiner.refined_new.to_s).to eq('')
+    end
+  end
 end

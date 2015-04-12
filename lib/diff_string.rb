@@ -11,24 +11,26 @@ class DiffString
     @reverse = false
     @prefix = prefix
     @color = color
-    @string = prefix
+    @string = ''
   end
 
   def add(string, reverse)
+    if @string.empty?() || @string.end_with?("\n")
+      @string += @color
+      @string += @prefix
+    end
+
     if reverse != @reverse
       @string += reverse ? REVERSE : NOT_REVERSE
     end
     @reverse = reverse
 
-    if @string.end_with? "\n"
-      @string += @color
-      @string += @prefix
-    end
-
     @string += string
   end
 
   def to_s()
+    return '' if @string.empty?
+
     string = @string
     newline = ''
     if string.end_with? "\n"
@@ -37,6 +39,6 @@ class DiffString
     end
 
     suffix = @color.empty? ? '' : RESET
-    return @color + string + suffix + newline
+    return string + suffix + newline
   end
 end

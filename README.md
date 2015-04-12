@@ -6,8 +6,6 @@ have changed, but also which parts of the lines that have changed.
 You can do `git diff | riff` and get reasonable output.
 
 # TODO
-* Make the Refiner not highlight anything if either old or new is
-empty
 * Ask the Refiner even if either old or new is empty
 * Use DiffString for context lines?
 * Refine added line endings properly
@@ -35,3 +33,5 @@ replaced by another block of lines.
 than our own refinement algorithm
 * Make it possible to print rather than puts Refiner output
 * "print" rather than "puts" the Refiner output
+* Make the Refiner not highlight anything if either old or new is
+empty
