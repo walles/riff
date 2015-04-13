@@ -92,14 +92,19 @@ class Riff
     puts "#{style}#{line}#{reset}"
   end
 
-  def handle_diff_line(line)
-    line.chomp!
-
-    method_name = "handle_#{@state}_line"
-    fail "Unknown state: <:#{@state}>" unless
+  # Call handle_<state>_line() for the given state and line
+  def handle_line_for_state(state, line)
+    method_name = "handle_#{state}_line"
+    fail "Unknown state: <:#{state}>" unless
       self.respond_to? method_name
 
     send(method_name, line)
+  end
+
+  def handle_diff_line(line)
+    line.chomp!
+
+    handle_line_for_state(@state, line)
 
     case @state
     when :diff_added
