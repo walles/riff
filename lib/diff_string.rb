@@ -41,4 +41,10 @@ class DiffString
     suffix = @color.empty? ? '' : RESET
     return string + suffix + newline
   end
+
+  def self.decorate_string(prefix, color, string)
+    decorated = DiffString.new(prefix, color)
+    decorated.add(string, false)
+    return decorated.to_s
+  end
 end

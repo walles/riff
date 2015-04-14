@@ -114,7 +114,9 @@ class Riff
     else
       consume_replacement()
 
-      print_styled_line(LINE_PREFIX.fetch(@state), line)
+      color = LINE_PREFIX.fetch(@state)
+
+      print DiffString.decorate_string('', color, line + "\n")
     end
   end
 
