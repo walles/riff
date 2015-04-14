@@ -13,13 +13,6 @@ differences between the sections. The point here is that we want to
 highlight changes, but if it's a *replacement* rather than a change
 then we don't want to highlight it.
 * Handle missing linefeed at end of file properly
-* Preserve linefeeds when sending lines to the Refiner
-* All context lines must be prefixed by ' ', currently they aren't
-* Diffing <x "hej"> vs <x 'hej'> shows the first space as a
-difference.
-* Refine each pair of blocks, make sure both added characters and
-  removed characters are highlighted in a readable fashion, both in
-  added blocks and removed blocks.
 * Test that we work as expected when "gem install"ed system-wide
 * See if we can get Riff to transparently insert itself as "git riff"
   and treat that as git diff | riff | $PAGER.
@@ -39,3 +32,10 @@ than our own refinement algorithm
 empty
 * Ask the Refiner even if either old or new is empty
 * Use DiffString for context lines
+* Preserve linefeeds when sending lines to the Refiner
+* All context lines must be prefixed by ' ', currently they aren't
+* Refine each pair of blocks, make sure both added characters and
+  removed characters are highlighted in a readable fashion, both in
+  added blocks and removed blocks.
+* Diffing <x "hej"> vs <x 'hej'> shows the first space as a
+difference.

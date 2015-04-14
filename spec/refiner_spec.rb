@@ -3,24 +3,30 @@ require 'refiner'
 
 include Colors
 
+def reversed(string)
+  return "#{REVERSE}#{string}#{NOT_REVERSE}"
+end
+
 RSpec.describe Refiner, '#new' do
   context 'with "x"->"y"' do
+    refiner = Refiner.new("x\n", "y\n")
+
     it 'fully highlights both "x" and "y"' do
-      refiner = Refiner.new("x\n", "y\n")
       expect(refiner.refined_old.to_s).to eq(
-        "#{RED}-#{REVERSE}x#{NOT_REVERSE}#{RESET}\n")
+        "#{RED}-" + reversed('x') + "#{RESET}\n")
       expect(refiner.refined_new.to_s).to eq(
-        "#{GREEN}+#{REVERSE}y#{NOT_REVERSE}#{RESET}\n")
+        "#{GREEN}+" + reversed('y') + "#{RESET}\n")
     end
   end
 
   context 'with single quotes to double quotes' do
+    refiner = Refiner.new(%('quoted'\n), %("quoted"\n))
+
     it 'highlights the quotes and nothing else' do
-      refiner = Refiner.new(%('quoted'\n), %("quoted"\n))
       expect(refiner.refined_old.to_s).to eq(
-        %(#{RED}-#{REVERSE}'#{NOT_REVERSE}quoted#{REVERSE}'#{NOT_REVERSE}#{RESET}\n))
+        %(#{RED}-#{reversed("'")}quoted#{reversed("'")}#{RESET}\n))
       expect(refiner.refined_new.to_s).to eq(
-        %(#{GREEN}+#{REVERSE}"#{NOT_REVERSE}quoted#{REVERSE}"#{NOT_REVERSE}#{RESET}\n))
+        %(#{GREEN}+#{reversed('"')}quoted#{reversed('"')}#{RESET}\n))
     end
   end
 
@@ -47,6 +53,17 @@ RSpec.describe Refiner, '#new' do
 
     it 'refines new to the empty string' do
       expect(refiner.refined_new.to_s).to eq('')
+    end
+  end
+
+  context %(with <x "hej"> to <x 'hej'>) do
+    refiner = Refiner.new(%(x "hej"\n), %(x 'hej'\n))
+
+    it 'highlights the quotes and nothing else' do
+      expect(refiner.refined_old.to_s).to eq(
+        %(#{RED}-x #{reversed('"')}hej#{reversed('"')}#{RESET}\n))
+      expect(refiner.refined_new.to_s).to eq(
+        %(#{GREEN}+x #{reversed("'")}hej#{reversed("'")}#{RESET}\n))
     end
   end
 end
