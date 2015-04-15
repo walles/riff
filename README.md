@@ -6,16 +6,17 @@ have changed, but also which parts of the lines that have changed.
 You can do `git diff | riff` and get reasonable output.
 
 # TODO
+* If stdout is a terminal, pipe the output to a pager using the
+  algorithm described under "core.pager" in "git help pager".
 * Refine added line endings properly
 * Refine removed line endings properly
+* Handle missing linefeed at end of file properly
 * Make the Refiner not highlight anything if there are "too many"
 differences between the sections. The point here is that we want to
 highlight changes, but if it's a *replacement* rather than a change
 then we don't want to highlight it.
-* Handle missing linefeed at end of file properly
 * Test that we work as expected when "gem install"ed system-wide
-* See if we can get Riff to transparently insert itself as "git riff"
-  and treat that as git diff | riff | $PAGER.
+* Release version 0.0.0
 
 # DONE
 * Make a main program that can read input from stdin and print it to
