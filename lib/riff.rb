@@ -1,3 +1,7 @@
+require 'colors'
+require 'refiner'
+require 'diff_string'
+
 # Call do_stream() with the output of some diff-like tool (diff,
 # diff3, git diff, ...) and it will highlight that output for you.
 class Riff
@@ -8,16 +12,7 @@ class Riff
   DIFF_REMOVED = /^-(.*)/
   DIFF_CONTEXT = /^ /
 
-  ESC = 27.chr
-  R = "#{ESC}[7m"  # REVERSE
-  N = "#{ESC}[27m" # NORMAL
-
-  BOLD = "#{ESC}[1m"
-  CYAN = "#{ESC}[36m"
-  GREEN = "#{ESC}[32m"
-  RED = "#{ESC}[31m"
-
-  RESET = "#{ESC}[m"
+  include Colors
 
   LINE_PREFIX = {
     initial:          '',
@@ -32,8 +27,8 @@ class Riff
   def initialize()
     @state = :initial
 
-    @replace_old = ""
-    @replace_new = ""
+    @replace_old = ''
+    @replace_new = ''
   end
 
   def handle_initial_line(line)
@@ -84,25 +79,9 @@ class Riff
   def consume_replacement()
     return if @replace_old.empty? && @replace_new.empty?
 
-    if @replace_new.empty?
-      style = LINE_PREFIX.fetch(:diff_removed)
-      @replace_old.lines.each { |line| print_styled_line(style, line.chomp) }
-    elsif @replace_old.empty?
-      style = LINE_PREFIX.fetch(:diff_added)
-      @replace_new.lines.each { |line| print_styled_line(style, line.chomp) }
-    else
-      # FIXME: Highlight differences between @replace_old and @replace_new
-
-      removed_style = '-' + LINE_PREFIX.fetch(:diff_removed)
-      @replace_old.lines.each do |line|
-        print_styled_line(removed_style, line.chomp)
-      end
-
-      added_style = '+' + LINE_PREFIX.fetch(:diff_added)
-      @replace_new.lines.each do |line|
-        print_styled_line(added_style, line.chomp)
-      end
-    end
+    refiner = Refiner.new(@replace_old, @replace_new)
+    print refiner.refined_old
+    print refiner.refined_new
 
     @replace_old = ''
     @replace_new = ''
@@ -113,14 +92,19 @@ class Riff
     puts "#{style}#{line}#{reset}"
   end
 
-  def handle_diff_line(line)
-    line.chomp!
-
-    method_name = "handle_#{@state}_line"
-    fail "Unknown state: <:#{@state}>" unless
+  # Call handle_<state>_line() for the given state and line
+  def handle_line_for_state(state, line)
+    method_name = "handle_#{state}_line"
+    fail "Unknown state: <:#{state}>" unless
       self.respond_to? method_name
 
     send(method_name, line)
+  end
+
+  def handle_diff_line(line)
+    line.chomp!
+
+    handle_line_for_state(@state, line)
 
     case @state
     when :diff_added
@@ -130,7 +114,9 @@ class Riff
     else
       consume_replacement()
 
-      print_styled_line(LINE_PREFIX.fetch(@state), line)
+      color = LINE_PREFIX.fetch(@state)
+
+      print DiffString.decorate_string('', color, line + "\n")
     end
   end
 
