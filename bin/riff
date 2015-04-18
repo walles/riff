@@ -8,4 +8,9 @@ rescue LoadError
   require 'riff'
 end
 
-Riff.new().do_stream(STDIN)
+refined = Riff.new().do_stream(STDIN)
+if $stdout.isatty
+  IO.popen('LESS=FRX less', 'w') { |pager| pager.print refined }
+else
+  print refined
+end
