@@ -15,6 +15,9 @@ module Pager
     # Set LESS=FRX unless $LESS already has a value
     env['LESS'] = 'FRX' unless ENV['LESS']
 
+    # Set LV=-c unless $LV already has a value
+    env['LV'] = '-c' unless ENV['LV']
+
     IO.popen(env, command, 'w') { |pager| pager.print text }
   end
 
