@@ -8,17 +8,6 @@ def reversed(string)
 end
 
 RSpec.describe Refiner, '#new' do
-  context 'with "x"->"y"' do
-    refiner = Refiner.new("x\n", "y\n")
-
-    it 'fully highlights both "x" and "y"' do
-      expect(refiner.refined_old.to_s).to eq(
-        "#{RED}-" + reversed('x') + "#{RESET}\n")
-      expect(refiner.refined_new.to_s).to eq(
-        "#{GREEN}+" + reversed('y') + "#{RESET}\n")
-    end
-  end
-
   context 'with single quotes to double quotes' do
     refiner = Refiner.new(%('quoted'\n), %("quoted"\n))
 
@@ -64,6 +53,18 @@ RSpec.describe Refiner, '#new' do
         %(#{RED}-x #{reversed('"')}hej#{reversed('"')}#{RESET}\n))
       expect(refiner.refined_new.to_s).to eq(
         %(#{GREEN}+x #{reversed("'")}hej#{reversed("'")}#{RESET}\n))
+    end
+  end
+
+  context %(with too many differences) do
+    refiner = Refiner.new("0123456789\n",
+                          "abcdefghij\n")
+
+    it %(doesn't highlight anything) do
+      expect(refiner.refined_old.to_s).to eq(
+        %(#{RED}-0123456789#{RESET}\n))
+      expect(refiner.refined_new.to_s).to eq(
+        %(#{GREEN}+abcdefghij#{RESET}\n))
     end
   end
 end

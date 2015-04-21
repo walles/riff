@@ -17,10 +17,6 @@ Or if you do...
 You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
-* Make the Refiner not highlight anything if there are "too many"
-differences between the sections. The point here is that we want to
-highlight changes, but if it's a *replacement* rather than a change
-then we don't want to highlight it.
 * Refine "ax"->"bx\nc" properly
 * Refine added line endings properly
 * Refine removed line endings properly
@@ -70,3 +66,7 @@ difference.
 * If stdout is a terminal, pipe the output to a pager using the
 algorithm described under "core.pager" in "git help config".
 * Do some effort to prevent fork loops if people set riff as $PAGER
+* Make the Refiner not highlight anything if there are "too many"
+differences between the sections. The point here is that we want to
+highlight changes, but if it's a *replacement* rather than a change
+then we don't want to highlight it.
