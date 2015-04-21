@@ -2,6 +2,17 @@
 Riff is a wrapper around diff that highlights not only which lines
 have changed, but also which parts of the lines that have changed.
 
+# Usage
+    git diff | riff
+
+Or if you do...
+
+    git config --global pager.diff riff
+    git config --global pager.show riff
+    git config --global color.diff false
+
+... then all future 'git diff's and 'git show's will be refined.
+
 ## Minimum Viable Product
 You can do `git diff | riff` and get reasonable output.
 
