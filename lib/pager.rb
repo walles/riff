@@ -1,6 +1,10 @@
 # Add a pager() method that can send text to a pager.
 #
 # With "pager" referring to something like less or moar.
+#
+# This file attempts to be as close as possible to what Git is
+# doing. For reference, do "git help config", search for "core.pager"
+# and compare that text to the page() method below.
 module Pager
   # Checking for this variable before launching $PAGER should prevent
   # us from fork bombing if somebody sets the PAGER environment

@@ -5,11 +5,6 @@ have changed, but also which parts of the lines that have changed.
 ## Minimum Viable Product
 You can do `git diff | riff` and get reasonable output.
 
-# TODO before Johan can use it as $GIT_PAGER
-* If stdout is a terminal, pipe the output to a pager using the
-algorithm described under "core.pager" in "git help config".
-* Do some effort to prevent fork loops if people set riff as $PAGER
-
 # TODO before first release
 * Refine "ax"->"bx\nc" properly
 * Refine added line endings properly
@@ -57,3 +52,6 @@ empty
   added blocks and removed blocks.
 * Diffing <x "hej"> vs <x 'hej'> shows the first space as a
 difference.
+* If stdout is a terminal, pipe the output to a pager using the
+algorithm described under "core.pager" in "git help config".
+* Do some effort to prevent fork loops if people set riff as $PAGER
