@@ -4,7 +4,7 @@
 begin
   require 'riff'
 rescue LoadError
-  $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../lib"
+  $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
   require 'riff'
 end
 require 'pager'
