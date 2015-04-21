@@ -7,5 +7,9 @@ rescue LoadError
   $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../lib"
   require 'riff'
 end
+require 'pager'
 
-Riff.new().do_stream(STDIN)
+include Pager
+
+refined = Riff.new().do_stream(STDIN)
+page(refined)

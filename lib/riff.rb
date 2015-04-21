@@ -77,19 +77,16 @@ class Riff
   # If we have stored adds / removes, calling this method will flush
   # those.
   def consume_replacement()
-    return if @replace_old.empty? && @replace_new.empty?
+    return '' if @replace_old.empty? && @replace_new.empty?
 
     refiner = Refiner.new(@replace_old, @replace_new)
-    print refiner.refined_old
-    print refiner.refined_new
+    return_me = refiner.refined_old.to_s
+    return_me += refiner.refined_new.to_s
 
     @replace_old = ''
     @replace_new = ''
-  end
 
-  def print_styled_line(style, line)
-    reset = (style.empty? ? '' : RESET)
-    puts "#{style}#{line}#{reset}"
+    return return_me
   end
 
   # Call handle_<state>_line() for the given state and line
@@ -109,22 +106,28 @@ class Riff
     case @state
     when :diff_added
       @replace_new += DIFF_ADDED.match(line)[1] + "\n"
+      return ''
     when :diff_removed
       @replace_old += DIFF_REMOVED.match(line)[1] + "\n"
+      return ''
     else
-      consume_replacement()
+      refined = consume_replacement()
 
       color = LINE_PREFIX.fetch(@state)
 
-      print DiffString.decorate_string('', color, line + "\n")
+      return refined + DiffString.decorate_string('', color, line + "\n")
     end
   end
 
   # Read diff from a stream and output a highlighted version to stdout
   def do_stream(diff_stream)
+    output = ''
+
     diff_stream.each do |line|
-      handle_diff_line(line)
+      output += handle_diff_line(line)
     end
-    consume_replacement()
+    output += consume_replacement()
+
+    return output
   end
 end

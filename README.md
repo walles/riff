@@ -5,18 +5,30 @@ have changed, but also which parts of the lines that have changed.
 ## Minimum Viable Product
 You can do `git diff | riff` and get reasonable output.
 
-# TODO
-* If stdout is a terminal, pipe the output to a pager using the
-  algorithm described under "core.pager" in "git help pager".
+# TODO before first release
+* Refine "ax"->"bx\nc" properly
 * Refine added line endings properly
 * Refine removed line endings properly
 * Handle missing linefeed at end of file properly
+* Test that we work as expected when "gem install"ed system-wide
+* On exceptions, print a link to the issue tracker
+* Add support for --help
+* Add support for --version
+* Release version 0.0.0
+
+# TODO post first release
 * Make the Refiner not highlight anything if there are "too many"
 differences between the sections. The point here is that we want to
 highlight changes, but if it's a *replacement* rather than a change
 then we don't want to highlight it.
-* Test that we work as expected when "gem install"ed system-wide
-* Release version 0.0.0
+* Make sure we highlight the output of "git log -p" properly. If we
+get something unexpected, maybe just go back to :initial?
+* Make sure we highlight the output of "git show --stat" properly
+* Somehow hint users that they can use us as $GIT_PAGER
+* Given two files on the command line, we should pass them and any
+options on to "diff" and highlight the result.
+* Given three files on the command line, we should pass them and any
+options on to "diff3" and highlight the result
 
 # DONE
 * Make a main program that can read input from stdin and print it to
@@ -40,3 +52,6 @@ empty
   added blocks and removed blocks.
 * Diffing <x "hej"> vs <x 'hej'> shows the first space as a
 difference.
+* If stdout is a terminal, pipe the output to a pager using the
+algorithm described under "core.pager" in "git help config".
+* Do some effort to prevent fork loops if people set riff as $PAGER
