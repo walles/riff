@@ -6,6 +6,10 @@ have changed, but also which parts of the lines that have changed.
 You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
+* Make the Refiner not highlight anything if there are "too many"
+differences between the sections. The point here is that we want to
+highlight changes, but if it's a *replacement* rather than a change
+then we don't want to highlight it.
 * Refine "ax"->"bx\nc" properly
 * Refine added line endings properly
 * Refine removed line endings properly
@@ -17,14 +21,14 @@ You can do `git diff | riff` and get reasonable output.
 * Release version 0.0.0
 
 # TODO post first release
-* Make the Refiner not highlight anything if there are "too many"
-differences between the sections. The point here is that we want to
-highlight changes, but if it's a *replacement* rather than a change
-then we don't want to highlight it.
 * Make sure we highlight the output of "git log -p" properly. If we
 get something unexpected, maybe just go back to :initial?
 * Make sure we highlight the output of "git show --stat" properly
-* Somehow hint users that they can use us as $GIT_PAGER
+* Somehow hint users on what to write in their .gitconfig to make
+selected commands page through riff
+* Strip all color from the input before handling it to enable users to
+  set Git's pager.diff and pager.show variables to 'riff' without also
+  needing to set color.diff=false.
 * Given two files on the command line, we should pass them and any
 options on to "diff" and highlight the result.
 * Given three files on the command line, we should pass them and any
