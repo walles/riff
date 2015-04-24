@@ -11,4 +11,8 @@ module Colors
   NOT_REVERSE = "#{ESC}[27m"
 
   RESET = "#{ESC}[m"
+
+  def uncolor(string)
+    return string.gsub(/#{ESC}[^m]*m/, '')
+  end
 end

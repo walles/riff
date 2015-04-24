@@ -100,6 +100,7 @@ class Riff
 
   def handle_diff_line(line)
     line.chomp!
+    line = uncolor(line)
 
     handle_line_for_state(@state, line)
 

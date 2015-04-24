@@ -25,14 +25,14 @@ You can do `git diff | riff` and get reasonable output.
 * Release version 0.0.0
 
 # TODO post first release
+* Think about how to visualize one line changing to itself with a
+  comma at the end plus a bunch of entirely new lines. Think of a
+  constant array getting some more extra members.
 * Make sure we highlight the output of "git log -p" properly. If we
 get something unexpected, maybe just go back to :initial?
 * Make sure we highlight the output of "git show --stat" properly
 * Somehow hint users on what to write in their .gitconfig to make
 selected commands page through riff
-* Strip all color from the input before handling it to enable users to
-  set Git's pager.diff and pager.show variables to 'riff' without also
-  needing to set color.diff=false.
 * Given two files on the command line, we should pass them and any
 options on to "diff" and highlight the result.
 * Given three files on the command line, we should pass them and any
@@ -70,3 +70,6 @@ then we don't want to highlight it.
 * Refine added line endings properly
 * Refine removed line endings properly
 * Refine "ax"->"bx\nc" properly
+* Strip all color from the input before handling it to enable users to
+  set Git's pager.diff and pager.show variables to 'riff' without also
+  needing to set color.diff=false.
