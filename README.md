@@ -17,9 +17,6 @@ Or if you do...
 You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
-* Refine "ax"->"bx\nc" properly
-* Refine added line endings properly
-* Refine removed line endings properly
 * Handle missing linefeed at end of file properly
 * Test that we work as expected when "gem install"ed system-wide
 * On exceptions, print a link to the issue tracker
@@ -70,3 +67,6 @@ algorithm described under "core.pager" in "git help config".
 differences between the sections. The point here is that we want to
 highlight changes, but if it's a *replacement* rather than a change
 then we don't want to highlight it.
+* Refine added line endings properly
+* Refine removed line endings properly
+* Refine "ax"->"bx\nc" properly

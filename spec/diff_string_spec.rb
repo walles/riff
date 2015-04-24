@@ -1,3 +1,4 @@
+# coding: utf-8
 require 'colors'
 require 'diff_string'
 
@@ -39,6 +40,22 @@ RSpec.describe DiffString, '#add' do
       expect(diff_string.to_s).to eq(
         "#{GREEN}+a\n" +
         "#{GREEN}+b#{RESET}\n")
+    end
+  end
+
+  context %(with added newline) do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('a', false)
+    diff_string.add('b', false)
+    diff_string.add("\n", true)
+    diff_string.add('c', false)
+    diff_string.add('d', false)
+    diff_string.add("\n", false)
+
+    it %(properly highlights the newline) do
+      expect(diff_string.to_s).to eq(
+        %(#{GREEN}+ab#{reversed('↵')}\n) +
+        %(#{GREEN}+cd#{RESET}\n))
     end
   end
 end

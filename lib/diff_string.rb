@@ -15,6 +15,12 @@ class DiffString
   end
 
   def add(string, reverse)
+    if reverse && string == "\n"
+      add('↵', true)
+      add("\n", false)
+      return
+    end
+
     if @string.empty?() || @string.end_with?("\n")
       @string += @color
       @string += @prefix
