@@ -9,7 +9,6 @@ Or if you do...
 
     git config --global pager.diff riff
     git config --global pager.show riff
-    git config --global color.diff false
 
 ... then all future 'git diff's and 'git show's will be refined.
 
@@ -18,10 +17,10 @@ You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
 * Handle missing linefeed at end of file properly
-* Test that we work as expected when "gem install"ed system-wide
 * On exceptions, print a link to the issue tracker
 * Add support for --help
 * Add support for --version
+* Test that we work as expected when "gem install"ed system-wide
 * Release version 0.0.0
 
 # TODO post first release
