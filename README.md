@@ -32,6 +32,9 @@ properly
 * Think about how to visualize one line changing to itself with a
   comma at the end plus a bunch of entirely new lines. Think of a
   constant array getting some more extra members.
+* Do "git show 57f27da" and think about what rule we should use to get
+the REVERSE vs reversed() lines highlighted.
+* Think about highlighting whitespace errors like Git does
 * Make sure we highlight the output of "git log -p" properly. If we
 get something unexpected, maybe just go back to :initial?
 * Make sure we highlight the output of "git show --stat" properly

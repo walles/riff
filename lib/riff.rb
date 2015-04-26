@@ -59,6 +59,8 @@ class Riff
       @state = :diff_removed
     when DIFF_CONTEXT
       @state = :diff_context
+    else
+      fail NotImplementedError, "Can't handle <#{@state}> line: <#{line}>"
     end
   end
 
