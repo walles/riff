@@ -22,7 +22,7 @@ class Refiner
   # If either old or new would get more than this percentage of chars
   # highlighted, consider this to be a replacement rather than a
   # change and just don't highlight anything.
-  REFINEMENT_THRESHOLD=30
+  REFINEMENT_THRESHOLD = 30
 
   def collect_highlights(diff, old_highlights, new_highlights)
     diff.each do |section|

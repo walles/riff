@@ -13,7 +13,7 @@ RSpec.describe DiffString, '#add' do
       diff_string.add('3', true)
       diff_string.add("\n", false)
       expect(diff_string.to_s).to eq(
-        "#{GREEN}+#{REVERSE}1#{NOT_REVERSE}2#{REVERSE}3#{NOT_REVERSE}#{RESET}\n")
+        "#{GREEN}+#{reversed('1')}2#{reversed('3')}#{RESET}\n")
     end
 
     it 'renders correctly with a few chars in between' do
@@ -25,7 +25,7 @@ RSpec.describe DiffString, '#add' do
       diff_string.add('5', true)
       diff_string.add("\n", false)
       expect(diff_string.to_s).to eq(
-        "#{GREEN}+#{REVERSE}1#{NOT_REVERSE}234#{REVERSE}5#{NOT_REVERSE}#{RESET}\n")
+        "#{GREEN}+#{reversed('1')}234#{reversed('5')}#{RESET}\n")
     end
   end
 
@@ -38,7 +38,7 @@ RSpec.describe DiffString, '#add' do
       diff_string.add("\n", false)
 
       expect(diff_string.to_s).to eq(
-        "#{GREEN}+a\n" +
+        "#{GREEN}+a\n" \
         "#{GREEN}+b#{RESET}\n")
     end
   end
