@@ -3,10 +3,6 @@ require 'refiner'
 
 include Colors
 
-def reversed(string)
-  return "#{REVERSE}#{string}#{NOT_REVERSE}"
-end
-
 RSpec.describe Refiner, '#new' do
   context 'with single quotes to double quotes' do
     refiner = Refiner.new(%('quoted'\n), %("quoted"\n))
