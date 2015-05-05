@@ -11,9 +11,9 @@ RSpec.describe Riff, '#handle_diff_line' do
         File.open(File.join(__dir__, 'removed-newline-at-eof.diff')))
 
     it 'ends the right way' do
-      expect(highlighted).to end_with(
-        "#{RED}-last line#{reversed('↵')}\n" \
-        "#{GREEN}+last line#{RESET}\n")
+      expect(highlighted.split("\n", -1)[-3..-1]).to eq(
+        "#{RED}-  needing to set color.diff=false.#{reversed('↵')}\n" \
+        "#{GREEN}+  needing to set color.diff=false.#{RESET}\n".split("\n", -1))
     end
   end
 end
