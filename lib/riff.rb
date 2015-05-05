@@ -11,6 +11,7 @@ class Riff
   DIFF_ADDED = /^\+(.*)/
   DIFF_REMOVED = /^-(.*)/
   DIFF_CONTEXT = /^ /
+  DIFF_NO_ENDING_NEWLINE = /^\\/
 
   include Colors
 
@@ -21,7 +22,8 @@ class Riff
     diff_hunk:        '',
     diff_added:       GREEN,
     diff_removed:     RED,
-    diff_context:     ''
+    diff_context:     '',
+    diff_no_ending_newline: ''
   }
 
   def initialize()
@@ -47,6 +49,20 @@ class Riff
     handle_diff_hunk_line(line)
   end
 
+  def handle_no_ending_newline(line)
+    case @state
+    when :diff_added
+      @replace_new.sub!(/\n$/, '')
+    when :diff_removed
+      @replace_old.sub!(/\n$/, '')
+    else
+      fail NotImplementedError,
+           "Can't handle no-ending-newline in <#{@state}> line: <#{line}>"
+    end
+
+    @state = :diff_no_ending_newline
+  end
+
   def handle_diff_hunk_line(line)
     case line
     when DIFF_HUNK_HEADER
@@ -59,6 +75,8 @@ class Riff
       @state = :diff_removed
     when DIFF_CONTEXT
       @state = :diff_context
+    when DIFF_NO_ENDING_NEWLINE
+      handle_no_ending_newline(line)
     else
       fail NotImplementedError, "Can't handle <#{@state}> line: <#{line}>"
     end
@@ -113,6 +131,8 @@ class Riff
     when :diff_removed
       @replace_old += DIFF_REMOVED.match(line)[1] + "\n"
       return ''
+    when :diff_no_ending_newline
+      return consume_replacement()
     else
       refined = consume_replacement()
 
