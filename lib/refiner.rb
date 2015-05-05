@@ -56,11 +56,11 @@ class Refiner
     old_highlights = Set.new
     new_highlights = Set.new
     if (!old.empty?) && (!new.empty?)
-      collect_highlights(Diff::LCS.diff(old.chomp, new.chomp),
+      collect_highlights(Diff::LCS.diff(old, new),
                          old_highlights,
                          new_highlights)
 
-      censor_highlights(old.chomp, new.chomp, old_highlights, new_highlights)
+      censor_highlights(old, new, old_highlights, new_highlights)
     end
 
     @refined_old = DiffString.new('-', RED)
