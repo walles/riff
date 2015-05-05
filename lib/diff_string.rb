@@ -38,14 +38,10 @@ class DiffString
     return '' if @string.empty?
 
     string = @string
-    newline = ''
-    if string.end_with? "\n"
-      string.chomp!
-      newline = "\n"
-    end
+    string.chomp! if string.end_with? "\n"
 
     suffix = @color.empty? ? '' : RESET
-    return string + suffix + newline
+    return string + suffix + "\n"
   end
 
   def self.decorate_string(prefix, color, string)

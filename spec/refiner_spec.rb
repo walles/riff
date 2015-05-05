@@ -1,3 +1,4 @@
+# coding: utf-8
 require 'colors'
 require 'refiner'
 
@@ -61,6 +62,40 @@ RSpec.describe Refiner, '#new' do
         %(#{RED}-0123456789#{RESET}\n))
       expect(refiner.refined_new.to_s).to eq(
         %(#{GREEN}+abcdefghij#{RESET}\n))
+    end
+  end
+
+  context %(with added ending newline) do
+    refiner = Refiner.new('abcde',
+                          "abcde\n")
+
+    it %(highlights the newline) do
+      expect(refiner.refined_old.to_s).to eq(
+        %(#{RED}-abcde#{RESET}\n))
+      expect(refiner.refined_new.to_s).to eq(
+        %(#{GREEN}+abcde#{reversed('↵')}#{RESET}\n))
+    end
+
+    it %(ends in a newline) do
+      expect(refiner.refined_old.to_s).to end_with("\n")
+      expect(refiner.refined_new.to_s).to end_with("\n")
+    end
+  end
+
+  context %(with removed ending newline) do
+    refiner = Refiner.new("abcde\n",
+                          'abcde')
+
+    it %(highlights the newline) do
+      expect(refiner.refined_old.to_s).to eq(
+        %(#{RED}-abcde#{reversed('↵')}#{RESET}\n))
+      expect(refiner.refined_new.to_s).to eq(
+        %(#{GREEN}+abcde#{RESET}\n))
+    end
+
+    it %(ends in a newline) do
+      expect(refiner.refined_old.to_s).to end_with("\n")
+      expect(refiner.refined_new.to_s).to end_with("\n")
     end
   end
 end

@@ -16,8 +16,6 @@ Or if you do...
 You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
-* Visualize removed linefeed at end of file properly
-* Visualize adding a missing linefeed at end of file properly
 * Visualize missing linefeed at end of file as part of the context
 properly
 * On exceptions, print a link to the issue tracker
@@ -31,7 +29,7 @@ properly
 # TODO post first release
 * Think about how to visualize one line changing to itself with a
   comma at the end plus a bunch of entirely new lines. Think of a
-  constant array getting some more extra members.
+  constant array getting one or more extra members.
 * Do "git show 57f27da" and think about what rule we should use to get
 the REVERSE vs reversed() lines highlighted.
 * Think about highlighting whitespace errors like Git does
@@ -80,3 +78,5 @@ then we don't want to highlight it.
 * Strip all color from the input before handling it to enable users to
   set Git's pager.diff and pager.show variables to 'riff' without also
   needing to set color.diff=false.
+* Visualize removed linefeed at end of file properly
+* Visualize adding a missing linefeed at end of file properly
