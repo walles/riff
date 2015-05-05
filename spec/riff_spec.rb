@@ -12,7 +12,7 @@ RSpec.describe Riff, '#handle_diff_line' do
 
     it 'ends the right way' do
       expect(highlighted.split("\n", -1)[-3..-1]).to eq(
-        "#{RED}-  needing to set color.diff=false.#{reversed('↵')}\n" \
+        "#{RED}-  needing to set color.diff=false.#{reversed('↵')}#{RESET}\n" \
         "#{GREEN}+  needing to set color.diff=false.#{RESET}\n".split("\n", -1))
     end
   end
