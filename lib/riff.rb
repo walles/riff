@@ -55,6 +55,9 @@ class Riff
       @replace_new.sub!(/\n$/, '')
     when :diff_removed
       @replace_old.sub!(/\n$/, '')
+    when :diff_context
+      # Intentionally ignored
+      return
     else
       fail NotImplementedError,
            "Can't handle no-ending-newline in <#{@state}> line: <#{line}>"

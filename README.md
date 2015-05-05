@@ -16,8 +16,6 @@ Or if you do...
 You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
-* Visualize missing linefeed at end of file as part of the context
-properly
 * On exceptions, print a link to the issue tracker
 * On exceptions, print the riff.rb @state
 * On exceptions, print the line riff.rb was processing
@@ -44,6 +42,11 @@ selected commands page through riff
 options on to "diff" and highlight the result.
 * Given three files on the command line, we should pass them and any
 options on to "diff3" and highlight the result
+
+# TODO future
+* Detect moved blocks and use a number as a prefix for both the add
+  and the remove part of the move. Hightlight any changes just like
+  for other changes.
 
 # DONE
 * Make a main program that can read input from stdin and print it to
@@ -82,3 +85,5 @@ then we don't want to highlight it.
   needing to set color.diff=false.
 * Visualize removed linefeed at end of file properly
 * Visualize adding a missing linefeed at end of file properly
+* Visualize missing linefeed at end of file as part of the context
+properly

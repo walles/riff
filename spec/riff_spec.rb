@@ -29,4 +29,17 @@ RSpec.describe Riff, '#handle_diff_line' do
           .split("\n", -1))
     end
   end
+
+  context 'No newline at end of file as part of context' do
+    highlighted =
+      Riff.new.do_stream(
+        File.open(File.join(__dir__, 'no-newline-at-eof-context.diff')))
+
+    it 'ends the right way' do
+      expect(highlighted.split("\n", -1)[-3..-1]).to eq(
+        "   needing to set color.diff=false.\n" \
+        "\\ No newline at end of file\n"
+          .split("\n", -1))
+    end
+  end
 end

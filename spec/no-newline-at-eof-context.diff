@@ -1,0 +1,12 @@
+diff --git a/README.md b/README.md
+index bb8be87..0769058 100644
+--- a/README.md
++++ b/README.md
+@@ -78,5 +78,5 @@ then we don't want to highlight it.
+ * Refine removed line endings properly
+ * Refine "ax"->"bx\nc" properly
+ * Strip all color from the input before handling it to enable users to
+-  set Git's pager.diff and pager.show variables to 'riff' without also
++  set Git's pager.diff and pager.xshow variables to 'riff' without also
+   needing to set color.diff=false.
+\ No newline at end of file
