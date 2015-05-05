@@ -58,4 +58,34 @@ RSpec.describe DiffString, '#add' do
         %(#{GREEN}+cd#{RESET}\n))
     end
   end
+
+  context %(with highlighted ending newline) do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('x', false)
+    diff_string.add('y', false)
+    diff_string.add("\n", true)
+
+    it %(properly highlights the newline) do
+      expect(diff_string.to_s).to eq(
+        %(#{GREEN}+xy#{reversed('↵')}#{RESET}\n))
+    end
+  end
+
+  context %(empty) do
+    diff_string = DiffString.new('+', GREEN)
+
+    it %(is empty) do
+      expect(diff_string.to_s).to eq('')
+    end
+  end
+
+  context %(doesn't end in a newline) do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('x', false)
+
+    it %(gets a newline added) do
+      expect(diff_string.to_s).to eq(
+        %(#{GREEN}+x#{RESET}\n))
+    end
+  end
 end
