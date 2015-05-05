@@ -32,6 +32,8 @@ properly
   constant array getting one or more extra members.
 * Do "git show 57f27da" and think about what rule we should use to get
 the REVERSE vs reversed() lines highlighted.
+* Do "git show 2ac5b06" and think about what rule we should use to
+highlight all of both "some" and "one or".
 * Think about highlighting whitespace errors like Git does
 * Make sure we highlight the output of "git log -p" properly. If we
 get something unexpected, maybe just go back to :initial?
