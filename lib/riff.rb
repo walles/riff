@@ -94,6 +94,10 @@ class Riff
     handle_diff_hunk_line(line)
   end
 
+  def handle_diff_no_ending_newline_line(line)
+    handle_diff_hunk_line(line)
+  end
+
   # If we have stored adds / removes, calling this method will flush
   # those.
   def consume_replacement()
@@ -132,7 +136,7 @@ class Riff
       @replace_old += DIFF_REMOVED.match(line)[1] + "\n"
       return ''
     when :diff_no_ending_newline
-      return consume_replacement()
+      return ''
     else
       refined = consume_replacement()
 
