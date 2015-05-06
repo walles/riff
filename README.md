@@ -16,9 +16,9 @@ Or if you do...
 You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
-* On exceptions, print a link to the issue tracker
 * Add support for --help
 * Add support for --version
+* On exceptions, print the current version just like --version
 * Test that we work as expected when "gem install"ed system-wide
 * Release version 0.0.0
 
@@ -91,3 +91,4 @@ then we don't want to highlight it.
 properly
 * On exceptions, print the riff.rb @state
 * On exceptions, print the line riff.rb was processing
+* On exceptions, print a link to the issue tracker

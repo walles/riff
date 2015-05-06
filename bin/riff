@@ -1,15 +1,23 @@
 #!/usr/bin/env ruby
 
-# Inspired by http://timelessrepo.com/making-ruby-gems
 begin
-  require 'riff'
-rescue LoadError
-  $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
-  require 'riff'
+  # Inspired by http://timelessrepo.com/making-ruby-gems
+  begin
+    require 'riff'
+  rescue LoadError
+    $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
+    require 'riff'
+  end
+  require 'pager'
+
+  include Pager
+
+  refined = Riff.new().do_stream(STDIN)
+  page(refined)
+rescue => e
+  STDERR.puts
+  STDERR.puts e.to_s
+  STDERR.puts e.backtrace.join("\n\t")
+  STDERR.puts
+  STDERR.puts 'Please report this to https://github.com/walles/riff/issues'
 end
-require 'pager'
-
-include Pager
-
-refined = Riff.new().do_stream(STDIN)
-page(refined)
