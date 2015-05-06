@@ -17,14 +17,16 @@ You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
 * On exceptions, print a link to the issue tracker
-* On exceptions, print the riff.rb @state
-* On exceptions, print the line riff.rb was processing
 * Add support for --help
 * Add support for --version
 * Test that we work as expected when "gem install"ed system-wide
 * Release version 0.0.0
 
 # TODO post first release
+* Think about highlighting whitespace errors like Git does
+* If there is a ~/.gitconfig file, and we aren't the default git pager
+  for diff and show, inform the user how to do that in the --help
+  output.
 * Think about how to visualize one line changing to itself with a
   comma at the end plus a bunch of entirely new lines. Think of a
   constant array getting one or more extra members.
@@ -32,12 +34,12 @@ You can do `git diff | riff` and get reasonable output.
 the REVERSE vs reversed() lines highlighted.
 * Do "git show 2ac5b06" and think about what rule we should use to
 highlight all of both "some" and "one or".
-* Think about highlighting whitespace errors like Git does
 * Make sure we highlight the output of "git log -p" properly. If we
 get something unexpected, maybe just go back to :initial?
 * Make sure we highlight the output of "git show --stat" properly
-* Somehow hint users on what to write in their .gitconfig to make
-selected commands page through riff
+* Make sure we can handle a git conflict
+  resolution diff. File format is described at
+  http://git-scm.com/docs/git-diff#_combined_diff_format.
 * Given two files on the command line, we should pass them and any
 options on to "diff" and highlight the result.
 * Given three files on the command line, we should pass them and any
@@ -87,3 +89,5 @@ then we don't want to highlight it.
 * Visualize adding a missing linefeed at end of file properly
 * Visualize missing linefeed at end of file as part of the context
 properly
+* On exceptions, print the riff.rb @state
+* On exceptions, print the line riff.rb was processing

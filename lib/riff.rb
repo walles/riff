@@ -152,11 +152,19 @@ class Riff
   # Read diff from a stream and output a highlighted version to stdout
   def do_stream(diff_stream)
     output = ''
+    current_line = nil
 
-    diff_stream.each do |line|
-      output += handle_diff_line(line)
+    begin
+      diff_stream.each do |line|
+        current_line = line
+        output += handle_diff_line(line)
+      end
+      output += consume_replacement()
+    rescue
+      STDERR.puts "State: <#{@state}>"
+      STDERR.puts "Current line: <#{current_line}>"
+      raise
     end
-    output += consume_replacement()
 
     return output
   end
