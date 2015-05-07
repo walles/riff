@@ -18,6 +18,11 @@ EOS
   end
 end
 
+if $stdin.isatty
+  puts opts
+  exit
+end
+
 begin
   opts.parse(ARGV)
 rescue Slop::Error => e
