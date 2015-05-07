@@ -15,6 +15,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.2.0)
     rspec-support (3.2.2)
+    slop (4.1.0)
 
 PLATFORMS
   ruby
@@ -22,3 +23,4 @@ PLATFORMS
 DEPENDENCIES
   diff-lcs (~> 1.2.5)
   rspec (~> 3.0)
+  slop (~> 4.1.0)

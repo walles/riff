@@ -16,7 +16,7 @@ Or if you do...
 You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
-* Add support for --help
+* Print help and bail if stdin is a terminal
 * Add support for --version
 * On exceptions, print the current version just like --version
 * Test that we work as expected when "gem install"ed system-wide
@@ -24,9 +24,6 @@ You can do `git diff | riff` and get reasonable output.
 
 # TODO post first release
 * Think about highlighting whitespace errors like Git does
-* If there is a ~/.gitconfig file, and we aren't the default git pager
-  for diff and show, inform the user how to do that in the --help
-  output.
 * Think about how to visualize one line changing to itself with a
   comma at the end plus a bunch of entirely new lines. Think of a
   constant array getting one or more extra members.
@@ -34,6 +31,9 @@ You can do `git diff | riff` and get reasonable output.
 the REVERSE vs reversed() lines highlighted.
 * Do "git show 2ac5b06" and think about what rule we should use to
 highlight all of both "some" and "one or".
+* Do "git show -b 77c8f77" and think about what rule we should use to
+  highlight the leading spaces of the "+  refined" and "+  page" lines
+  at the end of the file.
 * Make sure we highlight the output of "git log -p" properly. If we
 get something unexpected, maybe just go back to :initial?
 * Make sure we highlight the output of "git show --stat" properly
@@ -92,3 +92,4 @@ properly
 * On exceptions, print the riff.rb @state
 * On exceptions, print the line riff.rb was processing
 * On exceptions, print a link to the issue tracker
+* Add support for --help
