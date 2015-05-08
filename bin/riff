@@ -1,37 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'slop'
-
-opts = Slop::Options.new do |o|
-  o.banner = <<-EOS
-Usage: diff ... | riff
-Colors diff and highlights what parts of changed lines have changed.
-
-Git integration:
-    git config --global pager.diff riff
-    git config --global pager.show riff
-EOS
-  o.separator 'Options:'
-  o.on '-h', '--help', 'Print this help' do
-    puts o
-    exit
-  end
-end
-
-if $stdin.isatty
-  puts opts
-  exit
-end
-
-begin
-  opts.parse(ARGV)
-rescue Slop::Error => e
-  STDERR.puts "ERROR: #{e}"
-  STDERR.puts
-  STDERR.puts opts
-  exit 1
-end
-
 begin
   # Inspired by http://timelessrepo.com/making-ruby-gems
   begin
@@ -40,8 +8,12 @@ begin
     $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
     require 'riff'
   end
-  require 'pager'
 
+  require 'options'
+  include Options
+  handle_options
+
+  require 'pager'
   include Pager
 
   refined = Riff.new().do_stream(STDIN)
