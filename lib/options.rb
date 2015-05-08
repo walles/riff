@@ -2,6 +2,10 @@ require 'slop'
 
 # Handle command line options
 module Options
+  def version
+    return `cd #{__dir__} ; git describe --dirty`
+  end
+
   def handle_options
     opts = Slop::Options.new do |o|
       o.banner = <<-EOS
@@ -13,15 +17,17 @@ Git integration:
     git config --global pager.show riff
 EOS
       o.separator 'Options:'
+      o.on '--version', 'Print version information and exit' do
+        puts "riff #{version}"
+        puts
+        puts 'Developed at http://github.com/walles/riff'
+
+        exit
+      end
       o.on '-h', '--help', 'Print this help' do
         puts o
         exit
       end
-    end
-
-    if $stdin.isatty
-      puts opts
-      exit
     end
 
     begin
@@ -31,6 +37,11 @@ EOS
       STDERR.puts
       STDERR.puts opts
       exit 1
+    end
+
+    if $stdin.isatty
+      puts opts
+      exit
     end
   end
 end

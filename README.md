@@ -16,7 +16,6 @@ Or if you do...
 You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
-* Add support for --version
 * On exceptions, print the current version just like --version
 * Test that we work as expected when "gem install"ed system-wide
 * Release version 0.0.0
@@ -93,3 +92,4 @@ properly
 * On exceptions, print a link to the issue tracker
 * Add support for --help
 * Print help and bail if stdin is a terminal
+* Add support for --version
