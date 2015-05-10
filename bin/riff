@@ -19,9 +19,16 @@ begin
   refined = Riff.new().do_stream(STDIN)
   page(refined)
 rescue => e
-  STDERR.puts
   STDERR.puts e.to_s
   STDERR.puts e.backtrace.join("\n\t")
+  STDERR.puts
+  begin
+    STDERR.puts "Riff version #{version}"
+  rescue => e
+    STDERR.puts 'Also, getting the Riff version failed:'
+    STDERR.puts e.to_s
+    STDERR.puts e.backtrace.join("\n\t")
+  end
   STDERR.puts
   STDERR.puts 'Please report this to https://github.com/walles/riff/issues'
 end
