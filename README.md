@@ -16,6 +16,7 @@ Or if you do...
 You can do `git diff | riff` and get reasonable output.
 
 # TODO before first release
+* Put an upper bound on how large regions we should refine
 * Test that we work as expected when "gem install"ed system-wide
 * Release version 0.0.0
 
