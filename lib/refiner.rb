@@ -52,10 +52,25 @@ class Refiner
     end
   end
 
+  def should_highlight?(old, new)
+    return false if old.empty? || new.empty?
+
+    # The 15000 constant has been determined by doing...
+    #
+    # git diff | time riff > /dev/null
+    #
+    # ... on diffs of different sizes. It could potentially be that we
+    # should limit based on old.length * new.length, but this will do
+    # until further notice.
+    return false if old.length + new.length > 15000
+
+    return true
+  end
+
   def initialize(old, new)
     old_highlights = Set.new
     new_highlights = Set.new
-    if (!old.empty?) && (!new.empty?)
+    if should_highlight?(old, new)
       collect_highlights(Diff::LCS.diff(old, new),
                          old_highlights,
                          new_highlights)

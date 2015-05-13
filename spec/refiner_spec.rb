@@ -98,4 +98,20 @@ RSpec.describe Refiner, '#new' do
       expect(refiner.refined_new.to_s).to end_with("\n")
     end
   end
+
+  context %(with large input) do
+    # A Refiner that fails if trying to collect highlights
+    class NonHighlightingRefiner < Refiner
+      def collect_highlights(_diff, _old_highlights, _new_highlights)
+        fail "Shouldn't collect highlights"
+      end
+    end
+
+    old = "0123456789\n"
+    new = '0123456789' * 1500 + "\n"
+
+    it %(doesn't even attempt highlighting) do
+      NonHighlightingRefiner.new(old, new)
+    end
+  end
 end
