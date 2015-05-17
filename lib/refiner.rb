@@ -55,14 +55,9 @@ class Refiner
   def should_highlight?(old, new)
     return false if old.empty? || new.empty?
 
-    # The 15000 constant has been determined by doing...
-    #
-    # git diff | time riff > /dev/null
-    #
-    # ... on diffs of different sizes. It could potentially be that we
-    # should limit based on old.length * new.length, but this will do
-    # until further notice.
-    return false if old.length + new.length > 15000
+    # The 15_000 constant has been determined using the "benchmark"
+    # program in our bin/ directory.
+    return false if old.length + new.length > 15_000
 
     return true
   end

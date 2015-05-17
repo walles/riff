@@ -94,3 +94,5 @@ properly
 * Add support for --version
 * On exceptions, print the current version just like --version
 * Put an upper bound on how large regions we should attempt to refine
+* Find out how the LCS algorithm scales and improve the heuristic for
+  when not to call it.

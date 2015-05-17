@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+
+# This program is for finding out how our refiner's performance scales
+# with the size of the input.
+
+# Inspired by http://timelessrepo.com/making-ruby-gems
+begin
+  require 'riff'
+rescue LoadError
+  $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
+  require 'riff'
+end
+
+$ks = {}
+def time_string(dt, m, n, formula)
+  k = dt / eval(formula)
+  $ks[formula] = k unless $ks.key? formula
+  k /= $ks[formula]
+  return "#{k.round(1)}: dt/(#{formula})"
+end
+
+$k0_a_plus_b = nil
+$k0_a_times_b = nil
+$k0_dist = nil
+def print_timings(old_size, new_size)
+  old = 'o' * old_size
+  new = 'n' * new_size
+  t0 = Time.now
+  Refiner.new(old, new)
+  t1 = Time.now
+  dt = t1 - t0
+
+  puts "Timings: old_size=#{old_size} new_size=#{new_size} dt=#{dt.round(1)}s"
+
+  puts "  #{time_string(dt, old_size, new_size, 'm+n')}"
+  puts "  #{time_string(dt, old_size, new_size, 'm*n*Math.log(m)')}"
+  puts "  #{time_string(dt, old_size, new_size, 'Math.sqrt(m*m + n*n)')}"
+  puts "  #{time_string(dt, old_size, new_size, 'Math.log(m*m + n*n)')}"
+  puts "  #{time_string(dt, old_size, new_size, 'Math.sqrt(m + n)')}"
+
+  puts
+end
+
+print_timings(40_000, 40_000)
+print_timings(40_000, 40_000)
+print_timings(40_000, 40_000)
+print_timings(40_000, 40_000)
+puts
+
+# Exercise O(m+n)
+print_timings(10, 79_990)
+
+# Exercise O(m*n)
+print_timings(20_000, 80_000)
+
+# Excercise m+n=15000
+print_timings(7_500, 7_500)
+
+# Excercise m+n=30000
+print_timings(15_000, 15_000)
+
+puts
