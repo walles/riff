@@ -12,9 +12,6 @@ Or if you do...
 
 ... then all future 'git diff's and 'git show's will be refined.
 
-## Minimum Viable Product
-You can do `git diff | riff` and get reasonable output.
-
 # TODO before first release
 * Test that we work as expected when "gem install"ed system-wide
 * Release version 0.0.0
@@ -96,3 +93,4 @@ properly
 * Put an upper bound on how large regions we should attempt to refine
 * Find out how the LCS algorithm scales and improve the heuristic for
   when not to call it.
+* You can do `git diff | riff` and get reasonable output.

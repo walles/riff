@@ -20,3 +20,7 @@ Style/GuardClause:
 # Johan thinks return statements improve readability
 Style/RedundantReturn:
   Enabled: false
+
+# Johan thinks these are OK as long as there aren't too many of them
+Style/PerlBackrefs:
+  Enabled: false
