@@ -13,18 +13,17 @@ Or if you do...
 ... then all future 'git diff's and 'git show's will be refined.
 
 # TODO before first release
-* Test that we work as expected when "gem install"ed system-wide
 * Create a Rakefile that can install dependencies, build, run tests, package and
 optionally deploy as well.
 * Release version 0.0.0
 
 # TODO post first release
-* Think about highlighting whitespace errors like Git does
-* Think about how to visualize an added line break together with some
-indentation on the following line.
 * Think about how to visualize one line changing to itself with a
   comma at the end plus a bunch of entirely new lines. Think of a
   constant array getting one or more extra members.
+* Think about highlighting whitespace errors like Git does
+* Think about how to visualize an added line break together with some
+indentation on the following line.
 * Do "git show 57f27da" and think about what rule we should use to get
 the REVERSE vs reversed() lines highlighted.
 * Do "git show 2ac5b06" and think about what rule we should use to
@@ -98,3 +97,4 @@ properly
 * Find out how the LCS algorithm scales and improve the heuristic for
   when not to call it.
 * You can do `git diff | riff` and get reasonable output.
+* Test that we work as expected when "gem install"ed system-wide
