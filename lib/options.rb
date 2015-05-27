@@ -1,10 +1,9 @@
 require 'slop'
+require 'version'
 
 # Handle command line options
 module Options
-  def version
-    return `cd #{__dir__} ; git describe --dirty`
-  end
+  include Version
 
   def handle_options
     opts = Slop::Options.new do |o|
