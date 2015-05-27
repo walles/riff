@@ -1,8 +1,14 @@
+require 'English'
+
 # Methods for finding out the Riff version
 module Version
-  # FIXME: This method should return null if this command fails
   def git_version
-    return `cd #{__dir__} ; git describe --dirty`.chomp
+    version = `cd #{__dir__} ; git describe --dirty 2> /dev/null`.chomp
+    if $CHILD_STATUS.success?
+      return version
+    else
+      return nil
+    end
   end
 
   def rubygems_version
@@ -25,10 +31,8 @@ module Version
   end
 
   def version
-    raw_git_version = git_version
-    unless raw_git_version.nil?
-      return semantify_git_version(raw_git_version)
-    end
+    semantic_git_version = semantify_git_version(git_version)
+    return semantic_git_version unless semantic_git_version.nil?
 
     return rubygems_version
   end
