@@ -2,7 +2,7 @@
 module Version
   # FIXME: This method should return null if this command fails
   def git_version
-    return `cd #{__dir__} ; git describe --dirty`
+    return `cd #{__dir__} ; git describe --dirty`.chomp
   end
 
   def rubygems_version

@@ -17,7 +17,7 @@ RSpec.describe Version, '#semantify_git_version' do
   end
 
   context 'tagged dirty version' do
-    it 'returns tag.0' do
+    it 'returns the raw version string' do
       expect(semantify_git_version('1.2-dirty')).to eq('1.2-dirty')
     end
   end
@@ -29,9 +29,15 @@ RSpec.describe Version, '#semantify_git_version' do
   end
 
   context 'non tagged dirty version' do
-    it 'returns tag.tagged-commits-ago' do
+    it 'returns the raw version string' do
       expect(semantify_git_version('1.2-5-g695a668-dirty')).to(
         eq('1.2-5-g695a668-dirty'))
     end
+  end
+end
+
+RSpec.describe Version, '#git_version' do
+  it "doesn't end in a newline" do
+    expect(git_version).to(eq(git_version.chomp))
   end
 end
