@@ -14,10 +14,14 @@ Or if you do...
 
 # TODO before first release
 * Test that we work as expected when "gem install"ed system-wide
+* Create a Rakefile that can install dependencies, build, run tests, package and
+optionally deploy as well.
 * Release version 0.0.0
 
 # TODO post first release
 * Think about highlighting whitespace errors like Git does
+* Think about how to visualize an added line break together with some
+indentation on the following line.
 * Think about how to visualize one line changing to itself with a
   comma at the end plus a bunch of entirely new lines. Think of a
   constant array getting one or more extra members.
