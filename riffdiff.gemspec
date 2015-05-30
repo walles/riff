@@ -13,13 +13,13 @@ but also which parts of the lines that have changed.
 
 = Usage
 
-<tt>git diff | riff</tt>
+git diff | riff
 
 Or if you do...
 
-<tt>git config --global pager.diff riff</tt>
+git config --global pager.diff riff
 
-<tt>git config --global pager.show riff</tt>
+git config --global pager.show riff
 
 ... then all future <tt>git diff</tt>s and <tt>git show</tt>s will be
 refined.
