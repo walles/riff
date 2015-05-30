@@ -23,8 +23,6 @@ Optionally followed by...
 ... to make git show refined diffs by default.
 
 # TODO
-* Running from a git clone should work even if Riff is installed
-globally on the system.
 * Think about how to visualize one line changing to itself with a
   comma at the end plus a bunch of entirely new lines. Think of a
   constant array getting one or more extra members.
@@ -108,3 +106,5 @@ properly
 * Create a Rakefile that can install dependencies, build, run tests, package and
 optionally deploy as well.
 * Make a first public release
+* Running from a git clone should work even if Riff is installed
+globally on the system.

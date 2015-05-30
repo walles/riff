@@ -1,13 +1,11 @@
 #!/usr/bin/env ruby
 
 begin
-  # Inspired by http://timelessrepo.com/making-ruby-gems
-  begin
-    require 'riff'
-  rescue LoadError
+  dev_mode = File.directory? File.join(__dir__, '..', '.git')
+  if dev_mode
     $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
-    require 'riff'
   end
+  require 'riff'
 
   require 'options'
   include Options
