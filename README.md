@@ -12,10 +12,19 @@ Or if you do...
 
 ... then all future 'git diff's and 'git show's will be refined.
 
-# TODO before first release
-* Release version 0.0.0
+# Installation
+    gem install riffdiff
 
-# TODO post first release
+Optionally followed by...
+
+    git config --global pager.diff riff
+    git config --global pager.show riff
+
+... to make git show refined diffs by default.
+
+# TODO
+* Running from a git clone should work even if Riff is installed
+globally on the system.
 * Think about how to visualize one line changing to itself with a
   comma at the end plus a bunch of entirely new lines. Think of a
   constant array getting one or more extra members.
@@ -98,3 +107,4 @@ properly
 * Test that we work as expected when "gem install"ed system-wide
 * Create a Rakefile that can install dependencies, build, run tests, package and
 optionally deploy as well.
+* Make a first public release
