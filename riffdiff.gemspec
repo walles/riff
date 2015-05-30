@@ -13,14 +13,15 @@ but also which parts of the lines that have changed.
 
 = Usage
 
- git diff | riff
+<tt>git diff | riff</tt>
 
 Or if you do...
 
- git config --global pager.diff riff
- git config --global pager.show riff
+<tt>git config --global pager.diff riff</tt>
 
-... then all future <code>git diff</code>s and <code>git show</code>s will be
+<tt>git config --global pager.show riff</tt>
+
+... then all future <tt>git diff</tt>s and <tt>git show</tt>s will be
 refined.
 }
   s.authors     = ['Johan Walles']
