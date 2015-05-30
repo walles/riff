@@ -13,8 +13,6 @@ Or if you do...
 ... then all future 'git diff's and 'git show's will be refined.
 
 # TODO before first release
-* Create a Rakefile that can install dependencies, build, run tests, package and
-optionally deploy as well.
 * Release version 0.0.0
 
 # TODO post first release
@@ -98,3 +96,5 @@ properly
   when not to call it.
 * You can do `git diff | riff` and get reasonable output.
 * Test that we work as expected when "gem install"ed system-wide
+* Create a Rakefile that can install dependencies, build, run tests, package and
+optionally deploy as well.
