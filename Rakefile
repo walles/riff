@@ -9,6 +9,10 @@ end
 
 desc 'Create a .gem package'
 task package: [:spec] do
+  git_description = `git describe --dirty`.chomp
+  fail 'Cannot package when there are uncommitted sources' if
+    git_description.end_with? 'dirty'
+
   system('rm -f *.gem ; gem build riffdiff.gemspec') || fail
 end
 
