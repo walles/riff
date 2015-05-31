@@ -109,8 +109,8 @@ RSpec.describe Refiner, '#new' do
       expect(refiner.refined_old.to_s).to eq(
         %(#{RED}-abcde#{RESET}\n))
       expect(refiner.refined_new.to_s).to eq(
-        %(#{GREEN}+abcde#{reversed(',')}#{RESET}\n) +
-        %(#{GREEN}+fffff,#{RESET}\n) +
+        %(#{GREEN}+abcde#{reversed(',')}\n) +
+        %(#{GREEN}+fffff,\n) +
         %(#{GREEN}+ggggg#{RESET}\n))
     end
   end
@@ -123,8 +123,8 @@ RSpec.describe Refiner, '#new' do
 
     it %(highlights the first removed comma, but not the two removed lines) do
       expect(refiner.refined_old.to_s).to eq(
-        %(#{RED}-abcde#{reversed(',')}#{RESET}\n) +
-        %(#{RED}-fffff,#{RESET}\n) +
+        %(#{RED}-abcde#{reversed(',')}\n) +
+        %(#{RED}-fffff,\n) +
         %(#{RED}-ggggg#{RESET}\n))
       expect(refiner.refined_new.to_s).to eq(
         %(#{GREEN}+abcde#{RESET}\n))

@@ -62,7 +62,7 @@ class Refiner
     return true
   end
 
-  def initialize(old, new)
+  def try_highlight(old, new)
     old_highlights = Set.new
     new_highlights = Set.new
     if should_highlight?(old, new)
@@ -71,6 +71,34 @@ class Refiner
                          new_highlights)
 
       censor_highlights(old, new, old_highlights, new_highlights)
+    end
+
+    return old_highlights, new_highlights
+  end
+
+  def try_highlight_initial_lines(old, new)
+    old_line_count = old.lines.count
+    new_line_count = new.lines.count
+    if old_line_count == new_line_count
+      return Set.new, Set.new
+    end
+
+    min_line_count = [old_line_count, new_line_count].min
+    if min_line_count == 0
+      return Set.new, Set.new
+    end
+
+    # Truncate old and new so they have the same number of lines
+    old = old.lines[0..(min_line_count - 1)].join
+    new = new.lines[0..(min_line_count - 1)].join
+
+    return try_highlight(old, new)
+  end
+
+  def initialize(old, new)
+    old_highlights, new_highlights = try_highlight(old, new)
+    if old_highlights.size == 0 && new_highlights.size == 0
+      old_highlights, new_highlights = try_highlight_initial_lines(old, new)
     end
 
     @refined_old = DiffString.new('-', RED)

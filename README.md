@@ -23,10 +23,6 @@ Optionally followed by...
 ... to make git show refined diffs by default.
 
 # TODO
-* Think about how to visualize one line changing to itself with a
-  comma at the end plus a bunch of entirely new lines. Think of a
-  constant array getting one or more extra members. Bottom of
-  `git show 77c8f77`, added leading spaces might do as a test case.
 * Think about highlighting whitespace errors like Git does
 * Think about how to visualize an added line break together with some
 indentation on the following line.
@@ -109,3 +105,7 @@ optionally deploy as well.
 * Make a first public release
 * Running from a git clone should work even if Riff is installed
 globally on the system.
+* Do `git show 0f5dd84` and think about how to visualize one line
+  changing to itself with a comma at the end plus a bunch of entirely
+  new lines. Think of a constant array getting one or more extra
+  members.
