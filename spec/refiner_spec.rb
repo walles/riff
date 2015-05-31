@@ -99,6 +99,38 @@ RSpec.describe Refiner, '#new' do
     end
   end
 
+  context %(with one line turning into many) do
+    refiner = Refiner.new("abcde\n",
+                          "abcde,\n" \
+                          "fffff,\n" \
+                          "ggggg\n")
+
+    it %(highlights the comma on the first line, but not the two extra lines) do
+      expect(refiner.refined_old.to_s).to eq(
+        %(#{RED}-abcde#{RESET}\n))
+      expect(refiner.refined_new.to_s).to eq(
+        %(#{GREEN}+abcde#{reversed(',')}#{RESET}\n) +
+        %(#{GREEN}+fffff,#{RESET}\n) +
+        %(#{GREEN}+ggggg#{RESET}\n))
+    end
+  end
+
+  context %(with many lines turning into one) do
+    refiner = Refiner.new("abcde,\n" \
+                          "fffff,\n" \
+                          "ggggg\n",
+                          "abcde\n")
+
+    it %(highlights the first removed comma, but not the two removed lines) do
+      expect(refiner.refined_old.to_s).to eq(
+        %(#{RED}-abcde#{reversed(',')}#{RESET}\n) +
+        %(#{RED}-fffff,#{RESET}\n) +
+        %(#{RED}-ggggg#{RESET}\n))
+      expect(refiner.refined_new.to_s).to eq(
+        %(#{GREEN}+abcde#{RESET}\n))
+    end
+  end
+
   context %(with large input) do
     # A Refiner that fails if trying to collect highlights
     class NonHighlightingRefiner < Refiner
