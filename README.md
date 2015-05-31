@@ -30,9 +30,6 @@ indentation on the following line.
 the REVERSE vs reversed() lines highlighted.
 * Do "git show 2ac5b06" and think about what rule we should use to
 highlight all of both "some" and "one or".
-* Do "git show -b 77c8f77" and think about what rule we should use to
-  highlight the leading spaces of the "+  refined" and "+  page" lines
-  at the end of the file.
 * Make sure we highlight the output of "git log -p" properly. If we
 get something unexpected, maybe just go back to :initial?
 * Make sure we highlight the output of "git show --stat" properly
@@ -109,3 +106,6 @@ globally on the system.
   changing to itself with a comma at the end plus a bunch of entirely
   new lines. Think of a constant array getting one or more extra
   members.
+* Do "git show -b 77c8f77" and think about what rule we should use to
+  highlight the leading spaces of the "+  refined" and "+  page" lines
+  at the end of the file.
