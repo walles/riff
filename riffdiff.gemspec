@@ -33,4 +33,9 @@ refined.
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = ['riff']
   s.require_paths = ['lib']
+
+  s.add_development_dependency 'rspec', '~> 3.0'
+
+  s.add_runtime_dependency 'diff-lcs', '~> 1.2.5'
+  s.add_runtime_dependency 'slop', '~> 4.1.0'
 end
