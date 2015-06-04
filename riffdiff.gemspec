@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
   extend Version
 
   s.name        = 'riffdiff'
-  s.version     = semantify_git_version(git_version)
+  s.version     = semantic_version
   s.summary     = 'A diff highlighter showing what parts of lines have changed'
   s.description = %{== Riff
 Riff is a wrapper around diff that highlights not only which lines have changed,
