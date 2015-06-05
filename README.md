@@ -23,7 +23,6 @@ Optionally followed by...
 ... to make git show refined diffs by default.
 
 # TODO
-* Think about whether we should remove bundler binstubs from Git
 * Make sure we can:
   * test dirty sources
   * not package dirty sources
@@ -117,3 +116,4 @@ globally on the system.
 * Don't use --dirty for the gemspec version
 * Rakefile: Refuse to package dirty sources
 * Remove .bundler/config from git
+* Remove bundler binstubs from Git
