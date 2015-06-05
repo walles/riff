@@ -41,4 +41,8 @@ module Version
   def semantic_version
     return semantify_git_version(git_version(false))
   end
+
+  def dirty?
+    return git_version(true).include?('-dirty')
+  end
 end
