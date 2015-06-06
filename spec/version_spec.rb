@@ -38,6 +38,6 @@ end
 
 RSpec.describe Version, '#git_version' do
   it "doesn't end in a newline" do
-    expect(git_version).to(eq(git_version.chomp))
+    expect(git_version(false)).to(eq(git_version(false).chomp))
   end
 end

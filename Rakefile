@@ -1,5 +1,10 @@
 require 'rspec/core/rake_task'
 
+$LOAD_PATH.unshift File.join(File.absolute_path(__dir__), 'lib')
+require 'version'
+
+include Version
+
 task default: :spec
 desc 'Run the unit tests (default)'
 task spec: [:deps]
@@ -9,9 +14,7 @@ end
 
 desc 'Create a .gem package'
 task package: [:spec] do
-  git_description = `git describe --dirty`.chomp
-  fail 'Cannot package when there are uncommitted sources' if
-    git_description.end_with? 'dirty'
+  fail 'Cannot package when there are uncommitted sources' if dirty?
 
   system('rm -f *.gem ; gem build riffdiff.gemspec') || fail
 end
