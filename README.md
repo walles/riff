@@ -23,10 +23,9 @@ Optionally followed by...
 ... to make git show refined diffs by default.
 
 # TODO
-* Make sure we can:
-  * test dirty sources
-  * not package dirty sources
-  * package clean sources
+* When highlighting an added comma at the end of a line, followed by some added
+lines, remove the leading + from the first line and don't color it. We should
+still show the comma in reverse video though.
 * Think about highlighting whitespace errors like Git does
 * Think about how to visualize an added line break together with some
 indentation on the following line.
@@ -117,3 +116,7 @@ globally on the system.
 * Rakefile: Refuse to package dirty sources
 * Remove .bundler/config from git
 * Remove bundler binstubs from Git
+* Make sure we can:
+  * test dirty sources
+  * not package dirty sources
+  * package clean sources, dependencies not verified
