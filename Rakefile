@@ -1,6 +1,6 @@
 require 'rspec/core/rake_task'
 
-$LOAD_PATH.unshift File.join(File.absolute_path(__dir__), 'lib')
+$LOAD_PATH.unshift File.join(__dir__, 'lib')
 require 'version'
 
 include Version
