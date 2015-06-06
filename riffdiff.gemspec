@@ -1,4 +1,4 @@
-$LOAD_PATH.unshift File.join(File.absolute_path(__dir__), 'lib')
+$LOAD_PATH.unshift File.join(__dir__, 'lib')
 require 'version'
 
 Gem::Specification.new do |s|
@@ -33,6 +33,10 @@ refined.
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = ['riff']
   s.require_paths = ['lib']
+
+  # Development is done on 2.0, and we're using at least __dir__ which requires
+  # Ruby 2.0.
+  s.required_ruby_version = '~> 2.0'
 
   s.add_development_dependency 'rspec', '~> 3.0'
 
