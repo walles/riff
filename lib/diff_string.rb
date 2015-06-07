@@ -7,6 +7,7 @@ require 'colors'
 class DiffString
   include Colors
 
+  # Note that the color argument can be the empty string
   def initialize(prefix, color)
     @reverse = false
     @prefix = prefix

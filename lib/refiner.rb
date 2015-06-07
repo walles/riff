@@ -111,12 +111,51 @@ class Refiner
     @refined_new = refined_new.to_s
   end
 
+  # After returning from this method, both @refined_old and @refined_new must
+  # have been set to reasonable values.
+  #
+  # Returns false if the preconditions for using this method aren't fulfilled
+  def create_one_to_many_refinements(old, new, old_highlights, new_highlights)
+    if old_highlights.count > 0
+      return false
+    end
+    if old.lines.count != 1
+      return false
+    end
+    lines = new.lines
+    if lines.count < 2
+      return false
+    end
+
+    @refined_old = ''
+
+    refined_line_1 = DiffString.new(' ', '')
+    lines[0].each_char.with_index do |char, index|
+      refined_line_1.add(char, new_highlights.include?(index))
+    end
+
+    refined_remaining_lines = DiffString.new('+', GREEN)
+    line_2_index_0 = lines[0].length
+    lines[1..-1].join.each_char.with_index do |char, index|
+      actual_index = line_2_index_0 + index
+      refined_remaining_lines.add(char, new_highlights.include?(actual_index))
+    end
+
+    @refined_new = refined_line_1.to_s + refined_remaining_lines.to_s
+
+    return true
+  end
+
   def initialize(old, new)
     old_highlights, new_highlights = try_highlight(old, new)
     if old_highlights.size == 0 && new_highlights.size == 0
       old_highlights, new_highlights = try_highlight_initial_lines(old, new)
     end
 
-    create_refinements(old, new, old_highlights, new_highlights)
+    if !create_one_to_many_refinements(old, new,
+                                       old_highlights,
+                                       new_highlights)
+      create_refinements(old, new, old_highlights, new_highlights)
+    end
   end
 end
