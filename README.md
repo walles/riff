@@ -25,7 +25,9 @@ Optionally followed by...
 # TODO
 * When highlighting an added comma at the end of a line, followed by some added
 lines, remove the leading + from the first line and don't color it. We should
-still show the comma in reverse video though.
+still show the comma in reverse video though. Do this when:
+  * One line is replaced by many
+  * The diff contains only additions
 * Think about highlighting whitespace errors like Git does
 * Think about how to visualize an added line break together with some
 indentation on the following line.
