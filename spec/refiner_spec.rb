@@ -100,17 +100,15 @@ RSpec.describe Refiner, '#new' do
   end
 
   context %(with one line turning into many) do
-    # FIXME: Update to not expect first line to be red
     refiner = Refiner.new("abcde\n",
                           "abcde,\n" \
                           "fffff,\n" \
                           "ggggg\n")
 
-    it %(highlights the comma on the first line, but not the two extra lines) do
-      expect(refiner.refined_old.to_s).to eq(
-        %(#{RED}-abcde#{RESET}\n))
+    it %(pretends first line is unchanged, but highlights comma) do
+      expect(refiner.refined_old.to_s).to eq('')
       expect(refiner.refined_new.to_s).to eq(
-        %(#{GREEN}+abcde#{reversed(',')}\n) +
+        %( abcde#{reversed(',')}\n) +
         %(#{GREEN}+fffff,\n) +
         %(#{GREEN}+ggggg#{RESET}\n))
     end
