@@ -98,15 +98,17 @@ class Refiner
   # After returning from this method, both @refined_old and @refined_new must
   # have been set to reasonable values.
   def create_refinements(old, new, old_highlights, new_highlights)
-    @refined_old = DiffString.new('-', RED)
+    refined_old = DiffString.new('-', RED)
     old.each_char.with_index do |char, index|
-      @refined_old.add(char, old_highlights.include?(index))
+      refined_old.add(char, old_highlights.include?(index))
     end
+    @refined_old = refined_old.to_s
 
-    @refined_new = DiffString.new('+', GREEN)
+    refined_new = DiffString.new('+', GREEN)
     new.each_char.with_index do |char, index|
-      @refined_new.add(char, new_highlights.include?(index))
+      refined_new.add(char, new_highlights.include?(index))
     end
+    @refined_new = refined_new.to_s
   end
 
   def initialize(old, new)
