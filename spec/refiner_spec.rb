@@ -100,6 +100,7 @@ RSpec.describe Refiner, '#new' do
   end
 
   context %(with one line turning into many) do
+    # FIXME: Update to not expect first line to be red
     refiner = Refiner.new("abcde\n",
                           "abcde,\n" \
                           "fffff,\n" \
@@ -110,6 +111,40 @@ RSpec.describe Refiner, '#new' do
         %(#{RED}-abcde#{RESET}\n))
       expect(refiner.refined_new.to_s).to eq(
         %(#{GREEN}+abcde#{reversed(',')}\n) +
+        %(#{GREEN}+fffff,\n) +
+        %(#{GREEN}+ggggg#{RESET}\n))
+    end
+  end
+
+  context %(with two lines turning into many) do
+    refiner = Refiner.new("abcde\n" \
+                          "fffff\n",
+                          "abcde,\n" \
+                          "fffff,\n" \
+                          "ggggg\n")
+
+    it %(highlights the comma on the first two lines, but not the extra line) do
+      expect(refiner.refined_old.to_s).to eq(
+        %(#{RED}-abcde\n) +
+        %(#{RED}-fffff#{RESET}\n))
+      expect(refiner.refined_new.to_s).to eq(
+        %(#{GREEN}+abcde#{reversed(',')}\n) +
+        %(#{GREEN}+fffff#{reversed(',')}\n) +
+        %(#{GREEN}+ggggg#{RESET}\n))
+    end
+  end
+
+  context %(with one line being replaced with many) do
+    refiner = Refiner.new("abcdx\n",
+                          "abcde,\n" \
+                          "fffff,\n" \
+                          "ggggg\n")
+
+    it %(highlights both adds and removes on the first line) do
+      expect(refiner.refined_old.to_s).to eq(
+        %(#{RED}-abcd#{reversed('x')}#{RESET}\n))
+      expect(refiner.refined_new.to_s).to eq(
+        %(#{GREEN}+abcd#{reversed('e,')}\n) +
         %(#{GREEN}+fffff,\n) +
         %(#{GREEN}+ggggg#{RESET}\n))
     end
