@@ -95,12 +95,9 @@ class Refiner
     return try_highlight(old, new)
   end
 
-  def initialize(old, new)
-    old_highlights, new_highlights = try_highlight(old, new)
-    if old_highlights.size == 0 && new_highlights.size == 0
-      old_highlights, new_highlights = try_highlight_initial_lines(old, new)
-    end
-
+  # After returning from this method, both @refined_old and @refined_new must
+  # have been set to reasonable values.
+  def create_refinements(old, new, old_highlights, new_highlights)
     @refined_old = DiffString.new('-', RED)
     old.each_char.with_index do |char, index|
       @refined_old.add(char, old_highlights.include?(index))
@@ -110,5 +107,14 @@ class Refiner
     new.each_char.with_index do |char, index|
       @refined_new.add(char, new_highlights.include?(index))
     end
+  end
+
+  def initialize(old, new)
+    old_highlights, new_highlights = try_highlight(old, new)
+    if old_highlights.size == 0 && new_highlights.size == 0
+      old_highlights, new_highlights = try_highlight_initial_lines(old, new)
+    end
+
+    create_refinements(old, new, old_highlights, new_highlights)
   end
 end
