@@ -107,8 +107,8 @@ class Riff
     return '' if @replace_old.empty? && @replace_new.empty?
 
     refiner = Refiner.new(@replace_old, @replace_new)
-    return_me = refiner.refined_old.to_s
-    return_me += refiner.refined_new.to_s
+    return_me = refiner.refined_old
+    return_me += refiner.refined_new
 
     @replace_old = ''
     @replace_new = ''
