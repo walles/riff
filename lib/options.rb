@@ -20,6 +20,9 @@ EOS
         puts "riff #{version}"
         puts
         puts 'Developed at http://github.com/walles/riff'
+        puts
+        puts 'Get the source code:'
+        puts '  git clone git@github.com:walles/riff.git'
 
         exit
       end
