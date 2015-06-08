@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.name        = 'riffdiff'
   s.version     = semantic_version
   s.summary     = 'A diff highlighter showing what parts of lines have changed'
-  s.description = %{== Riff
+  s.description = %(== Riff
 Riff is a wrapper around diff that highlights not only which lines have changed,
 but also which parts of the lines that have changed.
 
@@ -23,7 +23,7 @@ $ git config --global pager.show riff
 
 ... then all future 'git diff's and 'git show's will be
 refined.
-}
+)
   s.authors     = ['Johan Walles']
   s.email       = 'johan.walles@gmail.com'
   s.homepage    = 'http://github.com/walles/riff'

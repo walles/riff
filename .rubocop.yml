@@ -24,3 +24,19 @@ Style/RedundantReturn:
 # Johan thinks these are OK as long as there aren't too many of them
 Style/PerlBackrefs:
   Enabled: false
+
+# Johan thinks "unless" is hard to read
+Style/NegatedIf:
+  Enabled: false
+
+# Johan finds the default method length limit of 10 silly
+Metrics/MethodLength:
+  Max: 20
+
+# Johan looked at some methods and concluded 21 is fine
+Metrics/AbcSize:
+  Max: 21
+
+# Johan looked at some methods and concluded 7 is fine
+Metrics/CyclomaticComplexity:
+  Max: 7

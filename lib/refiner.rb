@@ -95,7 +95,7 @@ class Refiner
     return try_highlight(old, new)
   end
 
-  def render_refinement(prefix, color, string, highlights, base_index=0)
+  def render_refinement(prefix, color, string, highlights, base_index = 0)
     return_me = DiffString.new(prefix, color)
     string.each_char.with_index do |char, index|
       return_me.add(char, highlights.include?(index + base_index))

@@ -5,9 +5,7 @@ require 'version'
 module Options
   include Version
 
-  def handle_options
-    opts = Slop::Options.new do |o|
-      o.banner = <<-EOS
+  BANNER = <<-EOS
 Usage: diff ... | riff
 Colors diff and highlights what parts of changed lines have changed.
 
@@ -15,6 +13,10 @@ Git integration:
     git config --global pager.diff riff
     git config --global pager.show riff
 EOS
+
+  def create_opts
+    return Slop::Options.new do |o|
+      o.banner = BANNER
       o.separator 'Options:'
       o.on '--version', 'Print version information and exit' do
         puts "riff #{version}"
@@ -31,6 +33,10 @@ EOS
         exit
       end
     end
+  end
+
+  def handle_options
+    opts = create_opts()
 
     begin
       opts.parse(ARGV)
