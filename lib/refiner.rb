@@ -95,20 +95,19 @@ class Refiner
     return try_highlight(old, new)
   end
 
+  def render_refinement(prefix, color, string, highlights, base_index=0)
+    return_me = DiffString.new(prefix, color)
+    string.each_char.with_index do |char, index|
+      return_me.add(char, highlights.include?(index + base_index))
+    end
+    return return_me.to_s
+  end
+
   # After returning from this method, both @refined_old and @refined_new must
   # have been set to reasonable values.
   def create_refinements(old, new, old_highlights, new_highlights)
-    refined_old = DiffString.new('-', RED)
-    old.each_char.with_index do |char, index|
-      refined_old.add(char, old_highlights.include?(index))
-    end
-    @refined_old = refined_old.to_s
-
-    refined_new = DiffString.new('+', GREEN)
-    new.each_char.with_index do |char, index|
-      refined_new.add(char, new_highlights.include?(index))
-    end
-    @refined_new = refined_new.to_s
+    @refined_old = render_refinement('-', RED, old, old_highlights)
+    @refined_new = render_refinement('+', GREEN, new, new_highlights)
   end
 
   # After returning from this method, both @refined_old and @refined_new must
@@ -129,19 +128,15 @@ class Refiner
 
     @refined_old = ''
 
-    refined_line_1 = DiffString.new(' ', '')
-    lines[0].each_char.with_index do |char, index|
-      refined_line_1.add(char, new_highlights.include?(index))
-    end
+    refined_line_1 = render_refinement(' ', '', lines[0], new_highlights)
 
-    refined_remaining_lines = DiffString.new('+', GREEN)
     line_2_index_0 = lines[0].length
-    lines[1..-1].join.each_char.with_index do |char, index|
-      actual_index = line_2_index_0 + index
-      refined_remaining_lines.add(char, new_highlights.include?(actual_index))
-    end
+    refined_remaining_lines = render_refinement('+', GREEN,
+                                                lines[1..-1].join,
+                                                new_highlights,
+                                                line_2_index_0)
 
-    @refined_new = refined_line_1.to_s + refined_remaining_lines.to_s
+    @refined_new = refined_line_1 + refined_remaining_lines
 
     return true
   end
