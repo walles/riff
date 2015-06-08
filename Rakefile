@@ -7,9 +7,16 @@ include Version
 
 task default: :spec
 desc 'Run the unit tests (default)'
-task spec: [:deps]
+task spec: [:deps, :lint]
 RSpec::Core::RakeTask.new do |t|
   t.pattern = FileList['spec/**/*_spec.rb']
+end
+
+desc 'Lint the source code'
+task :lint do
+  # Everything except bin/benchmark; it's not used in production and is unlikely
+  # to change anyway
+  sh 'rubocop lib spec bin/riff Rakefile riffdiff.gemspec'
 end
 
 desc 'Create a .gem package'
