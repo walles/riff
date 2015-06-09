@@ -39,9 +39,9 @@ refined.
   s.required_ruby_version = '~> 2.0'
 
   s.add_development_dependency 'rspec', '~> 3.0'
-  s.add_development_dependency 'rubocop', '~> 0.29.1'
-  s.add_development_dependency 'rake', '~> 0.9.6'
+  s.add_development_dependency 'rubocop', '~> 0.29'
+  s.add_development_dependency 'rake', '~> 0.9'
 
-  s.add_runtime_dependency 'diff-lcs', '~> 1.2.5'
-  s.add_runtime_dependency 'slop', '~> 4.1.0'
+  s.add_runtime_dependency 'diff-lcs', '~> 1.2'
+  s.add_runtime_dependency 'slop', '~> 4.1'
 end
