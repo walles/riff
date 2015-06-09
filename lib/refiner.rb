@@ -15,7 +15,7 @@ require 'diff_string'
 # * added characters highlighted in inverse video
 class Refiner
   include Colors
-hink
+
   attr_reader :refined_old
   attr_reader :refined_new
 
