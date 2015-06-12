@@ -148,6 +148,23 @@ RSpec.describe Refiner, '#new' do
     end
   end
 
+  # From https://github.com/walles/riff/issues/5
+  context %(with one line being replaced with many, real world case) do
+    refiner = Refiner.new("THROTTLE_SECONDS = 51\n",
+                          "\n" \
+                          "Monkey\n" \
+                          "THROTTLE_SECONDS = None\n")
+
+    it %(just colors the lines) do
+      expect(refiner.refined_old).to eq(
+        %(#{RED}-THROTTLE_SECONDS = 51#{RESET}\n))
+      expect(refiner.refined_new).to eq(
+        %(#{GREEN}+\n) +
+        %(#{GREEN}+Monkey\n) +
+        %(#{GREEN}+THROTTLE_SECONDS = None#{RESET}\n))
+    end
+  end
+
   context %(with many lines turning into one) do
     refiner = Refiner.new("abcde,\n" \
                           "fffff,\n" \

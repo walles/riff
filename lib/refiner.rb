@@ -115,16 +115,20 @@ class Refiner
   #
   # Returns false if the preconditions for using this method aren't fulfilled
   def create_one_to_many_refinements(old, new, old_highlights, new_highlights)
-    if old_highlights.count > 0
-      return false
-    end
-    if old.lines.count != 1
-      return false
-    end
+    # If things have been removed from the first line, the specialized
+    # highlighting won't work
+    return false if old_highlights.count > 0
+
+    # If the first line was replaced rather than updated, the specialized
+    # highlighting won't work
+    return false if new_highlights.count == 0
+
+    # Specialized highlighting requires exactly one old line
+    return false if old.lines.count != 1
+
     lines = new.lines
-    if lines.count < 2
-      return false
-    end
+    # Specialized highlighting requires two or more new lines
+    return false if lines.count < 2
 
     @refined_old = ''
 
