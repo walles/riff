@@ -33,5 +33,8 @@ end
 
 desc 'Publish to rubygems.org'
 task publish: [:package] do
+  branch = git_branch
+  fail "Cannot publish from #{branch}, must be on master" if branch != 'master'
+
   system('gem push *.gem') || fail
 end

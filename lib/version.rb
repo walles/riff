@@ -45,4 +45,13 @@ module Version
   def dirty?
     return git_version(true).include?('-dirty')
   end
+
+  def git_branch
+    git_result = `cd #{__dir__} ; git rev-parse --abbrev-ref HEAD 2> /dev/null`
+    if $CHILD_STATUS.success?
+      return git_result.chomp
+    else
+      return nil
+    end
+  end
 end
