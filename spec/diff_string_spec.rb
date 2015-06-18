@@ -29,6 +29,113 @@ RSpec.describe DiffString, '#add' do
     end
   end
 
+  context 'single char special color, on green' do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('1', false)
+    diff_string.add('2', true, RED)
+    diff_string.add('3', false)
+    diff_string.add('\n', false)
+
+    it 'renders correctly' do
+      expect(diff_string.to_s).to eq(
+        "#{GREEN}+1#{reversed("#{RED}2")}#{GREEN}3#{RESET}\n")
+    end
+  end
+
+  context 'double char special color, on green' do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('1', false)
+    diff_string.add('2', true, RED)
+    diff_string.add('x', true, RED)
+    diff_string.add('3', false)
+    diff_string.add('\n', false)
+
+    it 'renders correctly' do
+      expect(diff_string.to_s).to eq(
+        "#{GREEN}+1#{reversed("#{RED}2x")}#{GREEN}3#{RESET}\n")
+    end
+  end
+
+  context 'special color at start, on green' do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('1', true, RED)
+    diff_string.add('2', false)
+    diff_string.add('3', false)
+    diff_string.add('\n', false)
+
+    it 'renders correctly' do
+      expect(diff_string.to_s).to eq(
+        "#{GREEN}+#{reversed("#{RED}1")}#{GREEN}23#{RESET}\n")
+    end
+  end
+
+  context 'special color at end, on green' do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('1', false)
+    diff_string.add('2', false)
+    diff_string.add('3', true, RED)
+    diff_string.add('\n', false)
+
+    it 'renders correctly' do
+      expect(diff_string.to_s).to eq(
+        "#{GREEN}+12#{reversed("#{RED}3")}#{RESET}\n")
+    end
+  end
+
+  context 'special color before reverse, on green' do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('1', false)
+    diff_string.add('2', true, RED)
+    diff_string.add('3', true)
+    diff_string.add('\n', false)
+
+    it 'renders correctly' do
+      expect(diff_string.to_s).to eq(
+        "#{GREEN}+1#{reversed("#{RED}2#{GREEN}3")}#{RESET}\n")
+    end
+  end
+
+  context 'special color after reverse, on green' do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('1', false)
+    diff_string.add('2', true)
+    diff_string.add('3', true, RED)
+    diff_string.add('\n', false)
+
+    it 'renders correctly' do
+      expect(diff_string.to_s).to eq(
+        "#{GREEN}+1#{reversed("2#{RED}3")}#{RESET}\n")
+    end
+  end
+
+  context 'special color at end of first line, on green' do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('1', false)
+    diff_string.add('2', true, RED)
+    diff_string.add('\n', false)
+    diff_string.add('3', false)
+    diff_string.add('\n', false)
+
+    it 'renders correctly' do
+      expect(diff_string.to_s).to eq(
+        "#{GREEN}+1#{reversed("#{RED}2")}#{GREEN}\n3#{RESET}\n")
+    end
+  end
+
+  context 'special color before reversed newline, on green' do
+    diff_string = DiffString.new('+', GREEN)
+    diff_string.add('1', false)
+    diff_string.add('2', true, RED)
+    diff_string.add('\n', true)
+    diff_string.add('3', false)
+    diff_string.add('\n', false)
+
+    it 'renders correctly' do
+      expect(diff_string.to_s).to eq(
+        "#{GREEN}+1#{reversed("#{RED}2#{GREEN}↵")}\n3#{RESET}\n")
+    end
+  end
+
   context 'multiline' do
     it 'colors both lines' do
       diff_string = DiffString.new('+', GREEN)
