@@ -34,7 +34,7 @@ RSpec.describe DiffString, '#add' do
     diff_string.add('1', false)
     diff_string.add('2', true, RED)
     diff_string.add('3', false)
-    diff_string.add('\n', false)
+    diff_string.add("\n", false)
 
     it 'renders correctly' do
       expect(diff_string.to_s).to eq(
@@ -48,7 +48,7 @@ RSpec.describe DiffString, '#add' do
     diff_string.add('2', true, RED)
     diff_string.add('x', true, RED)
     diff_string.add('3', false)
-    diff_string.add('\n', false)
+    diff_string.add("\n", false)
 
     it 'renders correctly' do
       expect(diff_string.to_s).to eq(
@@ -61,7 +61,7 @@ RSpec.describe DiffString, '#add' do
     diff_string.add('1', true, RED)
     diff_string.add('2', false)
     diff_string.add('3', false)
-    diff_string.add('\n', false)
+    diff_string.add("\n", false)
 
     it 'renders correctly' do
       expect(diff_string.to_s).to eq(
@@ -74,7 +74,7 @@ RSpec.describe DiffString, '#add' do
     diff_string.add('1', false)
     diff_string.add('2', false)
     diff_string.add('3', true, RED)
-    diff_string.add('\n', false)
+    diff_string.add("\n", false)
 
     it 'renders correctly' do
       expect(diff_string.to_s).to eq(
@@ -87,7 +87,7 @@ RSpec.describe DiffString, '#add' do
     diff_string.add('1', false)
     diff_string.add('2', true, RED)
     diff_string.add('3', true)
-    diff_string.add('\n', false)
+    diff_string.add("\n", false)
 
     it 'renders correctly' do
       expect(diff_string.to_s).to eq(
@@ -100,7 +100,7 @@ RSpec.describe DiffString, '#add' do
     diff_string.add('1', false)
     diff_string.add('2', true)
     diff_string.add('3', true, RED)
-    diff_string.add('\n', false)
+    diff_string.add("\n", false)
 
     it 'renders correctly' do
       expect(diff_string.to_s).to eq(
@@ -112,9 +112,9 @@ RSpec.describe DiffString, '#add' do
     diff_string = DiffString.new('+', GREEN)
     diff_string.add('1', false)
     diff_string.add('2', true, RED)
-    diff_string.add('\n', false)
+    diff_string.add("\n", false)
     diff_string.add('3', false)
-    diff_string.add('\n', false)
+    diff_string.add("\n", false)
 
     it 'renders correctly' do
       expect(diff_string.to_s).to eq(
@@ -126,9 +126,9 @@ RSpec.describe DiffString, '#add' do
     diff_string = DiffString.new('+', GREEN)
     diff_string.add('1', false)
     diff_string.add('2', true, RED)
-    diff_string.add('\n', true)
+    diff_string.add("\n", true)
     diff_string.add('3', false)
-    diff_string.add('\n', false)
+    diff_string.add("\n", false)
 
     it 'renders correctly' do
       expect(diff_string.to_s).to eq(
