@@ -28,6 +28,8 @@ Optionally followed by...
  * Add a whitespace analysis pass to the Refiner
  * Let the Refiner highlight whitespace errors among the added lines in reverse
  red.
+* When special highighting an expansion, highlight the added parts in green
+reverse, rather than black reverse.
 * Think about how to visualize an added line break together with some
 indentation on the following line.
 * Do "git show 57f27da" and think about what rule we should use to get

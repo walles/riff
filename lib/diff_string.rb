@@ -9,13 +9,18 @@ class DiffString
 
   # Note that the color argument can be the empty string
   def initialize(prefix, color)
-    @reverse = false
     @prefix = prefix
-    @color = color
+    @base_color = color
+
     @string = ''
+
+    @reverse = false
+    @color = @base_color
   end
 
-  def add(string, reverse)
+  def add(string, reverse, color = '')
+    color = @base_color if color.empty?
+
     if reverse && string == "\n"
       add('↵', true)
       add("\n", false)
@@ -23,7 +28,7 @@ class DiffString
     end
 
     if @string.empty?() || @string.end_with?("\n")
-      @string += @color
+      @string += @base_color
       @string += @prefix
     end
 
@@ -31,6 +36,11 @@ class DiffString
       @string += reverse ? REVERSE : NOT_REVERSE
     end
     @reverse = reverse
+
+    if color != @color
+      @string += color
+    end
+    @color = color
 
     @string += string
   end
@@ -41,7 +51,7 @@ class DiffString
     string = @string
     string.chomp! if string.end_with? "\n"
 
-    suffix = @color.empty? ? '' : RESET
+    suffix = @base_color.empty? ? '' : RESET
     return string + suffix + "\n"
   end
 
