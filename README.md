@@ -24,7 +24,7 @@ Optionally followed by...
 
 # TODO
 * Think about highlighting whitespace errors like Git does
- * Make DiffString.add() take a color as well
+ * OK: Make DiffString.add() take a color as well
  * Add a whitespace analysis pass to the Refiner
  * Let the Refiner highlight whitespace errors among the added lines in reverse
  red.

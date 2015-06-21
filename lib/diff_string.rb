@@ -18,6 +18,8 @@ class DiffString
     @color = @base_color
   end
 
+  # rubocop:disable Metrics/CyclomaticComplexity
+  # rubocop:disable Metrics/PerceivedComplexity
   def add(string, reverse, color = '')
     color = @base_color if color.empty?
 
