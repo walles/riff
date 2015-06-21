@@ -104,7 +104,7 @@ RSpec.describe DiffString, '#add' do
 
     it 'renders correctly' do
       expect(diff_string.to_s).to eq(
-        "#{GREEN}+1#{reversed("2#{RED}3")}#{RESET}\n")
+        "#{GREEN}+1#{reversed("2#{RED}3")}#{GREEN}#{RESET}\n")
     end
   end
 
