@@ -25,7 +25,7 @@ class DiffString
     color = @reset_color if color.empty?
 
     if reverse && string == "\n"
-      add('↵', true)
+      add('↵', true, color)
       add("\n", false)
       return
     end
