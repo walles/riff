@@ -108,7 +108,7 @@ RSpec.describe Refiner, '#new' do
     it %(pretends first line is unchanged, but highlights comma) do
       expect(refiner.refined_old).to eq('')
       expect(refiner.refined_new).to eq(
-        %( abcde#{reversed(',')}\n) +
+        %( abcde#{reversed("#{GREEN},")}#{DEFAULT_COLOR}\n) +
         %(#{GREEN}+fffff,\n) +
         %(#{GREEN}+ggggg#{RESET}\n))
     end

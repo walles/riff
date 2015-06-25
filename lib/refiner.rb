@@ -95,10 +95,12 @@ class Refiner
     return try_highlight(old, new)
   end
 
-  def render_refinement(prefix, color, string, highlights, base_index = 0)
+  def render_refinement(prefix, color, string, highlights,
+                        base_index: 0, highlight_color: '')
     return_me = DiffString.new(prefix, color)
     string.each_char.with_index do |char, index|
-      return_me.add(char, highlights.include?(index + base_index))
+      highlight = highlights.include?(index + base_index)
+      return_me.add(char, highlight, highlight ? highlight_color : '')
     end
     return return_me.to_s
   end
@@ -132,13 +134,15 @@ class Refiner
 
     @refined_old = ''
 
-    refined_line_1 = render_refinement(' ', '', lines[0], new_highlights)
+    refined_line_1 =
+      render_refinement(' ', '', lines[0], new_highlights,
+                        highlight_color: GREEN)
 
     line_2_index_0 = lines[0].length
     refined_remaining_lines = render_refinement('+', GREEN,
                                                 lines[1..-1].join,
                                                 new_highlights,
-                                                line_2_index_0)
+                                                base_index: line_2_index_0)
 
     @refined_new = refined_line_1 + refined_remaining_lines
 

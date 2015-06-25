@@ -40,3 +40,8 @@ Metrics/AbcSize:
 # Johan looked at some methods and concluded 7 is fine
 Metrics/CyclomaticComplexity:
   Max: 7
+
+# Offense count: 1
+# Configuration parameters: CountKeywordArgs.
+Metrics/ParameterLists:
+  CountKeywordArgs: false

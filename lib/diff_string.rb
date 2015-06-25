@@ -16,12 +16,13 @@ class DiffString
 
     @reverse = false
     @color = @base_color
+    @reset_color = color.empty? ? DEFAULT_COLOR : color
   end
 
   # rubocop:disable Metrics/CyclomaticComplexity
   # rubocop:disable Metrics/PerceivedComplexity
   def add(string, reverse, color = '')
-    color = @base_color if color.empty?
+    color = @reset_color if color.empty?
 
     if reverse && string == "\n"
       add('↵', true)
@@ -32,6 +33,7 @@ class DiffString
     if @string.empty?() || @string.end_with?("\n")
       @string += @base_color
       @string += @prefix
+      @color = @reset_color
     end
 
     if reverse != @reverse
