@@ -42,4 +42,26 @@ RSpec.describe Riff, '#handle_diff_line' do
           .split("\n", -1))
     end
   end
+
+  context 'Plain non-git diff output' do
+    highlighted =
+      Riff.new.do_stream(
+        File.open(File.join(__dir__, 'plain.diff')))
+
+    it 'starts with a bold line' do
+      expect(highlighted).to start_with("#{BOLD}---")
+    end
+
+    it 'contains a cyan @@ line' do
+      expect(highlighted).to include("\n#{CYAN}@@ ")
+    end
+
+    it 'contains a red - line' do
+      expect(highlighted).to include("\n#{RED}-")
+    end
+
+    it 'contains a green + line' do
+      expect(highlighted).to include("\n#{GREEN}+")
+    end
+  end
 end
