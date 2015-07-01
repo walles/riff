@@ -128,3 +128,4 @@ globally on the system.
     * The diff contains only additions
 * When special highighting an expansion, highlight the added parts in green
 reverse, rather than black reverse. Testcase: `git show 7ea6877`
+* Handle plain non-git diff files
