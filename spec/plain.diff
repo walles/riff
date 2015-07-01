@@ -1,0 +1,24 @@
+--- srvadmin~7.1.0-1/openmanage/oma/ini/omcli.ini       2012-08-03 08:13:20.000000000 -0600
++++ /etc/opt/dell/srvadmin/openmanage/oma/ini/omcli.ini 2012-10-29 02:46:45.993168082 -0600
+@@ -63,8 +63,8 @@
+ recovery=sngl,cdll,sysclp
+ shutdown=sngl,cdll,sysclp
+ thrmshutdown=sngl,cdll,sysclp
+-summary=mult,oma,common,Summary.xsl,cdll,sysclp,cdll,chaclp,cdll,ssclp
+-version=mult,oma,cli,Summary.xsl,cdll,sysclp,cdll,ssclp
++summary=mult,oma,common,Summary.xsl,cdll,sysclp,cdll,chaclp
++version=mult,oma,cli,Summary.xsl,cdll,sysclp
+ validate=sngl,cdll,sysclp
+ progress=sngl,cdll,sysclp
+ [omreport chassis]
+@@ -146,8 +146,8 @@
+ recovery=sngl,cdll,sysclp
+ shutdown=sngl,cdll,sysclp
+ thrmshutdown=sngl,cdll,sysclp
+-summary=mult,oma,common,Summary.xsl,cdll,sysclp,cdll,chaclp,cdll,ssclp
+-version=mult,oma,cli,Summary.xsl,cdll,sysclp,cdll,ssclp
++summary=mult,oma,common,Summary.xsl,cdll,sysclp,cdll,chaclp
++version=mult,oma,cli,Summary.xsl,cdll,sysclp
+ validate=sngl,cdll,sysclp
+ progress=sngl,cdll,sysclp
+ [omreport mainsystem]t mainsystem]

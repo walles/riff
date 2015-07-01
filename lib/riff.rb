@@ -9,6 +9,7 @@ require 'diff_string'
 class Riff
   DIFF_HEADER = /^diff /
   DIFF_HUNK_HEADER = /^@@ /
+  DIFF_REPLACED_FILE_HEADER = /^---/
 
   DIFF_ADDED = /^\+(.*)/
   DIFF_REMOVED = /^-(.*)/
@@ -37,6 +38,8 @@ class Riff
 
   def handle_initial_line(line)
     if line =~ DIFF_HEADER
+      @state = :diff_header
+    elsif line =~ DIFF_REPLACED_FILE_HEADER
       @state = :diff_header
     end
   end
