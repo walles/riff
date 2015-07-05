@@ -74,6 +74,16 @@ RSpec.describe Refiner, '#new' do
     end
   end
 
+  context %(adding two lines, second with text + space) do
+    refiner = Refiner.new('', "text\ntext \n")
+
+    it %(highlights the final space in inverse red) do
+      expect(refiner.refined_new).to eq(
+        %(#{GREEN}+text#{RESET}\n) +
+        %(#{GREEN}+text#{reversed("#{RED} ")}#{GREEN}#{RESET}\n))
+    end
+  end
+
   context %(adding line with only a space) do
     refiner = Refiner.new('', " \n")
 
