@@ -33,7 +33,7 @@ class Refiner
         when '+'
           new_highlights << highlight.position
         else
-          fail("Unsupported diff type: <#{type}>")
+          fail("Unsupported diff action: <#{action}>")
         end
       end
     end
