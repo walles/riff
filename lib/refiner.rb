@@ -2,6 +2,9 @@ require 'set'
 require 'diff/lcs'
 require 'diff_string'
 
+require 'colors'
+require 'whitespace_lint'
+
 # Compute longest common substring based diff between two strings.
 #
 # The diff format is first the old string:
@@ -15,6 +18,7 @@ require 'diff_string'
 # * added characters highlighted in inverse video
 class Refiner
   include Colors
+  include WhitespaceLint
 
   attr_reader :refined_old
   attr_reader :refined_new
@@ -165,11 +169,6 @@ class Refiner
     @refined_new = refined_line_1 + refined_remaining_lines
 
     return true
-  end
-
-  def collect_ws_highlights(new)
-    highlights = Set.new()
-    return highlights
   end
 
   def initialize(old, new)
