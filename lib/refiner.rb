@@ -2,6 +2,9 @@ require 'set'
 require 'diff/lcs'
 require 'diff_string'
 
+require 'colors'
+require 'whitespace_lint'
+
 # Compute longest common substring based diff between two strings.
 #
 # The diff format is first the old string:
@@ -15,6 +18,7 @@ require 'diff_string'
 # * added characters highlighted in inverse video
 class Refiner
   include Colors
+  include WhitespaceLint
 
   attr_reader :refined_old
   attr_reader :refined_new
@@ -33,7 +37,7 @@ class Refiner
         when '+'
           new_highlights << highlight.position
         else
-          fail("Unsupported diff type: <#{type}>")
+          fail("Unsupported diff action: <#{action}>")
         end
       end
     end
@@ -95,28 +99,44 @@ class Refiner
     return try_highlight(old, new)
   end
 
-  def render_refinement(prefix, color, string, highlights,
-                        base_index: 0, highlight_color: '')
-    return_me = DiffString.new(prefix, color)
+  # ws: a set containing the whitespace errors we want to highlight
+  def render_refinement(prefix, base_color, string, highlights,
+                        base_index: 0, highlight_color: '',
+                        ws: nil)
+    return_me = DiffString.new(prefix, base_color)
     string.each_char.with_index do |char, index|
       highlight = highlights.include?(index + base_index)
-      return_me.add(char, highlight, highlight ? highlight_color : '')
+      color = highlight ? highlight_color : ''
+
+      if !ws.nil? && ws.include?(index + base_index)
+        # Highlight whitespace error in inverse red
+        color = RED
+        highlight = true
+      end
+
+      return_me.add(char, highlight, color)
     end
     return return_me.to_s
   end
 
   # After returning from this method, both @refined_old and @refined_new must
   # have been set to reasonable values.
-  def create_refinements(old, new, old_highlights, new_highlights)
+  def create_refinements(old, new,
+                         old_highlights, new_highlights,
+                         whitespace_highlights)
     @refined_old = render_refinement('-', RED, old, old_highlights)
-    @refined_new = render_refinement('+', GREEN, new, new_highlights)
+    @refined_new = render_refinement('+', GREEN,
+                                     new, new_highlights,
+                                     ws: whitespace_highlights)
   end
 
   # After returning from this method, both @refined_old and @refined_new must
   # have been set to reasonable values.
   #
   # Returns false if the preconditions for using this method aren't fulfilled
-  def create_one_to_many_refinements(old, new, old_highlights, new_highlights)
+  def create_one_to_many_refinements(old, new,
+                                     old_highlights, new_highlights,
+                                     whitespace_highlights)
     # If things have been removed from the first line, the specialized
     # highlighting won't work
     return false if old_highlights.count > 0
@@ -136,13 +156,15 @@ class Refiner
 
     refined_line_1 =
       render_refinement(' ', '', lines[0], new_highlights,
-                        highlight_color: GREEN)
+                        highlight_color: GREEN,
+                        ws: whitespace_highlights)
 
     line_2_index_0 = lines[0].length
     refined_remaining_lines = render_refinement('+', GREEN,
                                                 lines[1..-1].join,
                                                 new_highlights,
-                                                base_index: line_2_index_0)
+                                                base_index: line_2_index_0,
+                                                ws: whitespace_highlights)
 
     @refined_new = refined_line_1 + refined_remaining_lines
 
@@ -155,10 +177,15 @@ class Refiner
       old_highlights, new_highlights = try_highlight_initial_lines(old, new)
     end
 
+    whitespace_highlights = collect_ws_highlights(new)
+
     if !create_one_to_many_refinements(old, new,
                                        old_highlights,
-                                       new_highlights)
-      create_refinements(old, new, old_highlights, new_highlights)
+                                       new_highlights,
+                                       whitespace_highlights)
+      create_refinements(old, new,
+                         old_highlights, new_highlights,
+                         whitespace_highlights)
     end
   end
 end

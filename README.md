@@ -25,9 +25,10 @@ Optionally followed by...
 # TODO
 * Think about highlighting whitespace errors like Git does
  * OK: Make DiffString.add() take a color as well
- * Add a whitespace analysis pass to the Refiner
- * Let the Refiner highlight whitespace errors among the added lines in reverse
- red.
+ * OK: Add a trailing whitespace analysis pass to the Refiner
+ * OK: Let the Refiner highlight whitespace errors among the added lines in
+ reverse red.
+ * Add highlighting of non-leading tabs to the whitespace analysis
 * Think about how to visualize an added line break together with some
 indentation on the following line.
 * Do "git show 57f27da" and think about what rule we should use to get

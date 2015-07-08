@@ -45,3 +45,6 @@ Metrics/CyclomaticComplexity:
 # Configuration parameters: CountKeywordArgs.
 Metrics/ParameterLists:
   CountKeywordArgs: false
+
+Metrics/ClassLength:
+  Max: 132

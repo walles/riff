@@ -65,6 +65,52 @@ RSpec.describe Refiner, '#new' do
     end
   end
 
+  context %(adding line with text + space) do
+    refiner = Refiner.new('', "text \n")
+
+    it %(highlights the final space in inverse red) do
+      expect(refiner.refined_new).to eq(
+        %(#{GREEN}+text#{reversed("#{RED} ")}#{GREEN}#{RESET}\n))
+    end
+  end
+
+  context %(adding two lines, second with text + space) do
+    refiner = Refiner.new('', "text\ntext \n")
+
+    it %(highlights the final space in inverse red) do
+      expect(refiner.refined_new).to eq(
+        %(#{GREEN}+text\n) +
+        %(#{GREEN}+text#{reversed("#{RED} ")}#{GREEN}#{RESET}\n))
+    end
+  end
+
+  context %(adding line with only a space) do
+    refiner = Refiner.new('', " \n")
+
+    it %(highlights the space in inverse red) do
+      expect(refiner.refined_new).to eq(
+        %(#{GREEN}+#{reversed("#{RED} ")}#{GREEN}#{RESET}\n))
+    end
+  end
+
+  context %(adding line with only a tab) do
+    refiner = Refiner.new('', "\t\n")
+
+    it %(highlights the tab in inverse red) do
+      expect(refiner.refined_new).to eq(
+        %(#{GREEN}+#{reversed("#{RED}\t")}#{GREEN}#{RESET}\n))
+    end
+  end
+
+  context %(replacing final char of line with a space) do
+    refiner = Refiner.new("text\n", "tex \n")
+
+    it %(highlights final space of added line in inverse red) do
+      expect(refiner.refined_new).to eq(
+        %(#{GREEN}+tex#{reversed("#{RED} ")}#{GREEN}#{RESET}\n))
+    end
+  end
+
   context %(with added ending newline) do
     refiner = Refiner.new('abcde',
                           "abcde\n")

@@ -4,8 +4,6 @@ require 'diff_string'
 
 # Call do_stream() with the output of some diff-like tool (diff,
 # diff3, git diff, ...) and it will highlight that output for you.
-#
-# rubocop:disable Metrics/ClassLength
 class Riff
   DIFF_HEADER = /^diff /
   DIFF_HUNK_HEADER = /^@@ /
