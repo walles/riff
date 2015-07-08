@@ -11,7 +11,7 @@ RSpec.describe WhitespaceLint, '#collect_ws_highlights' do
 
   context 'a line that is fine' do
     it 'returns an empty set' do
-      expect(collect_ws_highlights("\t text\n")).to eq(Set.new [0])
+      expect(collect_ws_highlights("\t text\n")).to be_empty
     end
   end
 
