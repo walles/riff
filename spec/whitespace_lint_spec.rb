@@ -33,6 +33,12 @@ RSpec.describe WhitespaceLint, '#collect_ws_highlights' do
     end
   end
 
+  context 'line with tab after space' do
+    it 'highlights the tab' do
+      expect(collect_ws_highlights(" \tfoo\n")).to eq(Set.new [1])
+    end
+  end
+
   context 'two lines, second ending in space' do
     string = "012\n345 \n"
 
