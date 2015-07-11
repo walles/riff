@@ -1,5 +1,7 @@
 # Whitespace error linter
 module WhitespaceLint
+  # rubocop:disable Metrics/CyclomaticComplexity
+  # rubocop:disable Metrics/PerceivedComplexity
   def add_line_highlights(line, base_index, highlights)
     last_seen_whitespace = -1
     last_seen_non_ws = -1
