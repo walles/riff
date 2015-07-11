@@ -1,8 +1,11 @@
 # Whitespace error linter
 module WhitespaceLint
+  # rubocop:disable Metrics/CyclomaticComplexity
+  # rubocop:disable Metrics/PerceivedComplexity
   def add_line_highlights(line, base_index, highlights)
     last_seen_whitespace = -1
     last_seen_non_ws = -1
+    non_tab_seen = false
     line.each_char.with_index do |char, index|
       break if char == "\n"
       break if char == "\r"
@@ -12,6 +15,11 @@ module WhitespaceLint
       else
         last_seen_non_ws = index
       end
+
+      if non_tab_seen && char == "\t"
+        highlights << (base_index + index)
+      end
+      non_tab_seen = true if char != "\t"
     end
 
     if last_seen_non_ws < last_seen_whitespace

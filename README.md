@@ -23,12 +23,6 @@ Optionally followed by...
 ... to make git show refined diffs by default.
 
 # TODO
-* Think about highlighting whitespace errors like Git does
- * OK: Make DiffString.add() take a color as well
- * OK: Add a trailing whitespace analysis pass to the Refiner
- * OK: Let the Refiner highlight whitespace errors among the added lines in
- reverse red.
- * Add highlighting of non-leading tabs to the whitespace analysis
 * Think about how to visualize an added line break together with some
 indentation on the following line.
 * Do "git show 57f27da" and think about what rule we should use to get
@@ -130,3 +124,9 @@ globally on the system.
 * When special highighting an expansion, highlight the added parts in green
 reverse, rather than black reverse. Testcase: `git show 7ea6877`
 * Handle plain non-git diff files
+* Think about highlighting whitespace errors like Git does
+ * Make DiffString.add() take a color as well
+ * Add a trailing whitespace analysis pass to the Refiner
+ * Let the Refiner highlight whitespace errors among the added lines in
+ reverse red.
+ * Add highlighting of non-leading tabs to the whitespace analysis

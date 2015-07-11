@@ -48,3 +48,6 @@ Metrics/ParameterLists:
 
 Metrics/ClassLength:
   Max: 132
+
+Metrics/MethodLength:
+  Max: 21
