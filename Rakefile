@@ -28,7 +28,8 @@ end
 
 desc 'Install dependencies'
 task :deps do
-  system('bundle install') || fail
+  system('bundle install') || fail(
+    "Installing dependencies failed, try 'gem install bundler' first")
 end
 
 desc 'Publish to rubygems.org'
