@@ -13,6 +13,12 @@ Or if you do...
 ... then all future 'git diff's and 'git show's will be refined.
 
 # Installation
+First of all, you need `curses` on your system. On Linux you probably already have it, on macOS you may want to do:
+
+    brew install curses
+
+Then, to install Riff:
+
     gem install riffdiff
 
 Optionally followed by...
@@ -25,20 +31,20 @@ Optionally followed by...
 # TODO
 * Think about how to visualize an added line break together with some
 indentation on the following line.
-* Do "git show 57f27da" and think about what rule we should use to get
+* Do `git show 57f27da` and think about what rule we should use to get
 the REVERSE vs reversed() lines highlighted.
-* Do "git show 2ac5b06" and think about what rule we should use to
+* Do `git show 2ac5b06` and think about what rule we should use to
 highlight all of both "some" and "one or".
-* Make sure we highlight the output of "git log -p" properly. If we
+* Make sure we highlight the output of `git log -p` properly. If we
 get something unexpected, maybe just go back to :initial?
-* Make sure we highlight the output of "git show --stat" properly
+* Make sure we highlight the output of `git show --stat` properly
 * Make sure we can handle a git conflict
   resolution diff. File format is described at
-  http://git-scm.com/docs/git-diff#_combined_diff_format.
+  <http://git-scm.com/docs/git-diff#_combined_diff_format>.
 * Given two files on the command line, we should pass them and any
-options on to "diff" and highlight the result.
+options on to `diff` and highlight the result.
 * Given three files on the command line, we should pass them and any
-options on to "diff3" and highlight the result
+options on to `diff3` and highlight the result
 
 # TODO future
 * Detect moved blocks and use a number as a prefix for both the add
@@ -52,7 +58,7 @@ stdout.
 and color them accordingly. Use the same color scheme as `git`.
 * Make the main program identify blocks of lines that have been
 replaced by another block of lines.
-* Use http://www.rubydoc.info/github/halostatue/diff-lcs rather
+* Use <http://www.rubydoc.info/github/halostatue/diff-lcs> rather
 than our own refinement algorithm
 * Make it possible to print rather than puts Refiner output
 * "print" rather than "puts" the Refiner output
@@ -119,14 +125,14 @@ globally on the system.
 * When highlighting an added comma at the end of a line, followed by some added
   lines, remove the leading + from the first line and don't color it. We should
   still show the comma in reverse video though. Do this when:
-    * One line is replaced by many
-    * The diff contains only additions
+  * One line is replaced by many
+  * The diff contains only additions
 * When special highighting an expansion, highlight the added parts in green
 reverse, rather than black reverse. Testcase: `git show 7ea6877`
 * Handle plain non-git diff files
 * Think about highlighting whitespace errors like Git does
- * Make DiffString.add() take a color as well
- * Add a trailing whitespace analysis pass to the Refiner
- * Let the Refiner highlight whitespace errors among the added lines in
- reverse red.
- * Add highlighting of non-leading tabs to the whitespace analysis
+  * Make DiffString.add() take a color as well
+  * Add a trailing whitespace analysis pass to the Refiner
+  * Let the Refiner highlight whitespace errors among the added lines in
+   reverse red.
+  * Add highlighting of non-leading tabs to the whitespace analysis
