@@ -1,0 +1,10 @@
+[package]
+name = "riff"
+version = "0.1.0"
+authors = ["Johan Walles <johan.walles@gmail.com>"]
+edition = "2018"
+repository = "https://github.com/walles/riff/"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
