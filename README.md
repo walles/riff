@@ -30,8 +30,6 @@ git config --global pager.show riff
 
 
 # TODO
-* Make a main program that can read input from stdin and print it to
-stdout.
 * Make the main program identify different kinds of lines by prefix
 and color them accordingly. Use the same color scheme as `git`.
 * Make the main program identify blocks of lines that have been
@@ -137,3 +135,5 @@ options on to "diff3" and highlight the result
   for other changes.
 
 # DONE
+* Make a main program that can read input from stdin and print it to
+stdout.
