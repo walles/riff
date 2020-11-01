@@ -67,19 +67,14 @@ fn join_skip_first(lines: &[String]) -> String {
     return joined;
 }
 
-fn print_adds_and_removes(adds: &[String], removes: &[String]) {
+#[must_use]
+fn format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<String> {
     if adds.is_empty() {
-        for line in simple_format_adds_and_removes(adds, removes) {
-            println!("{}", line);
-        }
-        return;
+        return simple_format_adds_and_removes(adds, removes);
     }
 
     if removes.is_empty() {
-        for line in simple_format_adds_and_removes(adds, removes) {
-            println!("{}", line);
-        }
-        return;
+        return simple_format_adds_and_removes(adds, removes);
     }
 
     // Join inputs by linefeeds into strings
@@ -137,12 +132,15 @@ fn print_adds_and_removes(adds: &[String], removes: &[String]) {
         }
     }
 
+    let mut lines: Vec<String> = Vec::new();
     for highlighted_remove in highlighted_removes.lines() {
-        println!("{}-{}", REMOVE, highlighted_remove);
+        lines.push(format!("{}-{}", REMOVE, highlighted_remove));
     }
     for highlighted_add in highlighted_adds.lines() {
-        println!("{}+{}", ADD, highlighted_add);
+        lines.push(format!("{}+{}", ADD, highlighted_add));
     }
+
+    return lines;
 }
 
 fn get_fixed_highlight(line: &str) -> &str {
@@ -166,7 +164,9 @@ fn main() {
         let fixed_highlight = get_fixed_highlight(&line);
         if !fixed_highlight.is_empty() {
             // Drain outstanding adds / removes
-            print_adds_and_removes(&adds, &removes);
+            for line in format_adds_and_removes(&adds, &removes) {
+                println!("{}", line);
+            }
             adds.clear();
             removes.clear();
 
@@ -184,14 +184,18 @@ fn main() {
         }
 
         // Drain outstanding adds / removes
-        print_adds_and_removes(&adds, &removes);
+        for line in format_adds_and_removes(&adds, &removes) {
+            println!("{}", line);
+        }
         adds.clear();
         removes.clear();
 
         // Print current line
         println!("{}", line);
     }
-    print_adds_and_removes(&adds, &removes);
+    for line in format_adds_and_removes(&adds, &removes) {
+        println!("{}", line);
+    }
 
     print!("{}", NORMAL);
 }
