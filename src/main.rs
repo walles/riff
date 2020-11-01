@@ -4,7 +4,7 @@ const ADDITION: &str = "\x1b[32m"; // Green
 const REMOVAL: &str = "\x1b[31m";  // Red
 const NORMAL: &str = "\x1b[0m";
 
-fn print_adds_and_removes(adds: &Vec<String>, removes: &Vec<String>) {
+fn print_adds_and_removes(adds: &[String], removes: &[String]) {
     for remove_line in removes {
         println!("{}{}", REMOVAL, remove_line)
     }
