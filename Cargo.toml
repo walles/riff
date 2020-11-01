@@ -9,3 +9,5 @@ repository = "https://github.com/walles/riff/"
 
 [dependencies]
 diffus = "0.9.1"
+regex = "1"
+lazy_static = "1.4.0"

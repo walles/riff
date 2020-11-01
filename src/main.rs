@@ -1,13 +1,33 @@
+#[macro_use]
+extern crate lazy_static;
+
+use diffus::{
+    edit::{self, string},
+    Diffable,
+};
+use regex::Regex;
 use std::io::{self, BufRead};
-use diffus::{edit::{self, string}, Diffable};
 
 const ADD: &str = "\x1b[32m"; // Green
-const REMOVE: &str = "\x1b[31m";  // Red
+const REMOVE: &str = "\x1b[31m"; // Red
+const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
 const INVERSE_VIDEO: &str = "\x1b[7m";
 const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
 
+const BOLD: &str = "\x1b[1m";
+
 const NORMAL: &str = "\x1b[0m";
+
+lazy_static!{
+    static ref STATIC_HEADERS: Vec<(Regex, &'static str)> = vec![
+        (Regex::new("^diff ").unwrap(), BOLD),
+        (Regex::new("^index ").unwrap(), BOLD),
+        (Regex::new("^--- ").unwrap(), BOLD),
+        (Regex::new("^\\+\\+\\+ ").unwrap(), BOLD),
+        (Regex::new("^@@ ").unwrap(), HUNK_HEADER),
+    ];
+}
 
 fn simple_print_adds_and_removes(adds: &[String], removes: &[String]) {
     for remove_line in removes {
@@ -46,58 +66,84 @@ fn print_adds_and_removes(adds: &[String], removes: &[String]) {
         edit::Edit::Copy(unchanged) => {
             highlighted_adds.push_str(unchanged);
             highlighted_removes.push_str(unchanged);
-        },
+        }
         edit::Edit::Change(diff) => {
-            diff.into_iter().map(|edit| {
-                match edit {
-                    string::Edit::Copy(elem) => {
-                        if adds_is_inverse {
-                            highlighted_adds.push_str(NOT_INVERSE_VIDEO);
-                        }
-                        adds_is_inverse = false;
+            diff.into_iter()
+                .map(|edit| {
+                    match edit {
+                        string::Edit::Copy(elem) => {
+                            if adds_is_inverse {
+                                highlighted_adds.push_str(NOT_INVERSE_VIDEO);
+                            }
+                            adds_is_inverse = false;
 
-                        if removes_is_inverse {
-                            highlighted_removes.push_str(NOT_INVERSE_VIDEO);
-                        }
-                        removes_is_inverse = false;
+                            if removes_is_inverse {
+                                highlighted_removes.push_str(NOT_INVERSE_VIDEO);
+                            }
+                            removes_is_inverse = false;
 
-                        highlighted_adds.push(elem);
-                        highlighted_removes.push(elem);
-                    },
-                    string::Edit::Insert(elem) => {
-                        if !adds_is_inverse {
-                            highlighted_adds.push_str(INVERSE_VIDEO);
+                            highlighted_adds.push(elem);
+                            highlighted_removes.push(elem);
                         }
-                        adds_is_inverse = true;
+                        string::Edit::Insert(elem) => {
+                            if !adds_is_inverse {
+                                highlighted_adds.push_str(INVERSE_VIDEO);
+                            }
+                            adds_is_inverse = true;
 
-                        highlighted_adds.push(elem);
-                    },
-                    string::Edit::Remove(elem) => {
-                        if !removes_is_inverse {
-                            highlighted_removes.push_str(INVERSE_VIDEO);
+                            highlighted_adds.push(elem);
                         }
-                        removes_is_inverse = true;
+                        string::Edit::Remove(elem) => {
+                            if !removes_is_inverse {
+                                highlighted_removes.push_str(INVERSE_VIDEO);
+                            }
+                            removes_is_inverse = true;
 
-                        highlighted_removes.push(elem);
-                    },
-                };
-            }).for_each(drop);
-        },
+                            highlighted_removes.push(elem);
+                        }
+                    };
+                })
+                .for_each(drop);
+        }
     }
 
+    // FIXME: Put REMOVE before all removed lines, not just the first
     println!("{}{}", REMOVE, highlighted_removes);
-    println!("{}{}", ADD, highlighted_adds);
-    print!("{}", NORMAL);
+
+    // FIXME: Put ADD before all removed lines, not just the first
+    println!("{}{}{}", ADD, highlighted_adds, NORMAL);
+}
+
+fn get_fixed_highlight(line: &str) -> &str {
+    for static_header in STATIC_HEADERS.iter() {
+        let re = &static_header.0;
+        if re.is_match(line) {
+            return static_header.1;
+        }
+    }
+
+    return "";
 }
 
 fn main() {
-    println!("Now reading from stdin and printing to stdout:");
-
     let stdin = io::stdin();
     let mut adds: Vec<String> = Vec::new();
     let mut removes: Vec<String> = Vec::new();
     for line in stdin.lock().lines() {
         let line = line.unwrap();
+
+        let fixed_highlight = get_fixed_highlight(&line);
+        if !fixed_highlight.is_empty() {
+            // Drain outstanding adds / removes
+            print_adds_and_removes(&adds, &removes);
+            adds.clear();
+            removes.clear();
+
+            println!("{}{}{}", fixed_highlight, line, NORMAL);
+            continue;
+        }
+
+        // Collect adds / removes
         if !line.is_empty() && line.chars().next().unwrap() == '+' {
             adds.push(line);
             continue;
@@ -106,7 +152,7 @@ fn main() {
             continue;
         }
 
-        // Print diff section
+        // Drain outstanding adds / removes
         print_adds_and_removes(&adds, &removes);
         adds.clear();
         removes.clear();
