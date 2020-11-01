@@ -19,7 +19,7 @@ const BOLD: &str = "\x1b[1m";
 
 const NORMAL: &str = "\x1b[0m";
 
-lazy_static!{
+lazy_static! {
     static ref STATIC_HEADERS: Vec<(Regex, &'static str)> = vec![
         (Regex::new("^diff ").unwrap(), BOLD),
         (Regex::new("^index ").unwrap(), BOLD),
@@ -41,6 +41,24 @@ fn simple_print_adds_and_removes(adds: &[String], removes: &[String]) {
     print!("{}", NORMAL);
 }
 
+/// Joins multiple lines into a single string.
+///
+/// The first character of each line is skipped, because it is assumed to be
+/// either a `+` or a `-` in a diff.
+///
+/// Between each joined line a `\n` linefeed character is inserted.
+fn join_skip_first(lines: &[String]) -> String {
+    let mut joined = String::new();
+    for line in lines {
+        if !line.is_empty() {
+            joined.push_str("\n")
+        }
+        joined.push_str(&line[1..]);
+    }
+
+    return joined;
+}
+
 fn print_adds_and_removes(adds: &[String], removes: &[String]) {
     if adds.is_empty() {
         simple_print_adds_and_removes(adds, removes);
@@ -53,8 +71,8 @@ fn print_adds_and_removes(adds: &[String], removes: &[String]) {
     }
 
     // Join inputs by linefeeds into strings
-    let adds = adds.join("\n");
-    let removes = removes.join("\n");
+    let adds = join_skip_first(adds);
+    let removes = join_skip_first(removes);
 
     // Find diffs between adds and removals
     let mut highlighted_adds = String::new();
@@ -108,10 +126,10 @@ fn print_adds_and_removes(adds: &[String], removes: &[String]) {
     }
 
     for highlighted_remove in highlighted_removes.lines() {
-        println!("{}{}", REMOVE, highlighted_remove);
+        println!("{}-{}", REMOVE, highlighted_remove);
     }
     for highlighted_add in highlighted_adds.lines() {
-        println!("{}{}", ADD, highlighted_add);
+        println!("{}+{}", ADD, highlighted_add);
     }
 }
 
