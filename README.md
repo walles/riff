@@ -31,14 +31,9 @@ git config --global pager.show riff
 
 # TODO
 
-* Prefix all added / removed lines with the correct ANSI color code
 * Don't highlight the initial `+` / `-` on added / removed lines
-* Use DiffString for context lines
-* Preserve linefeeds when sending lines to the Refiner
-* All context lines must be prefixed by ' ', currently they aren't
-* Refine each pair of blocks, make sure both added characters and
-  removed characters are highlighted in a readable fashion, both in
-  added blocks and removed blocks.
+* Add test for never changing the number of lines in the input, that
+  messes up `git add -p` behavior.
 * Diffing `<x "hej">` vs `<x 'hej'>` shows the first space as a
 difference.
 * If stdout is a terminal, pipe the output to a pager using the
@@ -55,8 +50,6 @@ then we don't want to highlight it.
 * Strip all color from the input before handling it to enable users to
   set Git's pager.diff and pager.show variables to 'riff' without also
   needing to set color.diff=false.
-* Add test for never changing the number of lines in the input, that
-  messes up `git add -p` behavior.
 * Visualize removed linefeed at end of file properly
 * Visualize adding a missing linefeed at end of file properly
 * Visualize missing linefeed at end of file as part of the context
@@ -142,3 +135,4 @@ empty
 * Use <https://crates.io/crates/diffus> to refine hunks
 * Build refined hunks and print them
 * Highlight `^diff`, `^index`, `^+++` and `^---` lines in bold white
+* Prefix all added / removed lines with the correct ANSI color code

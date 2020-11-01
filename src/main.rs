@@ -107,11 +107,12 @@ fn print_adds_and_removes(adds: &[String], removes: &[String]) {
         }
     }
 
-    // FIXME: Put REMOVE before all removed lines, not just the first
-    println!("{}{}", REMOVE, highlighted_removes);
-
-    // FIXME: Put ADD before all removed lines, not just the first
-    println!("{}{}{}", ADD, highlighted_adds, NORMAL);
+    for highlighted_remove in highlighted_removes.lines() {
+        println!("{}{}", REMOVE, highlighted_remove);
+    }
+    for highlighted_add in highlighted_adds.lines() {
+        println!("{}{}", ADD, highlighted_add);
+    }
 }
 
 fn get_fixed_highlight(line: &str) -> &str {
