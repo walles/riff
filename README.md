@@ -12,11 +12,12 @@ Or if you do...
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
-````
+```
 
 ... then all future `git diff`s and `git show`s will be refined.
 
 # FIXME: Installation
+
 FIXME: How to place the binary in the PATH?
 
 Optionally followed by...
@@ -28,13 +29,11 @@ git config --global pager.show riff
 
 ... to make git show refined diffs by default.
 
-
 # TODO
-* Make the main program identify blocks of lines that have been
-replaced by another block of lines.
+
 * Use some RUST LCS algorithm rather than our own refinement algorithm
 * Make it possible to print rather than puts Refiner output
-* "print" rather than "puts" the Refiner output
+* `print` rather than `puts` the Refiner output
 * Make the Refiner not highlight anything if either old or new is
 empty
 * Ask the Refiner even if either old or new is empty
@@ -44,21 +43,23 @@ empty
 * Refine each pair of blocks, make sure both added characters and
   removed characters are highlighted in a readable fashion, both in
   added blocks and removed blocks.
-* Diffing <x "hej"> vs <x 'hej'> shows the first space as a
+* Diffing `<x "hej">` vs `<x 'hej'>` shows the first space as a
 difference.
 * If stdout is a terminal, pipe the output to a pager using the
-algorithm described under "core.pager" in "git help config".
-* Do some effort to prevent fork loops if people set riff as $PAGER
+algorithm described under `core.pager` in `git help config`.
+* Do some effort to prevent fork loops if people set riff as `$PAGER`
 * Make the Refiner not highlight anything if there are "too many"
 differences between the sections. The point here is that we want to
 highlight changes, but if it's a *replacement* rather than a change
 then we don't want to highlight it.
 * Refine added line endings properly
 * Refine removed line endings properly
-* Refine "ax"->"bx\nc" properly
+* Refine `ax`->`bx\nc` properly
 * Strip all color from the input before handling it to enable users to
   set Git's pager.diff and pager.show variables to 'riff' without also
   needing to set color.diff=false.
+* Add test for never changing the number of lines in the input, that
+  messes up `git add -p` behavior.
 * Visualize removed linefeed at end of file properly
 * Visualize adding a missing linefeed at end of file properly
 * Visualize missing linefeed at end of file as part of the context
@@ -74,7 +75,7 @@ properly
 * Find out how the LCS algorithm scales and improve the heuristic for
   when not to call it.
 * You can do `git diff | riff` and get reasonable output.
-* Test that we work as expected when "gem install"ed system-wide
+* Test that we work as expected when `gem install`ed system-wide
 * Create a Rakefile that can install dependencies, build, run tests, package and
 optionally deploy as well.
 * Make a first public release
@@ -84,8 +85,8 @@ globally on the system.
   changing to itself with a comma at the end plus a bunch of entirely
   new lines. Think of a constant array getting one or more extra
   members.
-* Do "git show -b 77c8f77" and think about what rule we should use to
-  highlight the leading spaces of the "+  refined" and "+  page" lines
+* Do `git show -b 77c8f77` and think about what rule we should use to
+  highlight the leading spaces of the `+  refined` and `+  page` lines
   at the end of the file.
 * Don't use --dirty for the gemspec version
 * Rakefile: Refuse to package dirty sources
@@ -112,20 +113,20 @@ reverse, rather than black reverse. Testcase: `git show 7ea6877`
 * Consider doing per-word / token refining rather than per-character
 * Think about how to visualize an added line break together with some
 indentation on the following line.
-* Do "git show 57f27da" and think about what rule we should use to get
+* Do `git show 57f27da` and think about what rule we should use to get
 the REVERSE vs reversed() lines highlighted.
-* Do "git show 2ac5b06" and think about what rule we should use to
-highlight all of both "some" and "one or".
-* Make sure we highlight the output of "git log -p" properly. If we
+* Do `git show 2ac5b06` and think about what rule we should use to
+highlight all of both `some` and `one or`.
+* Make sure we highlight the output of `git log -p` properly. If we
 get something unexpected, maybe just go back to :initial?
-* Make sure we highlight the output of "git show --stat" properly
+* Make sure we highlight the output of `git show --stat` properly
 * Make sure we can handle a git conflict
   resolution diff. File format is described at
   http://git-scm.com/docs/git-diff#_combined_diff_format.
 * Given two files on the command line, we should pass them and any
-options on to "diff" and highlight the result.
+options on to `diff` and highlight the result.
 * Given three files on the command line, we should pass them and any
-options on to "diff3" and highlight the result
+options on to `diff3` and highlight the result
 
 # TODO future
 * Detect moved blocks and use a number as a prefix for both the add
@@ -137,3 +138,5 @@ options on to "diff3" and highlight the result
 stdout.
 * Make the main program identify different kinds of lines by prefix
 and color them accordingly. Use the same color scheme as `git`.
+* Make the main program identify blocks of lines that have been
+replaced by another block of lines.
