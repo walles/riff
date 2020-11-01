@@ -29,16 +29,24 @@ lazy_static! {
     ];
 }
 
-fn simple_print_adds_and_removes(adds: &[String], removes: &[String]) {
+/// Format add and remove lines in ADD and REMOVE colors.
+///
+/// No intra-line refinement.
+#[must_use]
+fn simple_format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<String> {
+    let mut lines: Vec<String> = Vec::new();
+
     for remove_line in removes {
-        println!("{}{}", REMOVE, remove_line)
+        lines.push(format!("{}{}", REMOVE, remove_line));
     }
 
     for add_line in adds {
-        println!("{}{}", ADD, add_line)
+        // The NORMAL at the end is required for the following lines not to be printed
+        // with ADD coloring.
+        lines.push(format!("{}{}{}", ADD, add_line, NORMAL))
     }
 
-    print!("{}", NORMAL);
+    return lines;
 }
 
 /// Joins multiple lines into a single string.
@@ -61,12 +69,16 @@ fn join_skip_first(lines: &[String]) -> String {
 
 fn print_adds_and_removes(adds: &[String], removes: &[String]) {
     if adds.is_empty() {
-        simple_print_adds_and_removes(adds, removes);
+        for line in simple_format_adds_and_removes(adds, removes) {
+            println!("{}", line);
+        }
         return;
     }
 
     if removes.is_empty() {
-        simple_print_adds_and_removes(adds, removes);
+        for line in simple_format_adds_and_removes(adds, removes) {
+            println!("{}", line);
+        }
         return;
     }
 
