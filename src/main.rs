@@ -1,17 +1,21 @@
 use std::io::{self, BufRead};
-use diffus::{edit::{self, collection, string}, Same, Diffable};
+use diffus::{edit::{self, string}, Diffable};
 
-const ADDITION: &str = "\x1b[32m"; // Green
-const REMOVAL: &str = "\x1b[31m";  // Red
+const ADD: &str = "\x1b[32m"; // Green
+const REMOVE: &str = "\x1b[31m";  // Red
+
+const INVERSE_VIDEO: &str = "\x1b[7m";
+const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
+
 const NORMAL: &str = "\x1b[0m";
 
 fn simple_print_adds_and_removes(adds: &[String], removes: &[String]) {
     for remove_line in removes {
-        println!("{}{}", REMOVAL, remove_line)
+        println!("{}{}", REMOVE, remove_line)
     }
 
     for add_line in adds {
-        println!("{}{}", ADDITION, add_line)
+        println!("{}{}", ADD, add_line)
     }
 
     print!("{}", NORMAL);
@@ -33,24 +37,56 @@ fn print_adds_and_removes(adds: &[String], removes: &[String]) {
     let removes = removes.join("\n");
 
     // Find diffs between adds and removals
-    let diff = adds.diff(&removes);
+    let mut highlighted_adds = String::new();
+    let mut highlighted_removes = String::new();
+    let mut adds_is_inverse = false;
+    let mut removes_is_inverse = false;
+    let diff = removes.diff(&adds);
     match diff {
-        edit::Edit::Copy(unchanged) => println!("copy: {}", unchanged),
+        edit::Edit::Copy(unchanged) => {
+            highlighted_adds.push_str(unchanged);
+            highlighted_removes.push_str(unchanged);
+        },
         edit::Edit::Change(diff) => {
             diff.into_iter().map(|edit| {
                 match edit {
-                    string::Edit::Copy(elem) => println!("copy: {:?}", elem),
-                    string::Edit::Insert(elem) => println!("insert: {:?}", elem),
-                    string::Edit::Remove(elem) => println!("remove: {:?}", elem),
+                    string::Edit::Copy(elem) => {
+                        if adds_is_inverse {
+                            highlighted_adds.push_str(NOT_INVERSE_VIDEO);
+                        }
+                        adds_is_inverse = false;
+
+                        if removes_is_inverse {
+                            highlighted_removes.push_str(NOT_INVERSE_VIDEO);
+                        }
+                        removes_is_inverse = false;
+
+                        highlighted_adds.push(elem);
+                        highlighted_removes.push(elem);
+                    },
+                    string::Edit::Insert(elem) => {
+                        if !adds_is_inverse {
+                            highlighted_adds.push_str(INVERSE_VIDEO);
+                        }
+                        adds_is_inverse = true;
+
+                        highlighted_adds.push(elem);
+                    },
+                    string::Edit::Remove(elem) => {
+                        if !removes_is_inverse {
+                            highlighted_removes.push_str(INVERSE_VIDEO);
+                        }
+                        removes_is_inverse = true;
+
+                        highlighted_removes.push(elem);
+                    },
                 };
-            }).collect::<Vec<_>>();
+            }).for_each(drop);
         },
     }
 
-    // FIXME: Print removals with diffus-based highlights
-
-    // FIXME: Print adds with diffus-based highlights
-
+    println!("{}{}", REMOVE, highlighted_removes);
+    println!("{}{}", ADD, highlighted_adds);
     print!("{}", NORMAL);
 }
 

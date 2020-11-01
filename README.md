@@ -31,7 +31,8 @@ git config --global pager.show riff
 
 # TODO
 
-* Build refined hunks and print them
+* Highlight `^diff`, `^index`, `^+++` and `^---` lines in bold white
+* Don't highlight the initial `+` / `-` on added / removed lines
 * Use DiffString for context lines
 * Preserve linefeeds when sending lines to the Refiner
 * All context lines must be prefixed by ' ', currently they aren't
@@ -139,3 +140,4 @@ replaced by another block of lines.
 * Make the Refiner not highlight anything if either old or new is
 empty
 * Use <https://crates.io/crates/diffus> to refine hunks
+* Build refined hunks and print them
