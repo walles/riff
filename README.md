@@ -31,12 +31,7 @@ git config --global pager.show riff
 
 # TODO
 
-* Use some RUST LCS algorithm rather than our own refinement algorithm
-* Make it possible to print rather than puts Refiner output
-* `print` rather than `puts` the Refiner output
-* Make the Refiner not highlight anything if either old or new is
-empty
-* Ask the Refiner even if either old or new is empty
+* Use <https://crates.io/crates/diffus> to refine hunks
 * Use DiffString for context lines
 * Preserve linefeeds when sending lines to the Refiner
 * All context lines must be prefixed by ' ', currently they aren't
@@ -140,3 +135,5 @@ stdout.
 and color them accordingly. Use the same color scheme as `git`.
 * Make the main program identify blocks of lines that have been
 replaced by another block of lines.
+* Make the Refiner not highlight anything if either old or new is
+empty

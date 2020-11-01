@@ -4,7 +4,7 @@ const ADDITION: &str = "\x1b[32m"; // Green
 const REMOVAL: &str = "\x1b[31m";  // Red
 const NORMAL: &str = "\x1b[0m";
 
-fn print_adds_and_removes(adds: &[String], removes: &[String]) {
+fn simple_print_adds_and_removes(adds: &[String], removes: &[String]) {
     for remove_line in removes {
         println!("{}{}", REMOVAL, remove_line)
     }
@@ -14,6 +14,21 @@ fn print_adds_and_removes(adds: &[String], removes: &[String]) {
     }
 
     print!("{}", NORMAL);
+}
+
+fn print_adds_and_removes(adds: &[String], removes: &[String]) {
+    if adds.is_empty() {
+        simple_print_adds_and_removes(adds, removes);
+        return;
+    }
+
+    if removes.is_empty() {
+        simple_print_adds_and_removes(adds, removes);
+        return;
+    }
+
+    // FIXME: Refine using diffus and print refined output
+    simple_print_adds_and_removes(adds, removes);
 }
 
 fn main() {
