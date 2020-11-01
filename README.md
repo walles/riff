@@ -31,7 +31,7 @@ git config --global pager.show riff
 
 # TODO
 
-* Use <https://crates.io/crates/diffus> to refine hunks
+* Build refined hunks and print them
 * Use DiffString for context lines
 * Preserve linefeeds when sending lines to the Refiner
 * All context lines must be prefixed by ' ', currently they aren't
@@ -50,6 +50,7 @@ then we don't want to highlight it.
 * Refine added line endings properly
 * Refine removed line endings properly
 * Refine `ax`->`bx\nc` properly
+* Refine by word rather than by character
 * Strip all color from the input before handling it to enable users to
   set Git's pager.diff and pager.show variables to 'riff' without also
   needing to set color.diff=false.
@@ -137,3 +138,4 @@ and color them accordingly. Use the same color scheme as `git`.
 replaced by another block of lines.
 * Make the Refiner not highlight anything if either old or new is
 empty
+* Use <https://crates.io/crates/diffus> to refine hunks

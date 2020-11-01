@@ -1,4 +1,5 @@
 use std::io::{self, BufRead};
+use diffus::{edit::{self, collection, string}, Same, Diffable};
 
 const ADDITION: &str = "\x1b[32m"; // Green
 const REMOVAL: &str = "\x1b[31m";  // Red
@@ -27,8 +28,30 @@ fn print_adds_and_removes(adds: &[String], removes: &[String]) {
         return;
     }
 
-    // FIXME: Refine using diffus and print refined output
-    simple_print_adds_and_removes(adds, removes);
+    // Join inputs by linefeeds into strings
+    let adds = adds.join("\n");
+    let removes = removes.join("\n");
+
+    // Find diffs between adds and removals
+    let diff = adds.diff(&removes);
+    match diff {
+        edit::Edit::Copy(unchanged) => println!("copy: {}", unchanged),
+        edit::Edit::Change(diff) => {
+            diff.into_iter().map(|edit| {
+                match edit {
+                    string::Edit::Copy(elem) => println!("copy: {:?}", elem),
+                    string::Edit::Insert(elem) => println!("insert: {:?}", elem),
+                    string::Edit::Remove(elem) => println!("remove: {:?}", elem),
+                };
+            }).collect::<Vec<_>>();
+        },
+    }
+
+    // FIXME: Print removals with diffus-based highlights
+
+    // FIXME: Print adds with diffus-based highlights
+
+    print!("{}", NORMAL);
 }
 
 fn main() {
