@@ -37,12 +37,10 @@ fn simple_format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<St
     let mut lines: Vec<String> = Vec::new();
 
     for remove_line in removes {
-        lines.push(format!("{}{}", REMOVE, remove_line));
+        lines.push(format!("{}{}{}", REMOVE, remove_line, NORMAL));
     }
 
     for add_line in adds {
-        // The NORMAL at the end is required for the following lines not to be printed
-        // with ADD coloring.
         lines.push(format!("{}{}{}", ADD, add_line, NORMAL))
     }
 
@@ -211,8 +209,30 @@ mod tests {
         let empty: Vec<String> = Vec::new();
         assert_eq!(simple_format_adds_and_removes(&empty, &empty), empty);
 
-        // FIXME: Test adds-only
+        // Test adds-only
+        assert_eq!(
+            simple_format_adds_and_removes(&["+a".to_string()], &empty),
+            ["".to_string() + ADD + "+a" + NORMAL]
+        );
+        assert_eq!(
+            simple_format_adds_and_removes(&["+a".to_string(), "+b".to_string()], &empty),
+            [
+                "".to_string() + ADD + "+a" + NORMAL,
+                "".to_string() + ADD + "+b" + NORMAL,
+            ]
+        );
 
-        // FIXME: Test removes-only
+        // Test removes-only
+        assert_eq!(
+            simple_format_adds_and_removes(&empty, &["-a".to_string()]),
+            ["".to_string() + REMOVE + "-a" + NORMAL]
+        );
+        assert_eq!(
+            simple_format_adds_and_removes(&empty, &["-a".to_string(), "-b".to_string()]),
+            [
+                "".to_string() + REMOVE + "-a" + NORMAL,
+                "".to_string() + REMOVE + "-b" + NORMAL,
+            ]
+        );
     }
 }
