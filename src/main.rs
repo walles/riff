@@ -55,6 +55,7 @@ fn simple_format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<St
 /// either a `+` or a `-` in a diff.
 ///
 /// Between each joined line a `\n` linefeed character is inserted.
+#[must_use]
 fn join_skip_first(lines: &[String]) -> String {
     let mut joined = String::new();
     for line in lines {
@@ -143,6 +144,7 @@ fn format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<String> {
     return lines;
 }
 
+#[must_use]
 fn get_fixed_highlight(line: &str) -> &str {
     for static_header in STATIC_HEADERS.iter() {
         let re = &static_header.0;
@@ -198,4 +200,19 @@ fn main() {
     }
 
     print!("{}", NORMAL);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_simple_format_adds_and_removes() {
+        let empty: Vec<String> = Vec::new();
+        assert_eq!(simple_format_adds_and_removes(&empty, &empty), empty);
+
+        // FIXME: Test adds-only
+
+        // FIXME: Test removes-only
+    }
 }
