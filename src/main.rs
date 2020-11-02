@@ -204,6 +204,9 @@ fn main() {
 mod tests {
     use super::*;
 
+    #[cfg(test)]
+    use pretty_assertions::assert_eq;
+
     #[test]
     fn test_simple_format_adds_and_removes() {
         let empty: Vec<String> = Vec::new();
