@@ -33,8 +33,6 @@ git config --global pager.show riff
 
 # TODO
 
-- Visualize added line endings
-- Visualize removed line endings
 - Visualize removed linefeed at end of file properly
 - Visualize adding a missing linefeed at end of file properly
 - Visualize missing linefeed at end of file as part of the context
@@ -126,3 +124,5 @@ git config --global pager.show riff
 - Don't highlight the initial `+` / `-` on added / removed lines
 - Make sure we get the linefeeds right in diffs, try
   `git show 28e074bd0fc246d1caa3738432806a94f6773185` with and without `riff`.
+- Visualize added line endings
+- Visualize removed line endings

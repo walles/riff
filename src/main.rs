@@ -115,6 +115,13 @@ fn format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<String> {
                             }
                             adds_is_inverse = true;
 
+                            if elem == '\n' {
+                                // Make sure the highlighted linefeed is visible
+                                highlighted_adds.push('⏎');
+
+                                // This will be reset by the linefeed, so we need to re-inverse on the next line
+                                adds_is_inverse = false;
+                            }
                             highlighted_adds.push(elem);
                         }
                         string::Edit::Remove(elem) => {
@@ -123,6 +130,13 @@ fn format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<String> {
                             }
                             removes_is_inverse = true;
 
+                            if elem == '\n' {
+                                // Make sure the highlighted linefeed is visible
+                                highlighted_removes.push('⏎');
+
+                                // This will be reset by the linefeed, so we need to re-inverse on the next line
+                                removes_is_inverse = false;
+                            }
                             highlighted_removes.push(elem);
                         }
                     };
