@@ -133,10 +133,10 @@ fn format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<String> {
 
     let mut lines: Vec<String> = Vec::new();
     for highlighted_remove in highlighted_removes.lines() {
-        lines.push(format!("{}-{}", REMOVE, highlighted_remove));
+        lines.push(format!("{}-{}{}", REMOVE, highlighted_remove, NORMAL));
     }
     for highlighted_add in highlighted_adds.lines() {
-        lines.push(format!("{}+{}", ADD, highlighted_add));
+        lines.push(format!("{}+{}{}", ADD, highlighted_add, NORMAL));
     }
 
     return lines;
@@ -245,5 +245,22 @@ mod tests {
                 "".to_string() + REMOVE + "-b" + NORMAL,
             ]
         );
+    }
+
+    #[test]
+    fn test_quote_change() {
+        assert_eq!(
+            format_adds_and_removes(&["+[quotes]".to_string()], &["-<quotes>".to_string()]),
+            [
+                format!(
+                    "{}-{}<{}quotes{}>{}",
+                    REMOVE, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NORMAL
+                ),
+                format!(
+                    "{}+{}[{}quotes{}]{}",
+                    ADD, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NORMAL
+                ),
+            ]
+        )
     }
 }
