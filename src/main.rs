@@ -57,7 +57,7 @@ fn simple_format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<St
 fn join_skip_first(lines: &[String]) -> String {
     let mut joined = String::new();
     for line in lines {
-        if !line.is_empty() {
+        if !joined.is_empty() {
             joined.push_str("\n")
         }
         joined.push_str(&line[1..]);
@@ -206,6 +206,14 @@ mod tests {
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_join_skip_first() {
+        assert_eq!(
+            join_skip_first(&["Xa".to_string(), "Xb".to_string()]),
+            "a\nb"
+        );
+    }
 
     #[test]
     fn test_simple_format_adds_and_removes() {
