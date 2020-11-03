@@ -196,8 +196,6 @@ fn main() {
     for line in format_adds_and_removes(&adds, &removes) {
         println!("{}", line);
     }
-
-    print!("{}", NORMAL);
 }
 
 #[cfg(test)]
