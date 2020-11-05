@@ -6,11 +6,13 @@ use diffus::{
     Diffable,
 };
 use regex::Regex;
-use std::io::{self, BufRead, BufWriter, Write};
+use std::io::{self, BufRead, BufReader, BufWriter, Write};
+use std::str;
 
 const ADD: &str = "\x1b[32m"; // Green
 const REMOVE: &str = "\x1b[31m"; // Red
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
+const NO_EOF_NEWLINE: &str = "\x1b[2m"; // Faint
 
 const INVERSE_VIDEO: &str = "\x1b[7m";
 const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
@@ -168,9 +170,10 @@ fn get_fixed_highlight(line: &str) -> &str {
     return "";
 }
 
-fn highlight_diff(input: &mut dyn BufRead, output: &mut dyn io::Write) {
+fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
     let mut adds: Vec<String> = Vec::new();
     let mut removes: Vec<String> = Vec::new();
+    let input = BufReader::new(input);
     let mut output = BufWriter::new(output);
     for line in input.lines() {
         let line = line.unwrap();
@@ -188,6 +191,7 @@ fn highlight_diff(input: &mut dyn BufRead, output: &mut dyn io::Write) {
             output.write(fixed_highlight.as_bytes()).unwrap();
             output.write(line.as_bytes()).unwrap();
             output.write(NORMAL.as_bytes()).unwrap();
+            output.write(b"\n").unwrap();
             continue;
         }
 
@@ -284,5 +288,33 @@ mod tests {
                 ),
             ]
         )
+    }
+
+    fn remove(text: &str) -> String {
+        return format!("{}{}{}", REMOVE, text, NORMAL);
+    }
+
+    fn add(text: &str) -> String {
+        return format!("{}{}{}", ADD, text, NORMAL);
+    }
+
+    #[test]
+    fn test_remove_trailing_newline() {
+        let mut input = "-hej\n\
+            +hej\n\
+            \\ No newline at end of file\n\
+            "
+        .as_bytes();
+
+        let expected = format!(
+            "{}\n{}\n{}\n",
+            remove(&format!("-hej{}⏎", INVERSE_VIDEO)),
+            add("+hej"),
+            format!("{}\\ No newline at end of file{}", NO_EOF_NEWLINE, NORMAL)
+        );
+
+        let mut output: Vec<u8> = Vec::new();
+        highlight_diff(&mut input, &mut output);
+        assert_eq!(std::str::from_utf8(&output).unwrap(), expected);
     }
 }
