@@ -33,34 +33,47 @@ git config --global pager.show riff
 
 # TODO
 
+## Before setting the new riff as `$PAGER`
+
 - Visualize removed linefeed at end of file properly
 - Visualize adding a missing linefeed at end of file properly
 - Visualize missing linefeed at end of file as part of the context
   properly
 - Refine `ax`->`bx\nc` properly
-- If stdout is a terminal, pipe the output to a pager using the
-  algorithm described under `core.pager` in `git help config`.
-- Do some effort to prevent fork loops if people set riff as `$PAGER`
 - Strip all color from the input before handling it to enable users to
   set Git's pager.diff and pager.show variables to 'riff' without also
   needing to set color.diff=false.
-- Do not highlight anything if there are "too many" differences between the
-  sections. The point here is that we want to highlight changes, but if it's a
-  _replacement_ rather than a change then we don't want to highlight it.
+- If stdout is a terminal, pipe the output to a pager using the
+  algorithm described under `core.pager` in `git help config`.
+- Do some effort to prevent fork loops if people set riff as `$PAGER`
+- You can do `git diff | riff` and get reasonable output.
+
 - Refine by word rather than by character
+
+## Before releasing the Rust version as the official one
+
 - On exceptions, print the riff.rb @state
 - On exceptions, print the line riff.rb was processing
 - On exceptions, print a link to the issue tracker
 - Add support for --help
 - Print help and bail if stdin is a terminal
-- Add support for --version
-- Add test for never changing the number of lines in the input, that
-  messes up `git add -p` behavior.
-- On exceptions, print the current version just like --version
+- Add support for `--version`
+- On exceptions, print the current version just like `--version`
+- Do not highlight anything if there are "too many" differences between the
+  sections. The point here is that we want to highlight changes, but if it's a
+  _replacement_ rather than a change then we don't want to highlight it.
 - Put an upper bound on how large regions we should attempt to refine
 - Find out how the LCS algorithm scales and improve the heuristic for
   when not to call it.
-- You can do `git diff | riff` and get reasonable output.
+
+## Misc
+
+- Add a trailing whitespace analysis pass to the Refiner
+- Let the Refiner highlight whitespace errors among the added lines in
+  reverse red.
+- Add highlighting of non-leading tabs to the whitespace analysis
+- Add test for never changing the number of lines in the input, that
+  messes up `git add -p` behavior.
 - Make a first public release
 - Do `git show 0f5dd84` and think about how to visualize one line
   changing to itself with a comma at the end plus a bunch of entirely
@@ -80,10 +93,6 @@ git config --global pager.show riff
 - Handle plain non-git diff files
 - Think about highlighting whitespace errors like Git does
 - Make DiffString.add() take a color as well
-- Add a trailing whitespace analysis pass to the Refiner
-- Let the Refiner highlight whitespace errors among the added lines in
-  reverse red.
-- Add highlighting of non-leading tabs to the whitespace analysis
 - Think about how to visualize an added line break together with some
   indentation on the following line.
 - Do `git show 57f27da` and think about what rule we should use to get

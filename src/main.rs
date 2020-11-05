@@ -6,7 +6,7 @@ use diffus::{
     Diffable,
 };
 use regex::Regex;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, BufWriter, Write};
 
 const ADD: &str = "\x1b[32m"; // Green
 const REMOVE: &str = "\x1b[31m"; // Red
@@ -168,23 +168,26 @@ fn get_fixed_highlight(line: &str) -> &str {
     return "";
 }
 
-fn main() {
-    let stdin = io::stdin();
+fn highlight_diff(input: &mut dyn BufRead, output: &mut dyn io::Write) {
     let mut adds: Vec<String> = Vec::new();
     let mut removes: Vec<String> = Vec::new();
-    for line in stdin.lock().lines() {
+    let mut output = BufWriter::new(output);
+    for line in input.lines() {
         let line = line.unwrap();
 
         let fixed_highlight = get_fixed_highlight(&line);
         if !fixed_highlight.is_empty() {
             // Drain outstanding adds / removes
             for line in format_adds_and_removes(&adds, &removes) {
-                println!("{}", line);
+                output.write(line.as_bytes()).unwrap();
+                output.write(b"\n").unwrap();
             }
             adds.clear();
             removes.clear();
 
-            println!("{}{}{}", fixed_highlight, line, NORMAL);
+            output.write(fixed_highlight.as_bytes()).unwrap();
+            output.write(line.as_bytes()).unwrap();
+            output.write(NORMAL.as_bytes()).unwrap();
             continue;
         }
 
@@ -199,17 +202,24 @@ fn main() {
 
         // Drain outstanding adds / removes
         for line in format_adds_and_removes(&adds, &removes) {
-            println!("{}", line);
+            output.write(line.as_bytes()).unwrap();
+            output.write(b"\n").unwrap();
         }
         adds.clear();
         removes.clear();
 
         // Print current line
-        println!("{}", line);
+        output.write(line.as_bytes()).unwrap();
+        output.write(b"\n").unwrap();
     }
     for line in format_adds_and_removes(&adds, &removes) {
-        println!("{}", line);
+        output.write(line.as_bytes()).unwrap();
+        output.write(b"\n").unwrap();
     }
+}
+
+fn main() {
+    highlight_diff(&mut io::stdin().lock(), &mut io::stdout());
 }
 
 #[cfg(test)]
