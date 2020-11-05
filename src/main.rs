@@ -170,11 +170,20 @@ fn get_fixed_highlight(line: &str) -> &str {
     return "";
 }
 
+fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
+    stream.write(text.as_bytes()).unwrap();
+}
+
+fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
+    print(stream, &text);
+    print(stream, "\n");
+}
+
 fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
     let mut adds: Vec<String> = Vec::new();
     let mut removes: Vec<String> = Vec::new();
     let input = BufReader::new(input);
-    let mut output = BufWriter::new(output);
+    let output = &mut BufWriter::new(output);
     for line in input.lines() {
         let line = line.unwrap();
 
@@ -182,16 +191,14 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         if !fixed_highlight.is_empty() {
             // Drain outstanding adds / removes
             for line in format_adds_and_removes(&adds, &removes) {
-                output.write(line.as_bytes()).unwrap();
-                output.write(b"\n").unwrap();
+                println(output, &line);
             }
             adds.clear();
             removes.clear();
 
-            output.write(fixed_highlight.as_bytes()).unwrap();
-            output.write(line.as_bytes()).unwrap();
-            output.write(NORMAL.as_bytes()).unwrap();
-            output.write(b"\n").unwrap();
+            print(output, fixed_highlight);
+            print(output, &line);
+            println(output, NORMAL);
             continue;
         }
 
@@ -206,19 +213,16 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
 
         // Drain outstanding adds / removes
         for line in format_adds_and_removes(&adds, &removes) {
-            output.write(line.as_bytes()).unwrap();
-            output.write(b"\n").unwrap();
+            println(output, &line);
         }
         adds.clear();
         removes.clear();
 
         // Print current line
-        output.write(line.as_bytes()).unwrap();
-        output.write(b"\n").unwrap();
+        println(output, &line);
     }
     for line in format_adds_and_removes(&adds, &removes) {
-        output.write(line.as_bytes()).unwrap();
-        output.write(b"\n").unwrap();
+        println(output, &line);
     }
 }
 
