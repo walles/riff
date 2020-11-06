@@ -12,7 +12,9 @@ use std::str;
 const ADD: &str = "\x1b[32m"; // Green
 const REMOVE: &str = "\x1b[31m"; // Red
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
-const NO_EOF_NEWLINE: &str = "\x1b[2m"; // Faint
+
+const NO_EOF_NEWLINE_COLOR: &str = "\x1b[2m"; // Faint
+const NO_EOF_NEWLINE_MARKER: &str = "\\ No newline at end of file";
 
 const INVERSE_VIDEO: &str = "\x1b[7m";
 const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
@@ -31,6 +33,12 @@ lazy_static! {
     ];
 }
 
+enum LastLineKind {
+    Initial,
+    Add,
+    Remove,
+}
+
 /// Format add and remove lines in ADD and REMOVE colors.
 ///
 /// No intra-line refinement.
@@ -41,9 +49,21 @@ fn simple_format_adds_and_removes(adds: &String, removes: &String) -> Vec<String
     for remove_line in removes.lines() {
         lines.push(format!("{}-{}{}", REMOVE, remove_line, NORMAL));
     }
+    if (!removes.is_empty()) && removes.chars().last().unwrap() != '\n' {
+        lines.push(format!(
+            "{}{}{}",
+            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
+        ));
+    }
 
     for add_line in adds.lines() {
         lines.push(format!("{}+{}{}", ADD, add_line, NORMAL))
+    }
+    if (!adds.is_empty()) && adds.chars().last().unwrap() != '\n' {
+        lines.push(format!(
+            "{}{}{}",
+            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
+        ));
     }
 
     return lines;
@@ -128,8 +148,21 @@ fn format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
     for highlighted_remove in highlighted_removes.lines() {
         lines.push(format!("{}-{}{}", REMOVE, highlighted_remove, NORMAL));
     }
+    if (!removes.is_empty()) && removes.chars().last().unwrap() != '\n' {
+        lines.push(format!(
+            "{}{}{}",
+            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
+        ));
+    }
+
     for highlighted_add in highlighted_adds.lines() {
         lines.push(format!("{}+{}{}", ADD, highlighted_add, NORMAL));
+    }
+    if (!adds.is_empty()) && adds.chars().last().unwrap() != '\n' {
+        lines.push(format!(
+            "{}{}{}",
+            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
+        ));
     }
 
     return lines;
@@ -161,6 +194,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
     let mut removes = String::new();
     let input = BufReader::new(input);
     let output = &mut BufWriter::new(output);
+    let mut last_line_kind = LastLineKind::Initial;
     for line in input.lines() {
         let line = line.unwrap();
 
@@ -183,12 +217,34 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         if !line.is_empty() && line.chars().next().unwrap() == '+' {
             adds.push_str(&line[1..]);
             adds.push('\n');
+            last_line_kind = LastLineKind::Add;
             continue;
         } else if !line.is_empty() && line.chars().next().unwrap() == '-' {
             removes.push_str(&line[1..]);
             removes.push('\n');
+            last_line_kind = LastLineKind::Remove;
             continue;
         }
+
+        if line == NO_EOF_NEWLINE_MARKER {
+            match last_line_kind {
+                LastLineKind::Add => {
+                    assert!(adds.pop().unwrap() == '\n');
+                    continue;
+                }
+                LastLineKind::Remove => {
+                    assert!(removes.pop().unwrap() == '\n');
+                    continue;
+                }
+                LastLineKind::Initial => {
+                    // This block intentionally left blank
+
+                    // FIXME: Write a test ensuring that we color this line properly
+                }
+            }
+        }
+
+        last_line_kind = LastLineKind::Initial;
 
         // Drain outstanding adds / removes
         for line in format_adds_and_removes(&adds, &removes) {
@@ -293,7 +349,10 @@ mod tests {
             "{}\n{}\n{}\n",
             remove(&format!("-hej{}⏎", INVERSE_VIDEO)),
             add("+hej"),
-            format!("{}\\ No newline at end of file{}", NO_EOF_NEWLINE, NORMAL)
+            format!(
+                "{}\\ No newline at end of file{}",
+                NO_EOF_NEWLINE_COLOR, NORMAL
+            )
         );
 
         let mut output: Vec<u8> = Vec::new();

@@ -35,8 +35,6 @@ git config --global pager.show riff
 
 ## Before setting the new riff as `$PAGER`
 
-- Visualize removed linefeed at end of file properly
-- Visualize adding a missing linefeed at end of file properly
 - Visualize missing linefeed at end of file as part of the context
   properly
 - Refine `ax`->`bx\nc` properly
@@ -135,3 +133,5 @@ git config --global pager.show riff
   `git show 28e074bd0fc246d1caa3738432806a94f6773185` with and without `riff`.
 - Visualize added line endings
 - Visualize removed line endings
+- Visualize removed linefeed at end of file properly
+- Visualize adding a missing linefeed at end of file properly
