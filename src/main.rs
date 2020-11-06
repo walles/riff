@@ -35,41 +35,22 @@ lazy_static! {
 ///
 /// No intra-line refinement.
 #[must_use]
-fn simple_format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<String> {
+fn simple_format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
-    for remove_line in removes {
-        lines.push(format!("{}{}{}", REMOVE, remove_line, NORMAL));
+    for remove_line in removes.lines() {
+        lines.push(format!("{}-{}{}", REMOVE, remove_line, NORMAL));
     }
 
-    for add_line in adds {
-        lines.push(format!("{}{}{}", ADD, add_line, NORMAL))
+    for add_line in adds.lines() {
+        lines.push(format!("{}+{}{}", ADD, add_line, NORMAL))
     }
 
     return lines;
 }
 
-/// Joins multiple lines into a single string.
-///
-/// The first character of each line is skipped, because it is assumed to be
-/// either a `+` or a `-` in a diff.
-///
-/// Between each joined line a `\n` linefeed character is inserted.
 #[must_use]
-fn join_skip_first(lines: &[String]) -> String {
-    let mut joined = String::new();
-    for line in lines {
-        if !joined.is_empty() {
-            joined.push_str("\n")
-        }
-        joined.push_str(&line[1..]);
-    }
-
-    return joined;
-}
-
-#[must_use]
-fn format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<String> {
+fn format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
     if adds.is_empty() {
         return simple_format_adds_and_removes(adds, removes);
     }
@@ -77,10 +58,6 @@ fn format_adds_and_removes(adds: &[String], removes: &[String]) -> Vec<String> {
     if removes.is_empty() {
         return simple_format_adds_and_removes(adds, removes);
     }
-
-    // Join inputs by linefeeds into strings
-    let adds = join_skip_first(adds);
-    let removes = join_skip_first(removes);
 
     // Find diffs between adds and removals
     let mut highlighted_adds = String::new();
@@ -180,8 +157,8 @@ fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
 }
 
 fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
-    let mut adds: Vec<String> = Vec::new();
-    let mut removes: Vec<String> = Vec::new();
+    let mut adds = String::new();
+    let mut removes = String::new();
     let input = BufReader::new(input);
     let output = &mut BufWriter::new(output);
     for line in input.lines() {
@@ -204,10 +181,12 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
 
         // Collect adds / removes
         if !line.is_empty() && line.chars().next().unwrap() == '+' {
-            adds.push(line);
+            adds.push_str(&line[1..]);
+            adds.push('\n');
             continue;
         } else if !line.is_empty() && line.chars().next().unwrap() == '-' {
-            removes.push(line);
+            removes.push_str(&line[1..]);
+            removes.push('\n');
             continue;
         }
 
@@ -238,25 +217,20 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     #[test]
-    fn test_join_skip_first() {
-        assert_eq!(
-            join_skip_first(&["Xa".to_string(), "Xb".to_string()]),
-            "a\nb"
-        );
-    }
-
-    #[test]
     fn test_simple_format_adds_and_removes() {
         let empty: Vec<String> = Vec::new();
-        assert_eq!(simple_format_adds_and_removes(&empty, &empty), empty);
+        assert_eq!(
+            simple_format_adds_and_removes(&"".to_string(), &"".to_string()),
+            empty
+        );
 
         // Test adds-only
         assert_eq!(
-            simple_format_adds_and_removes(&["+a".to_string()], &empty),
+            simple_format_adds_and_removes(&"a\n".to_string(), &"".to_string()),
             ["".to_string() + ADD + "+a" + NORMAL]
         );
         assert_eq!(
-            simple_format_adds_and_removes(&["+a".to_string(), "+b".to_string()], &empty),
+            simple_format_adds_and_removes(&"a\nb\n".to_string(), &"".to_string()),
             [
                 "".to_string() + ADD + "+a" + NORMAL,
                 "".to_string() + ADD + "+b" + NORMAL,
@@ -265,11 +239,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            simple_format_adds_and_removes(&empty, &["-a".to_string()]),
+            simple_format_adds_and_removes(&"".to_string(), &"a\n".to_string()),
             ["".to_string() + REMOVE + "-a" + NORMAL]
         );
         assert_eq!(
-            simple_format_adds_and_removes(&empty, &["-a".to_string(), "-b".to_string()]),
+            simple_format_adds_and_removes(&"".to_string(), &"a\nb\n".to_string()),
             [
                 "".to_string() + REMOVE + "-a" + NORMAL,
                 "".to_string() + REMOVE + "-b" + NORMAL,
@@ -280,15 +254,20 @@ mod tests {
     #[test]
     fn test_quote_change() {
         assert_eq!(
-            format_adds_and_removes(&["+[quotes]".to_string()], &["-<quotes>".to_string()]),
+            format_adds_and_removes(&"[quotes]\n".to_string(), &"<quotes>\n".to_string()),
             [
                 format!(
-                    "{}-{}<{}quotes{}>{}",
-                    REMOVE, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NORMAL
+                    "{}-{}<{}quotes{}>{}{}",
+                    REMOVE,
+                    INVERSE_VIDEO,
+                    NOT_INVERSE_VIDEO,
+                    INVERSE_VIDEO,
+                    NOT_INVERSE_VIDEO,
+                    NORMAL
                 ),
                 format!(
-                    "{}+{}[{}quotes{}]{}",
-                    ADD, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NORMAL
+                    "{}+{}[{}quotes{}]{}{}",
+                    ADD, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NOT_INVERSE_VIDEO, NORMAL
                 ),
             ]
         )
