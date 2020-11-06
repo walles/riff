@@ -238,8 +238,6 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
                 }
                 LastLineKind::Initial => {
                     // This block intentionally left blank
-
-                    // FIXME: Write a test ensuring that we color this line properly
                 }
             }
         }
@@ -254,7 +252,13 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         removes.clear();
 
         // Print current line
-        println(output, &line);
+        if line == NO_EOF_NEWLINE_MARKER {
+            print(output, NO_EOF_NEWLINE_COLOR);
+            print(output, &line);
+            println(output, NORMAL);
+        } else {
+            println(output, &line);
+        }
     }
     for line in format_adds_and_removes(&adds, &removes) {
         println(output, &line);
@@ -349,6 +353,25 @@ mod tests {
             "{}\n{}\n{}\n",
             remove(&format!("-hej{}⏎", INVERSE_VIDEO)),
             add("+hej"),
+            format!(
+                "{}\\ No newline at end of file{}",
+                NO_EOF_NEWLINE_COLOR, NORMAL
+            )
+        );
+
+        let mut output: Vec<u8> = Vec::new();
+        highlight_diff(&mut input, &mut output);
+        assert_eq!(std::str::from_utf8(&output).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_trailing_newline_context() {
+        let mut input = "+bepa\n apa\n\\ No newline at end of file\n".as_bytes();
+
+        let expected = format!(
+            "{}\n{}\n{}\n",
+            add("+bepa"),
+            " apa",
             format!(
                 "{}\\ No newline at end of file{}",
                 NO_EOF_NEWLINE_COLOR, NORMAL

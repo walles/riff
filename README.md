@@ -35,8 +35,6 @@ git config --global pager.show riff
 
 ## Before setting the new riff as `$PAGER`
 
-- Visualize missing linefeed at end of file as part of the context
-  properly
 - Refine `ax`->`bx\nc` properly
 - Strip all color from the input before handling it to enable users to
   set Git's pager.diff and pager.show variables to 'riff' without also
@@ -135,3 +133,5 @@ git config --global pager.show riff
 - Visualize removed line endings
 - Visualize removed linefeed at end of file properly
 - Visualize adding a missing linefeed at end of file properly
+- Visualize missing linefeed at end of file as part of the context
+  properly
