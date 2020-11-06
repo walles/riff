@@ -31,6 +31,7 @@ lazy_static! {
         (Regex::new("^\\+\\+\\+ ").unwrap(), BOLD),
         (Regex::new("^@@ ").unwrap(), HUNK_HEADER),
     ];
+    static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
 }
 
 enum LastLineKind {
@@ -197,6 +198,10 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
     let mut last_line_kind = LastLineKind::Initial;
     for line in input.lines() {
         let line = line.unwrap();
+
+        // Strip out incoming ANSI formatting. This enables us to highlight
+        // already-colored input.
+        let line = ANSI_COLOR_REGEX.replace_all(&line, "");
 
         let fixed_highlight = get_fixed_highlight(&line);
         if !fixed_highlight.is_empty() {

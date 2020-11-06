@@ -35,10 +35,6 @@ git config --global pager.show riff
 
 ## Before setting the new riff as `$PAGER`
 
-- Refine `ax`->`bx\nc` properly
-- Strip all color from the input before handling it to enable users to
-  set Git's pager.diff and pager.show variables to 'riff' without also
-  needing to set color.diff=false.
 - If stdout is a terminal, pipe the output to a pager using the
   algorithm described under `core.pager` in `git help config`.
 - Do some effort to prevent fork loops if people set riff as `$PAGER`
@@ -135,3 +131,7 @@ git config --global pager.show riff
 - Visualize adding a missing linefeed at end of file properly
 - Visualize missing linefeed at end of file as part of the context
   properly
+- Refine `ax`->`bx\nc` properly
+- Strip all color from the input before handling it to enable users to
+  set Git's pager.diff and pager.show variables to 'riff' without also
+  needing to set color.diff=false.
