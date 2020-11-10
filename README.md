@@ -44,6 +44,10 @@ git config --global pager.show riff
 
 ## Before releasing the Rust version as the official one
 
+- Set up CI
+- Figure out cross compiling to Linux and macOS ARM (look into `cross` which
+  uses Docker for cross compiling)
+- Document release instructions
 - On exceptions, print the riff.rb @state
 - On exceptions, print the line riff.rb was processing
 - On exceptions, print a link to the issue tracker

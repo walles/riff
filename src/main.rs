@@ -5,8 +5,11 @@ use diffus::{
     edit::{self, string},
     Diffable,
 };
+use isatty::{stdin_isatty, stdout_isatty};
 use regex::Regex;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
+use std::process::exit;
+use std::process::{Command, Stdio};
 use std::str;
 
 const ADD: &str = "\x1b[32m"; // Green
@@ -271,7 +274,36 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
 }
 
 fn main() {
-    highlight_diff(&mut io::stdin().lock(), &mut io::stdout());
+    if stdin_isatty() {
+        eprintln!("Error: Expected input from a pipe");
+        exit(1);
+    }
+
+    if !stdout_isatty() {
+        // We're being piped, just do stdin -> stdout
+        highlight_diff(&mut io::stdin().lock(), &mut io::stdout());
+        return;
+    }
+
+    // FIXME: Prepare env vars LESS and LV for the pager process, just like git does
+
+    // FIXME: Create a pager command
+    let status = Command::new("moar").stdin(Stdio::piped()).spawn();
+
+    match status {
+        Ok(mut child) => {
+            let pager_stdin = child.stdin.as_mut().unwrap();
+            highlight_diff(&mut io::stdin().lock(), pager_stdin);
+            child.wait().expect("Waiting for pager failed");
+        }
+        Err(failure) => {
+            // FIXME: Try other pager here
+
+            // FIXME: Print pager name as well
+            eprintln!("FIXME: Failed to start pager: {}", failure);
+            exit(1);
+        }
+    }
 }
 
 #[cfg(test)]
