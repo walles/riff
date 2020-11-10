@@ -18,6 +18,10 @@ use std::str;
 /// highlighting it.
 const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 
+/// This constant is mostly made up. The Ruby version of riff had its
+/// limit set to 15_000, and this is more than that because blue.
+const MAX_HIGHLIGHT_LENGTH: usize = 25_000;
+
 const ADD: &str = "\x1b[32m"; // Green
 const REMOVE: &str = "\x1b[31m"; // Red
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
@@ -89,9 +93,7 @@ fn format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
         return simple_format_adds_and_removes(adds, removes);
     }
 
-    // This constant is mostly made up. The Ruby version of riff had its
-    // limit set to 15_000, and this is more than that because blue.
-    if adds.len() + removes.len() > 25_000 {
+    if adds.len() + removes.len() > MAX_HIGHLIGHT_LENGTH {
         return simple_format_adds_and_removes(adds, removes);
     }
 
