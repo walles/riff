@@ -7,6 +7,7 @@ use diffus::{
 };
 use isatty::{stdin_isatty, stdout_isatty};
 use regex::Regex;
+use std::env;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::process::exit;
 use std::process::{Command, Stdio};
@@ -308,10 +309,24 @@ fn main() {
         return;
     }
 
-    try_pager("moar");
+    let pager_env_var = env::var("PAGER");
+    if pager_env_var.is_ok() {
+        let pager_value = pager_env_var.unwrap();
+        if try_pager(&pager_value) {
+            return;
+        }
 
-    // FIXME: Print warning at the end if $PAGER was set to something that
-    // doesn't exist.
+        // FIXME: Print warning at the end if $PAGER was set to something that
+        // doesn't exist.
+    }
+
+    if try_pager("moar") {
+        return;
+    }
+
+    if try_pager("less") {
+        return;
+    }
 }
 
 #[cfg(test)]
