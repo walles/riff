@@ -273,6 +273,29 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
     }
 }
 
+/// Try paging using the named pager (`$PATH` will be searched).
+///
+/// Returns `true` if the pager was found, `false` otherwise.
+fn try_pager(pager_name: &str) -> bool {
+    // FIXME: Prepare env vars LESS and LV for the pager process, just like git does
+
+    match Command::new(pager_name).stdin(Stdio::piped()).spawn() {
+        Ok(mut pager) => {
+            let pager_stdin = pager.stdin.as_mut().unwrap();
+            highlight_diff(&mut io::stdin().lock(), pager_stdin);
+
+            // FIXME: Report pager exit status if non-zero, together with
+            // contents of pager stderr as well if possible.
+            pager.wait().expect("Waiting for pager failed");
+
+            return true;
+        }
+        Err(_) => {
+            return false;
+        }
+    }
+}
+
 fn main() {
     if stdin_isatty() {
         eprintln!("Error: Expected input from a pipe");
@@ -285,25 +308,10 @@ fn main() {
         return;
     }
 
-    // FIXME: Prepare env vars LESS and LV for the pager process, just like git does
+    try_pager("moar");
 
-    // FIXME: Create a pager command
-    let status = Command::new("moar").stdin(Stdio::piped()).spawn();
-
-    match status {
-        Ok(mut child) => {
-            let pager_stdin = child.stdin.as_mut().unwrap();
-            highlight_diff(&mut io::stdin().lock(), pager_stdin);
-            child.wait().expect("Waiting for pager failed");
-        }
-        Err(failure) => {
-            // FIXME: Try other pager here
-
-            // FIXME: Print pager name as well
-            eprintln!("FIXME: Failed to start pager: {}", failure);
-            exit(1);
-        }
-    }
+    // FIXME: Print warning at the end if $PAGER was set to something that
+    // doesn't exist.
 }
 
 #[cfg(test)]
