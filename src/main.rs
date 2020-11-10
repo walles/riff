@@ -278,9 +278,20 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
 ///
 /// Returns `true` if the pager was found, `false` otherwise.
 fn try_pager(pager_name: &str) -> bool {
-    // FIXME: Prepare env vars LESS and LV for the pager process, just like git does
+    let mut command = Command::new(pager_name);
+    command.stdin(Stdio::piped());
 
-    match Command::new(pager_name).stdin(Stdio::piped()).spawn() {
+    if !env::var("LESS").is_ok() {
+        // Set by git when paging
+        command.env("LESS", "FRX");
+    }
+
+    if !env::var("LV").is_ok() {
+        // Set by git when paging
+        command.env("LV", "-c");
+    }
+
+    match command.spawn() {
         Ok(mut pager) => {
             let pager_stdin = pager.stdin.as_mut().unwrap();
             highlight_diff(&mut io::stdin().lock(), pager_stdin);
