@@ -13,6 +13,11 @@ use std::process::exit;
 use std::process::{Command, Stdio};
 use std::str;
 
+/// If more than this part of either adds or moves is highlighted,
+/// we consider it to be a replacement rather than a move, and skip
+/// highlighting it.
+const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
+
 const ADD: &str = "\x1b[32m"; // Green
 const REMOVE: &str = "\x1b[31m"; // Red
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
@@ -84,11 +89,19 @@ fn format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
         return simple_format_adds_and_removes(adds, removes);
     }
 
+    // This constant is mostly made up. The Ruby version of riff had its
+    // limit set to 15_000, and this is more than that because blue.
+    if adds.len() + removes.len() > 25_000 {
+        return simple_format_adds_and_removes(adds, removes);
+    }
+
     // Find diffs between adds and removals
     let mut highlighted_adds = String::new();
     let mut highlighted_removes = String::new();
     let mut adds_is_inverse = false;
     let mut removes_is_inverse = false;
+    let mut adds_highlight_count = 0;
+    let mut removes_highlight_count = 0;
     let diff = removes.diff(&adds);
     match diff {
         edit::Edit::Copy(unchanged) => {
@@ -114,6 +127,7 @@ fn format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
                             highlighted_removes.push(elem);
                         }
                         string::Edit::Insert(elem) => {
+                            adds_highlight_count += 1;
                             if !adds_is_inverse {
                                 highlighted_adds.push_str(INVERSE_VIDEO);
                             }
@@ -129,6 +143,7 @@ fn format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
                             highlighted_adds.push(elem);
                         }
                         string::Edit::Remove(elem) => {
+                            removes_highlight_count += 1;
                             if !removes_is_inverse {
                                 highlighted_removes.push_str(INVERSE_VIDEO);
                             }
@@ -147,6 +162,13 @@ fn format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
                 })
                 .for_each(drop);
         }
+    }
+
+    if (100 * adds_highlight_count) / adds.len() > MAX_HIGHLIGHT_PERCENTAGE {
+        return simple_format_adds_and_removes(adds, removes);
+    }
+    if (100 * removes_highlight_count) / removes.len() > MAX_HIGHLIGHT_PERCENTAGE {
+        return simple_format_adds_and_removes(adds, removes);
     }
 
     let mut lines: Vec<String> = Vec::new();

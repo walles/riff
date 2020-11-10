@@ -33,15 +33,10 @@ git config --global pager.show riff
 
 # TODO
 
-## Before setting the new riff as `$PAGER`
-
-- Do some effort to prevent fork loops if people set riff as `$PAGER`
-- You can do `git diff | riff` and get reasonable output.
-
-- Refine by word rather than by character
-
 ## Before releasing the Rust version as the official one
 
+- Refine by word rather than by character
+- Do some effort to prevent fork loops if people set `$PAGER` to `riff`
 - Set up CI
 - Figure out cross compiling to Linux and macOS ARM (look into `cross` which
   uses Docker for cross compiling)
@@ -53,9 +48,6 @@ git config --global pager.show riff
 - Print help and bail if stdin is a terminal
 - Add support for `--version`
 - On exceptions, print the current version just like `--version`
-- Do not highlight anything if there are "too many" differences between the
-  sections. The point here is that we want to highlight changes, but if it's a
-  _replacement_ rather than a change then we don't want to highlight it.
 - Put an upper bound on how large regions we should attempt to refine
 - Find out how the LCS algorithm scales and improve the heuristic for
   when not to call it.
@@ -139,3 +131,7 @@ git config --global pager.show riff
   needing to set color.diff=false.
 - If stdout is a terminal, pipe the output to a pager using the
   algorithm described under `core.pager` in `git help config`.
+- You can do `git diff | riff` and get reasonable output.
+- Do not highlight anything if there are "too many" differences between the
+  sections. The point here is that we want to highlight changes, but if it's a
+  _replacement_ rather than a change then we don't want to highlight it.
