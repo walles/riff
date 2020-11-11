@@ -13,14 +13,14 @@ const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 /// limit set to 15_000, and this is more than that because blue.
 const MAX_HIGHLIGHT_LENGTH: usize = 25_000;
 
-pub struct Formatter<'a> {
+pub struct Refiner<'a> {
     adds: &'a str,
     removes: &'a str,
 }
 
-impl<'a> Formatter<'a> {
+impl<'a> Refiner<'a> {
     pub fn create(adds: &'a String, removes: &'a String) -> Self {
-        return Formatter { adds, removes };
+        return Refiner { adds, removes };
     }
 
     /// Format add and remove lines in ADD and REMOVE colors.
@@ -183,17 +183,17 @@ mod tests {
     fn test_simple_format_adds_and_removes() {
         let empty: Vec<String> = Vec::new();
         assert_eq!(
-            Formatter::create(&"".to_string(), &"".to_string()).simple_format(),
+            Refiner::create(&"".to_string(), &"".to_string()).simple_format(),
             empty
         );
 
         // Test adds-only
         assert_eq!(
-            Formatter::create(&"a\n".to_string(), &"".to_string()).simple_format(),
+            Refiner::create(&"a\n".to_string(), &"".to_string()).simple_format(),
             ["".to_string() + ADD + "+a" + NORMAL]
         );
         assert_eq!(
-            Formatter::create(&"a\nb\n".to_string(), &"".to_string()).simple_format(),
+            Refiner::create(&"a\nb\n".to_string(), &"".to_string()).simple_format(),
             [
                 "".to_string() + ADD + "+a" + NORMAL,
                 "".to_string() + ADD + "+b" + NORMAL,
@@ -202,11 +202,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            Formatter::create(&"".to_string(), &"a\n".to_string()).simple_format(),
+            Refiner::create(&"".to_string(), &"a\n".to_string()).simple_format(),
             ["".to_string() + REMOVE + "-a" + NORMAL]
         );
         assert_eq!(
-            Formatter::create(&"".to_string(), &"a\nb\n".to_string()).simple_format(),
+            Refiner::create(&"".to_string(), &"a\nb\n".to_string()).simple_format(),
             [
                 "".to_string() + REMOVE + "-a" + NORMAL,
                 "".to_string() + REMOVE + "-b" + NORMAL,
@@ -217,7 +217,7 @@ mod tests {
     #[test]
     fn test_quote_change() {
         assert_eq!(
-            Formatter::create(&"[quotes]\n".to_string(), &"<quotes>\n".to_string()).format(),
+            Refiner::create(&"[quotes]\n".to_string(), &"<quotes>\n".to_string()).format(),
             [
                 format!(
                     "{}-{}<{}quotes{}>{}{}",

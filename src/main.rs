@@ -2,8 +2,8 @@
 extern crate lazy_static;
 
 use constants::*;
-use formatter::Formatter;
 use isatty::{stdin_isatty, stdout_isatty};
+use refiner::Refiner;
 use regex::Regex;
 use std::env;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
@@ -12,7 +12,7 @@ use std::process::{Command, Stdio};
 use std::str;
 
 mod constants;
-mod formatter;
+mod refiner;
 mod tokenizer;
 
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
@@ -71,7 +71,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         let fixed_highlight = get_fixed_highlight(&line);
         if !fixed_highlight.is_empty() {
             // Drain outstanding adds / removes
-            for line in Formatter::create(&adds, &removes).format() {
+            for line in Refiner::create(&adds, &removes).format() {
                 println(output, &line);
             }
             adds.clear();
@@ -115,7 +115,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         last_line_kind = LastLineKind::Initial;
 
         // Drain outstanding adds / removes
-        for line in Formatter::create(&adds, &removes).format() {
+        for line in Refiner::create(&adds, &removes).format() {
             println(output, &line);
         }
         adds.clear();
@@ -130,7 +130,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
             println(output, &line);
         }
     }
-    for line in Formatter::create(&adds, &removes).format() {
+    for line in Refiner::create(&adds, &removes).format() {
         println(output, &line);
     }
 }
