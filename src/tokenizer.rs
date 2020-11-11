@@ -1,3 +1,10 @@
+// FIXME: The doctest doesn't run on `cargo test`, why?
+/// Splits string into a vector of words. A word is any sequence of alphanumeric
+/// characters. Non-words get into the vector one and one.
+///
+/// ```rust
+/// assert_eq!(tokenize("Adam, Bea"), ["Adam", ", ", " ", "Bea"]);
+/// ```
 fn tokenize(input: &str) -> Vec<&str> {
     let mut first_alphanumeric_index = 0;
     let mut last_was_alphanumeric = false;
