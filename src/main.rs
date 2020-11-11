@@ -13,6 +13,8 @@ use std::process::exit;
 use std::process::{Command, Stdio};
 use std::str;
 
+mod tokenizer;
+
 /// If more than this part of either adds or moves is highlighted,
 /// we consider it to be a replacement rather than a move, and skip
 /// highlighting it.
@@ -53,6 +55,8 @@ enum LastLineKind {
     Remove,
 }
 
+// FIXME: Move
+
 /// Format add and remove lines in ADD and REMOVE colors.
 ///
 /// No intra-line refinement.
@@ -83,6 +87,8 @@ fn simple_format_adds_and_removes(adds: &String, removes: &String) -> Vec<String
     return lines;
 }
 
+// FIXME: Move format_adds_and_removes() and friends into its own file
+
 #[must_use]
 fn format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
     if adds.is_empty() {
@@ -104,6 +110,9 @@ fn format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
     let mut removes_is_inverse = false;
     let mut adds_highlight_count = 0;
     let mut removes_highlight_count = 0;
+
+    // FIXME: Tokenize adds and removes before diffing them
+
     let diff = removes.diff(&adds);
     match diff {
         edit::Edit::Copy(unchanged) => {

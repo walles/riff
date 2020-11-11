@@ -36,6 +36,8 @@ git config --global pager.show riff
 ## Before releasing the Rust version as the official one
 
 - Refine by word rather than by character
+  - Test case `git show 2ac5b06`: Should highlight all of both `some` and
+    `one or`.
 - Do some effort to prevent fork loops if people set `$PAGER` to `riff`
 - Set up CI
 - Figure out cross compiling to Linux and macOS ARM (look into `cross` which
@@ -83,8 +85,6 @@ git config --global pager.show riff
   indentation on the following line.
 - Do `git show 57f27da` and think about what rule we should use to get
   the REVERSE vs reversed() lines highlighted.
-- Do `git show 2ac5b06` and think about what rule we should use to
-  highlight all of both `some` and `one or`.
 - Make sure we highlight the output of `git log -p` properly. If we
   get something unexpected, maybe just go back to :initial?
 - Make sure we highlight the output of `git show --stat` properly
