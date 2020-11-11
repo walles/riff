@@ -1,10 +1,8 @@
 #[macro_use]
 extern crate lazy_static;
 
-use diffus::{
-    edit::{self, string},
-    Diffable,
-};
+use constants::*;
+use formatter::Formatter;
 use isatty::{stdin_isatty, stdout_isatty};
 use regex::Regex;
 use std::env;
@@ -13,30 +11,11 @@ use std::process::exit;
 use std::process::{Command, Stdio};
 use std::str;
 
+mod constants;
+mod formatter;
 mod tokenizer;
 
-/// If more than this part of either adds or moves is highlighted,
-/// we consider it to be a replacement rather than a move, and skip
-/// highlighting it.
-const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
-
-/// This constant is mostly made up. The Ruby version of riff had its
-/// limit set to 15_000, and this is more than that because blue.
-const MAX_HIGHLIGHT_LENGTH: usize = 25_000;
-
-const ADD: &str = "\x1b[32m"; // Green
-const REMOVE: &str = "\x1b[31m"; // Red
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
-
-const NO_EOF_NEWLINE_COLOR: &str = "\x1b[2m"; // Faint
-const NO_EOF_NEWLINE_MARKER: &str = "\\ No newline at end of file";
-
-const INVERSE_VIDEO: &str = "\x1b[7m";
-const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
-
-const BOLD: &str = "\x1b[1m";
-
-const NORMAL: &str = "\x1b[0m";
 
 lazy_static! {
     static ref STATIC_HEADERS: Vec<(Regex, &'static str)> = vec![
@@ -53,157 +32,6 @@ enum LastLineKind {
     Initial,
     Add,
     Remove,
-}
-
-// FIXME: Move
-
-/// Format add and remove lines in ADD and REMOVE colors.
-///
-/// No intra-line refinement.
-#[must_use]
-fn simple_format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
-    let mut lines: Vec<String> = Vec::new();
-
-    for remove_line in removes.lines() {
-        lines.push(format!("{}-{}{}", REMOVE, remove_line, NORMAL));
-    }
-    if (!removes.is_empty()) && removes.chars().last().unwrap() != '\n' {
-        lines.push(format!(
-            "{}{}{}",
-            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
-        ));
-    }
-
-    for add_line in adds.lines() {
-        lines.push(format!("{}+{}{}", ADD, add_line, NORMAL))
-    }
-    if (!adds.is_empty()) && adds.chars().last().unwrap() != '\n' {
-        lines.push(format!(
-            "{}{}{}",
-            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
-        ));
-    }
-
-    return lines;
-}
-
-// FIXME: Move format_adds_and_removes() and friends into its own file
-
-#[must_use]
-fn format_adds_and_removes(adds: &String, removes: &String) -> Vec<String> {
-    if adds.is_empty() {
-        return simple_format_adds_and_removes(adds, removes);
-    }
-
-    if removes.is_empty() {
-        return simple_format_adds_and_removes(adds, removes);
-    }
-
-    if adds.len() + removes.len() > MAX_HIGHLIGHT_LENGTH {
-        return simple_format_adds_and_removes(adds, removes);
-    }
-
-    // Find diffs between adds and removals
-    let mut highlighted_adds = String::new();
-    let mut highlighted_removes = String::new();
-    let mut adds_is_inverse = false;
-    let mut removes_is_inverse = false;
-    let mut adds_highlight_count = 0;
-    let mut removes_highlight_count = 0;
-
-    // FIXME: Tokenize adds and removes before diffing them
-
-    let diff = removes.diff(&adds);
-    match diff {
-        edit::Edit::Copy(unchanged) => {
-            highlighted_adds.push_str(unchanged);
-            highlighted_removes.push_str(unchanged);
-        }
-        edit::Edit::Change(diff) => {
-            diff.into_iter()
-                .map(|edit| {
-                    match edit {
-                        string::Edit::Copy(elem) => {
-                            if adds_is_inverse {
-                                highlighted_adds.push_str(NOT_INVERSE_VIDEO);
-                            }
-                            adds_is_inverse = false;
-
-                            if removes_is_inverse {
-                                highlighted_removes.push_str(NOT_INVERSE_VIDEO);
-                            }
-                            removes_is_inverse = false;
-
-                            highlighted_adds.push(elem);
-                            highlighted_removes.push(elem);
-                        }
-                        string::Edit::Insert(elem) => {
-                            adds_highlight_count += 1;
-                            if !adds_is_inverse {
-                                highlighted_adds.push_str(INVERSE_VIDEO);
-                            }
-                            adds_is_inverse = true;
-
-                            if elem == '\n' {
-                                // Make sure the highlighted linefeed is visible
-                                highlighted_adds.push('⏎');
-
-                                // This will be reset by the linefeed, so we need to re-inverse on the next line
-                                adds_is_inverse = false;
-                            }
-                            highlighted_adds.push(elem);
-                        }
-                        string::Edit::Remove(elem) => {
-                            removes_highlight_count += 1;
-                            if !removes_is_inverse {
-                                highlighted_removes.push_str(INVERSE_VIDEO);
-                            }
-                            removes_is_inverse = true;
-
-                            if elem == '\n' {
-                                // Make sure the highlighted linefeed is visible
-                                highlighted_removes.push('⏎');
-
-                                // This will be reset by the linefeed, so we need to re-inverse on the next line
-                                removes_is_inverse = false;
-                            }
-                            highlighted_removes.push(elem);
-                        }
-                    };
-                })
-                .for_each(drop);
-        }
-    }
-
-    if (100 * adds_highlight_count) / adds.len() > MAX_HIGHLIGHT_PERCENTAGE {
-        return simple_format_adds_and_removes(adds, removes);
-    }
-    if (100 * removes_highlight_count) / removes.len() > MAX_HIGHLIGHT_PERCENTAGE {
-        return simple_format_adds_and_removes(adds, removes);
-    }
-
-    let mut lines: Vec<String> = Vec::new();
-    for highlighted_remove in highlighted_removes.lines() {
-        lines.push(format!("{}-{}{}", REMOVE, highlighted_remove, NORMAL));
-    }
-    if (!removes.is_empty()) && removes.chars().last().unwrap() != '\n' {
-        lines.push(format!(
-            "{}{}{}",
-            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
-        ));
-    }
-
-    for highlighted_add in highlighted_adds.lines() {
-        lines.push(format!("{}+{}{}", ADD, highlighted_add, NORMAL));
-    }
-    if (!adds.is_empty()) && adds.chars().last().unwrap() != '\n' {
-        lines.push(format!(
-            "{}{}{}",
-            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
-        ));
-    }
-
-    return lines;
 }
 
 #[must_use]
@@ -243,7 +71,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         let fixed_highlight = get_fixed_highlight(&line);
         if !fixed_highlight.is_empty() {
             // Drain outstanding adds / removes
-            for line in format_adds_and_removes(&adds, &removes) {
+            for line in Formatter::create(&adds, &removes).format() {
                 println(output, &line);
             }
             adds.clear();
@@ -287,7 +115,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         last_line_kind = LastLineKind::Initial;
 
         // Drain outstanding adds / removes
-        for line in format_adds_and_removes(&adds, &removes) {
+        for line in Formatter::create(&adds, &removes).format() {
             println(output, &line);
         }
         adds.clear();
@@ -302,7 +130,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
             println(output, &line);
         }
     }
-    for line in format_adds_and_removes(&adds, &removes) {
+    for line in Formatter::create(&adds, &removes).format() {
         println(output, &line);
     }
 }
@@ -379,63 +207,6 @@ mod tests {
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
-
-    #[test]
-    fn test_simple_format_adds_and_removes() {
-        let empty: Vec<String> = Vec::new();
-        assert_eq!(
-            simple_format_adds_and_removes(&"".to_string(), &"".to_string()),
-            empty
-        );
-
-        // Test adds-only
-        assert_eq!(
-            simple_format_adds_and_removes(&"a\n".to_string(), &"".to_string()),
-            ["".to_string() + ADD + "+a" + NORMAL]
-        );
-        assert_eq!(
-            simple_format_adds_and_removes(&"a\nb\n".to_string(), &"".to_string()),
-            [
-                "".to_string() + ADD + "+a" + NORMAL,
-                "".to_string() + ADD + "+b" + NORMAL,
-            ]
-        );
-
-        // Test removes-only
-        assert_eq!(
-            simple_format_adds_and_removes(&"".to_string(), &"a\n".to_string()),
-            ["".to_string() + REMOVE + "-a" + NORMAL]
-        );
-        assert_eq!(
-            simple_format_adds_and_removes(&"".to_string(), &"a\nb\n".to_string()),
-            [
-                "".to_string() + REMOVE + "-a" + NORMAL,
-                "".to_string() + REMOVE + "-b" + NORMAL,
-            ]
-        );
-    }
-
-    #[test]
-    fn test_quote_change() {
-        assert_eq!(
-            format_adds_and_removes(&"[quotes]\n".to_string(), &"<quotes>\n".to_string()),
-            [
-                format!(
-                    "{}-{}<{}quotes{}>{}{}",
-                    REMOVE,
-                    INVERSE_VIDEO,
-                    NOT_INVERSE_VIDEO,
-                    INVERSE_VIDEO,
-                    NOT_INVERSE_VIDEO,
-                    NORMAL
-                ),
-                format!(
-                    "{}+{}[{}quotes{}]{}{}",
-                    ADD, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NOT_INVERSE_VIDEO, NORMAL
-                ),
-            ]
-        )
-    }
 
     fn remove(text: &str) -> String {
         return format!("{}{}{}", REMOVE, text, NORMAL);

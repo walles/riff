@@ -5,7 +5,7 @@
 /// ```rust
 /// assert_eq!(tokenize("Adam, Bea"), ["Adam", ", ", " ", "Bea"]);
 /// ```
-fn tokenize(input: &str) -> Vec<&str> {
+pub fn tokenize(input: &str) -> Vec<&str> {
     let mut first_alphanumeric_index = 0;
     let mut last_was_alphanumeric = false;
     let mut result: Vec<&str> = Vec::new();
