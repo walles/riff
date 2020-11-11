@@ -35,9 +35,6 @@ git config --global pager.show riff
 
 ## Before releasing the Rust version as the official one
 
-- Refine by word rather than by character
-  - Test case `git show 2ac5b06`: Should highlight all of both `some` and
-    `one or`.
 - Do some effort to prevent fork loops if people set `$PAGER` to `riff`
 - Set up CI
 - Figure out cross compiling to Linux and macOS ARM (look into `cross` which
@@ -46,7 +43,7 @@ git config --global pager.show riff
 - On exceptions, print the riff.rb @state
 - On exceptions, print the line riff.rb was processing
 - On exceptions, print a link to the issue tracker
-- Add support for --help
+- Add support for `--help`
 - Print help and bail if stdin is a terminal
 - Add support for `--version`
 - On exceptions, print the current version just like `--version`
@@ -56,6 +53,8 @@ git config --global pager.show riff
 
 ## Misc
 
+- Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
+  How should we visualize the reformatting of the No-newline-at-eof code?
 - Add a trailing whitespace analysis pass to the Refiner
 - Let the Refiner highlight whitespace errors among the added lines in
   reverse red.
@@ -135,3 +134,6 @@ git config --global pager.show riff
 - Do not highlight anything if there are "too many" differences between the
   sections. The point here is that we want to highlight changes, but if it's a
   _replacement_ rather than a change then we don't want to highlight it.
+- Refine by word rather than by character
+  - Test case `git show 2ac5b06`: Should highlight all of both `some` and
+    `one or`.

@@ -1,6 +1,7 @@
 use crate::constants::*;
+use crate::tokenizer;
 use diffus::{
-    edit::{self, string},
+    edit::{self, collection},
     Diffable,
 };
 
@@ -55,7 +56,7 @@ impl<'a> Refiner<'a> {
 
     /// Returns a vector of ANSI highlighted lines
     #[must_use]
-    pub fn format(&self) -> Vec<String> {
+    pub fn format(self) -> Vec<String> {
         if self.adds.is_empty() {
             return self.simple_format();
         }
@@ -76,19 +77,23 @@ impl<'a> Refiner<'a> {
         let mut adds_highlight_count = 0;
         let mut removes_highlight_count = 0;
 
-        // FIXME: Tokenize adds and removes before diffing them
+        // Tokenize adds and removes before diffing them
+        let tokenized_adds = tokenizer::tokenize(self.adds);
+        let tokenized_removes = tokenizer::tokenize(self.removes);
 
-        let diff = self.removes.diff(self.adds);
+        let diff = tokenized_removes.diff(&tokenized_adds);
         match diff {
             edit::Edit::Copy(unchanged) => {
-                highlighted_adds.push_str(unchanged);
-                highlighted_removes.push_str(unchanged);
+                for token in unchanged {
+                    highlighted_adds.push_str(token);
+                    highlighted_removes.push_str(token);
+                }
             }
             edit::Edit::Change(diff) => {
                 diff.into_iter()
                     .map(|edit| {
                         match edit {
-                            string::Edit::Copy(elem) => {
+                            collection::Edit::Copy(elem) => {
                                 if adds_is_inverse {
                                     highlighted_adds.push_str(NOT_INVERSE_VIDEO);
                                 }
@@ -99,41 +104,42 @@ impl<'a> Refiner<'a> {
                                 }
                                 removes_is_inverse = false;
 
-                                highlighted_adds.push(elem);
-                                highlighted_removes.push(elem);
+                                highlighted_adds.push_str(elem);
+                                highlighted_removes.push_str(elem);
                             }
-                            string::Edit::Insert(elem) => {
+                            collection::Edit::Insert(elem) => {
                                 adds_highlight_count += 1;
                                 if !adds_is_inverse {
                                     highlighted_adds.push_str(INVERSE_VIDEO);
                                 }
                                 adds_is_inverse = true;
 
-                                if elem == '\n' {
+                                if elem == &"\n" {
                                     // Make sure the highlighted linefeed is visible
                                     highlighted_adds.push('⏎');
 
                                     // This will be reset by the linefeed, so we need to re-inverse on the next line
                                     adds_is_inverse = false;
                                 }
-                                highlighted_adds.push(elem);
+                                highlighted_adds.push_str(elem);
                             }
-                            string::Edit::Remove(elem) => {
+                            collection::Edit::Remove(elem) => {
                                 removes_highlight_count += 1;
                                 if !removes_is_inverse {
                                     highlighted_removes.push_str(INVERSE_VIDEO);
                                 }
                                 removes_is_inverse = true;
 
-                                if elem == '\n' {
+                                if elem == &"\n" {
                                     // Make sure the highlighted linefeed is visible
                                     highlighted_removes.push('⏎');
 
                                     // This will be reset by the linefeed, so we need to re-inverse on the next line
                                     removes_is_inverse = false;
                                 }
-                                highlighted_removes.push(elem);
+                                highlighted_removes.push_str(elem);
                             }
+                            collection::Edit::Change(_) => panic!("Not implemented, help!"),
                         };
                     })
                     .for_each(drop);
