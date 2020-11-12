@@ -53,6 +53,10 @@ git config --global pager.show riff
 
 ## Misc
 
+- Make a public release
+- Add a `--install` command line option
+- Add test case verifying that the `Inspired by` part of
+  `git show 77c8f77 -- bin/riff` is highlighted as an upside down L.
 - Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
   How should we visualize the reformatting of the No-newline-at-eof code?
 - Add a trailing whitespace analysis pass to the Refiner

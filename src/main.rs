@@ -199,6 +199,9 @@ fn main() {
     if try_pager("less") {
         return;
     }
+
+    // No pager found, wth?
+    highlight_diff(&mut io::stdin().lock(), &mut io::stdout());
 }
 
 #[cfg(test)]
