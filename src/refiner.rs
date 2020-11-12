@@ -8,7 +8,19 @@ use diffus::{
 /// If more than this part of either adds or moves is highlighted,
 /// we consider it to be a replacement rather than a move, and skip
 /// highlighting it.
+///
+// FIXME: Turn this condition into a test case
+/// If tuning this, please check that the `Inspired by` part of `git show
+/// 77c8f77 -- bin/riff` is highlighted as an upside down L.
 const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
+
+/// If it's only this few highlights, we'll just highligh anyway without
+/// checking the `MAX_HIGHLIGHT_PERCENTAGE`.
+///
+// FIXME: Turn this condition into a test case
+/// If tuning this, please check that the `Inspired by` part of `git show
+/// 77c8f77 -- bin/riff` is highlighted as an upside down L.
+const OK_HIGHLIGHT_COUNT: usize = 5;
 
 /// This constant is mostly made up. The Ruby version of riff had its
 /// limit set to 15_000, and this is more than that because blue.
@@ -146,10 +158,14 @@ impl<'a> Refiner<'a> {
             }
         }
 
-        if (100 * adds_highlight_count) / self.adds.len() > MAX_HIGHLIGHT_PERCENTAGE {
-            return self.simple_format();
-        }
-        if (100 * removes_highlight_count) / self.removes.len() > MAX_HIGHLIGHT_PERCENTAGE {
+        let highlight_count = adds_highlight_count + removes_highlight_count;
+        let token_count = tokenized_adds.len() + tokenized_removes.len();
+
+        // FIXME: Maybe for this check count how many runs of characters were
+        // highlighted rather than how many tokens? Heuristics are difficult...
+        if highlight_count <= OK_HIGHLIGHT_COUNT {
+            // Few enough highlights, Just do it (tm)
+        } else if (100 * highlight_count) / token_count > MAX_HIGHLIGHT_PERCENTAGE {
             return self.simple_format();
         }
 
