@@ -6,6 +6,7 @@ use isatty::{stdin_isatty, stdout_isatty};
 use refiner::Refiner;
 use regex::Regex;
 use std::env;
+use std::fs;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::process::exit;
 use std::process::{Command, Stdio};
@@ -259,5 +260,59 @@ mod tests {
         let mut output: Vec<u8> = Vec::new();
         highlight_diff(&mut input, &mut output);
         assert_eq!(std::str::from_utf8(&output).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_testdata_examples() {
+        // Example value: `/Users/johan/src/riff/target/debug/deps/riff-7a8916c06b0d3d6c`
+        let exe_path = std::env::current_exe().unwrap();
+
+        // Example value: `/Users/johan/src/riff`
+        let project_path = exe_path
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap();
+
+        // Example value: `/Users/johan/src/riff/testdata`
+        let testdata_path = &project_path.join("testdata");
+        assert!(testdata_path.is_dir());
+
+        // Iterate all files in there
+        for diff in fs::read_dir(testdata_path).unwrap() {
+            let diff = diff.unwrap();
+            let diff = diff.path();
+            let diff = diff.as_path();
+            if !diff.is_file() {
+                continue;
+            }
+
+            if diff.extension().unwrap() != "diff" {
+                continue;
+            }
+
+            println!("Evaluating example file <{}>...", diff.to_str().unwrap());
+
+            // Run highlighting on the file into a memory buffer
+            let mut actual_result: Vec<u8> = Vec::new();
+            highlight_diff(&mut fs::File::open(diff).unwrap(), &mut actual_result);
+            let actual_result = str::from_utf8(&actual_result).unwrap();
+
+            // Load the corresponding .riff-output file into a string
+            let basename = diff.file_stem().unwrap().to_str().unwrap();
+            let expected_path = format!(
+                "{}/{}.riff-output",
+                testdata_path.to_str().unwrap(),
+                basename
+            );
+            let expected_result = fs::read_to_string(expected_path).unwrap();
+
+            // FIXME: Assert that the highlighting output matches the contents of .riff-output
+            assert_eq!(actual_result, expected_result);
+        }
     }
 }

@@ -31,6 +31,10 @@ git config --global pager.show riff
 
 ... to make git show refined diffs by default.
 
+# Development
+
+If you put example input and output in the `testdata` directory, then `cargo test` will verify that they match.
+
 # TODO
 
 ## Before releasing the Rust version as the official one
