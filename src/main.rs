@@ -16,6 +16,7 @@ mod refiner;
 mod tokenizer;
 
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
+const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 
 lazy_static! {
     static ref STATIC_HEADERS: Vec<(Regex, &'static str)> = vec![
@@ -140,7 +141,12 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
 /// Returns `true` if the pager was found, `false` otherwise.
 fn try_pager(pager_name: &str) -> bool {
     let mut command = Command::new(pager_name);
-    command.stdin(Stdio::piped());
+
+    if env::var(PAGER_FORKBOMB_STOP).is_ok() {
+        // Try preventing fork bombing if $PAGER is set to riff
+        return false;
+    }
+    command.env(PAGER_FORKBOMB_STOP, "1");
 
     if !env::var("LESS").is_ok() {
         // Set by git when paging
@@ -151,6 +157,8 @@ fn try_pager(pager_name: &str) -> bool {
         // Set by git when paging
         command.env("LV", "-c");
     }
+
+    command.stdin(Stdio::piped());
 
     match command.spawn() {
         Ok(mut pager) => {

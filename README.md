@@ -39,7 +39,6 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 
 ## Before releasing the Rust version as the official one
 
-- Do some effort to prevent fork loops if people set `$PAGER` to `riff`
 - Set up CI
 - Figure out cross compiling to Linux and macOS ARM (look into `cross` which
   uses Docker for cross compiling)
@@ -145,3 +144,4 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 - Refine by word rather than by character
   - Test case `git show 2ac5b06`: Should highlight all of both `some` and
     `one or`.
+- Do some effort to prevent fork loops if people set `$PAGER` to `riff`
