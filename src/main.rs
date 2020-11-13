@@ -6,7 +6,6 @@ use isatty::{stdin_isatty, stdout_isatty};
 use refiner::Refiner;
 use regex::Regex;
 use std::env;
-use std::fs;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::process::exit;
 use std::process::{Command, Stdio};
@@ -208,6 +207,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;

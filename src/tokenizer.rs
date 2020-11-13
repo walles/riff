@@ -6,23 +6,24 @@
 /// assert_eq!(tokenize("Adam, Bea"), ["Adam", ", ", " ", "Bea"]);
 /// ```
 pub fn tokenize(input: &str) -> Vec<String> {
-    let mut first_alphanumeric_index = 0;
+    let mut first_alphanumeric_byte_index = 0;
     let mut last_was_alphanumeric = false;
     let mut result: Vec<String> = Vec::new();
-    for (index, character) in input.chars().enumerate() {
+    let mut byte_index = 0;
+    for character in input.chars() {
         let current_is_alphanumeric = character.is_alphanumeric();
         if current_is_alphanumeric {
             if last_was_alphanumeric {
                 // Do nothing, keep working on the current word.
             } else {
                 // Last was something else, we just started a new word.
-                first_alphanumeric_index = index;
+                first_alphanumeric_byte_index = byte_index;
             }
         } else {
             // Current is something else
             if last_was_alphanumeric {
                 // Push the word that just ended
-                result.push(input[first_alphanumeric_index..index].to_string());
+                result.push(input[first_alphanumeric_byte_index..byte_index].to_string());
             }
 
             // Push current char
@@ -30,11 +31,12 @@ pub fn tokenize(input: &str) -> Vec<String> {
         }
 
         last_was_alphanumeric = current_is_alphanumeric;
+        byte_index += character.len_utf8();
     }
 
     if last_was_alphanumeric {
         // Push the ending word
-        result.push(input[first_alphanumeric_index..].to_string());
+        result.push(input[first_alphanumeric_byte_index..].to_string());
     }
 
     return result;
