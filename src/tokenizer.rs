@@ -74,4 +74,9 @@ mod tests {
     fn test_others() {
         assert_eq!(tokenize("+!,"), ["+", "!", ","]);
     }
+
+    #[test]
+    fn test_non_breaking_space() {
+        assert_eq!(tokenize("\u{00a0}"), ["\u{00a0}"]);
+    }
 }
