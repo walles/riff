@@ -78,5 +78,6 @@ mod tests {
     #[test]
     fn test_non_breaking_space() {
         assert_eq!(tokenize("\u{00a0}"), ["\u{00a0}"]);
+        assert_eq!(tokenize("\u{00a0}s"), ["\u{00a0}", "s"]);
     }
 }
