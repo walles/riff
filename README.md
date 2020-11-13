@@ -39,6 +39,12 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 
 ## Before releasing the Rust version as the official one
 
+- Add support for `--version`
+- Print help and bail if stdin is a terminal
+- On exceptions, print the current version just like `--version`
+- `--help`: If we aren't in the `$PATH`, present a one-liner for how to fix
+- `--help`: If we aren't in git's `pager.diff`, `pager.show` and
+  `interactive.diffFilter`, present a one-liner for how to fix
 - Set up CI
 - Figure out cross compiling to Linux and macOS ARM (look into `cross` which
   uses Docker for cross compiling)
@@ -46,10 +52,6 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 - On exceptions, print the riff.rb @state
 - On exceptions, print the line riff.rb was processing
 - On exceptions, print a link to the issue tracker
-- Add support for `--help`
-- Print help and bail if stdin is a terminal
-- Add support for `--version`
-- On exceptions, print the current version just like `--version`
 - Put an upper bound on how large regions we should attempt to refine
 - Find out how the LCS algorithm scales and improve the heuristic for
   when not to call it.
@@ -145,3 +147,4 @@ If you put example input and output in the `testdata` directory, then `cargo tes
   - Test case `git show 2ac5b06`: Should highlight all of both `some` and
     `one or`.
 - Do some effort to prevent fork loops if people set `$PAGER` to `riff`
+- Add support for `--help`

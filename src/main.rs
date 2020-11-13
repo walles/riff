@@ -15,6 +15,17 @@ mod constants;
 mod refiner;
 mod tokenizer;
 
+const HELP_TEXT: &str = r#"
+Usage: diff ... | riff
+
+Colors diff and highlights what parts of changed lines have changed.
+
+Git integration:
+    git config --global pager.diff riff
+    git config --global pager.show riff
+    git config --global interactive.filter riff
+"#;
+
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 
@@ -139,6 +150,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
 /// Try paging using the named pager (`$PATH` will be searched).
 ///
 /// Returns `true` if the pager was found, `false` otherwise.
+#[must_use]
 fn try_pager(pager_name: &str) -> bool {
     let mut command = Command::new(pager_name);
 
@@ -177,7 +189,32 @@ fn try_pager(pager_name: &str) -> bool {
     }
 }
 
+/// If `option` is found in `argv`, all instances of `option` will be removed
+/// from `argv`.
+///
+/// Returns `true` if `option` was found and consumed, false otherwise.
+#[must_use]
+fn consume(option: &str, mut argv: Vec<String>) -> bool {
+    if !argv.contains(&option.to_string()) {
+        // Not found
+        return false;
+    }
+
+    argv.retain(|x| x != option);
+    return true;
+}
+
+fn print_help(output: &mut dyn io::Write) {
+    output.write(HELP_TEXT.trim().as_bytes()).unwrap();
+}
+
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    if consume("--help", args) {
+        print_help(&mut io::stdout());
+        return;
+    }
+
     if stdin_isatty() {
         eprintln!("Error: Expected input from a pipe");
         exit(1);
