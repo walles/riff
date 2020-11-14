@@ -14,6 +14,7 @@ Or if you do...
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
+git config --global interactive.filter riff
 ```
 
 ... then all future `git diff`s and `git show`s will be refined.
@@ -27,6 +28,7 @@ Optionally followed by...
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
+git config --global interactive.filter riff
 ```
 
 ... to make git show refined diffs by default.
@@ -45,6 +47,7 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 - `--help`: If we aren't in the `$PATH`, present a one-liner for how to fix
 - `--help`: If we aren't in git's `pager.diff`, `pager.show` and
   `interactive.diffFilter`, present a one-liner for how to fix
+- `--help`: Describe how to configure `riff` as your `$PAGER`
 - Set up CI
 - Figure out cross compiling to Linux and macOS ARM (look into `cross` which
   uses Docker for cross compiling)

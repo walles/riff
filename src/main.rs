@@ -216,7 +216,9 @@ fn main() {
     }
 
     if stdin_isatty() {
-        eprintln!("Error: Expected input from a pipe");
+        eprintln!("ERROR: Expected input from a pipe");
+        eprintln!("");
+        print_help(&mut io::stderr());
         exit(1);
     }
 
