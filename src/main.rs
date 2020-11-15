@@ -57,12 +57,12 @@ const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 const GIT_VERSION: &str = git_version!();
 
 lazy_static! {
-    static ref STATIC_HEADERS: Vec<(Regex, &'static str)> = vec![
-        (Regex::new("^diff ").unwrap(), BOLD),
-        (Regex::new("^index ").unwrap(), BOLD),
-        (Regex::new("^--- ").unwrap(), BOLD),
-        (Regex::new("^\\+\\+\\+ ").unwrap(), BOLD),
-        (Regex::new("^@@ ").unwrap(), HUNK_HEADER),
+    static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> = vec![
+        ("diff ", BOLD),
+        ("index ", BOLD),
+        ("--- ", BOLD),
+        ("+++ ", BOLD),
+        ("@@ ", HUNK_HEADER),
     ];
     static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
 }
@@ -75,10 +75,10 @@ enum LastLineKind {
 
 #[must_use]
 fn get_fixed_highlight(line: &str) -> &str {
-    for static_header in STATIC_HEADERS.iter() {
-        let re = &static_header.0;
-        if re.is_match(line) {
-            return static_header.1;
+    for static_header_prefix in STATIC_HEADER_PREFIXES.iter() {
+        let prefix = static_header_prefix.0;
+        if line.starts_with(prefix) {
+            return static_header_prefix.1;
         }
     }
 
