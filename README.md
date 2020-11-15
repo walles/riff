@@ -41,10 +41,9 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 
 ## Before releasing the Rust version as the official one
 
-- Make a CI script and document its existence
-- Set up CI calling the CI script
-- In the CI script, add a test case verifying that our exception handler
-  prints backtraces (should fail when stripping the release binary)
+- Document `ci.sh`'s existence
+- In `ci.sh`, add a test case verifying that our exception handler prints
+  backtraces (should fail when stripping the release binary)
 - Document install instructions
 - Figure out cross compiling to Linux and macOS ARM (look into `cross` which
   uses Docker for cross compiling)
@@ -152,3 +151,5 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 - Find out how the LCS algorithm scales and improve the heuristic for
   when not to call it.
 - Tune the upper bound on how large regions we should attempt to refine
+- Make a CI script
+- Set up CI calling the CI script
