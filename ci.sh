@@ -6,6 +6,7 @@
 
 set -ex
 
+# Settings are at the top of main.rs
 cargo clippy
 
 # Copied from here:

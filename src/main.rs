@@ -1,3 +1,8 @@
+// Clippy settings, full list here:
+// <https://rust-lang.github.io/rust-clippy/master/index.html>
+#![deny(clippy::clippy::implicit_return)]
+#![allow(clippy::clippy::clippy::needless_return)]
+
 #[macro_use]
 extern crate lazy_static;
 
