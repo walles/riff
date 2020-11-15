@@ -20,7 +20,7 @@ pub struct Refiner<'a> {
 }
 
 impl<'a> Refiner<'a> {
-    pub fn create(adds: &'a String, removes: &'a String) -> Self {
+    pub fn create(adds: &'a str, removes: &'a str) -> Self {
         return Refiner { adds, removes };
     }
 
@@ -34,7 +34,7 @@ impl<'a> Refiner<'a> {
         for remove_line in self.removes.lines() {
             lines.push(format!("{}-{}{}", REMOVE, remove_line, NORMAL));
         }
-        if (!self.removes.is_empty()) && self.removes.chars().last().unwrap() != '\n' {
+        if (!self.removes.is_empty()) && !self.removes.ends_with('\n') {
             lines.push(format!(
                 "{}{}{}",
                 NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
@@ -44,7 +44,7 @@ impl<'a> Refiner<'a> {
         for add_line in self.adds.lines() {
             lines.push(format!("{}+{}{}", ADD, add_line, NORMAL))
         }
-        if (!self.adds.is_empty()) && self.adds.chars().last().unwrap() != '\n' {
+        if (!self.adds.is_empty()) && !self.adds.ends_with('\n') {
             lines.push(format!(
                 "{}{}{}",
                 NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
@@ -110,7 +110,7 @@ impl<'a> Refiner<'a> {
                                 }
                                 adds_is_inverse = true;
 
-                                if elem == &"\n" {
+                                if elem == "\n" {
                                     // Make sure the highlighted linefeed is visible
                                     highlighted_adds.push('⏎');
 
@@ -126,7 +126,7 @@ impl<'a> Refiner<'a> {
                                 }
                                 removes_is_inverse = true;
 
-                                if elem == &"\n" {
+                                if elem == "\n" {
                                     // Make sure the highlighted linefeed is visible
                                     highlighted_removes.push('⏎');
 
@@ -157,7 +157,7 @@ impl<'a> Refiner<'a> {
         for highlighted_remove in highlighted_removes.lines() {
             lines.push(format!("{}-{}{}", REMOVE, highlighted_remove, NORMAL));
         }
-        if (!self.removes.is_empty()) && self.removes.chars().last().unwrap() != '\n' {
+        if (!self.removes.is_empty()) && !self.removes.ends_with('\n') {
             lines.push(format!(
                 "{}{}{}",
                 NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
@@ -167,7 +167,7 @@ impl<'a> Refiner<'a> {
         for highlighted_add in highlighted_adds.lines() {
             lines.push(format!("{}+{}{}", ADD, highlighted_add, NORMAL));
         }
-        if (!self.adds.is_empty()) && self.adds.chars().last().unwrap() != '\n' {
+        if (!self.adds.is_empty()) && !self.adds.ends_with('\n') {
             lines.push(format!(
                 "{}{}{}",
                 NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
