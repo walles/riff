@@ -11,5 +11,5 @@ cargo clippy
 
 # Copied from here:
 # <https://docs.travis-ci.com/user/languages/rust/#default-build-script>
-cargo build --verbose --workspace
+cargo build --workspace
 cargo test --verbose --workspace

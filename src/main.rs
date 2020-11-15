@@ -86,7 +86,7 @@ fn get_fixed_highlight(line: &str) -> &str {
 }
 
 fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
-    stream.write(text.as_bytes()).unwrap();
+    stream.write_all(text.as_bytes()).unwrap();
 }
 
 fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
@@ -232,9 +232,9 @@ fn consume(option: &str, argv: &mut Vec<String>) -> bool {
 }
 
 fn print_help(output: &mut dyn io::Write) {
-    output.write(HELP_TEXT.trim().as_bytes()).unwrap();
-    output.write(b"\n").unwrap();
-    output.write(b"\n").unwrap();
+    output.write_all(HELP_TEXT.trim().as_bytes()).unwrap();
+    output.write_all(b"\n").unwrap();
+    output.write_all(b"\n").unwrap();
 
     let self_path = env::args().into_iter().next().unwrap();
     let self_path = fs::canonicalize(self_path).unwrap();
@@ -242,15 +242,17 @@ fn print_help(output: &mut dyn io::Write) {
 
     // FIXME: Do this only if we aren't already in the $PATH
     output
-        .write("Installing riff in the $PATH:\n".as_bytes())
+        .write_all("Installing riff in the $PATH:\n".as_bytes())
         .unwrap();
     output
-        .write(&format!("  * sudo cp {} /usr/local/bin\n", self_path).as_bytes())
+        .write_all(&format!("  * sudo cp {} /usr/local/bin\n", self_path).as_bytes())
         .unwrap();
-    output.write(b"\n").unwrap();
+    output.write_all(b"\n").unwrap();
 
-    output.write(HELP_TEXT_FOOTER.trim().as_bytes()).unwrap();
-    output.write(b"\n").unwrap();
+    output
+        .write_all(HELP_TEXT_FOOTER.trim().as_bytes())
+        .unwrap();
+    output.write_all(b"\n").unwrap();
 }
 
 fn panic_handler(panic_info: &panic::PanicInfo) {
@@ -287,7 +289,7 @@ fn main() {
 
     if consume("--version", &mut args) {
         println!("riff {}", GIT_VERSION);
-        println!("");
+        println!();
         println!("Source code available at <https://github.com/walles/riff>.");
         return;
     }
