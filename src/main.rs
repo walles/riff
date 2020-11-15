@@ -123,12 +123,12 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         }
 
         // Collect adds / removes
-        if !line.is_empty() && line.chars().next().unwrap() == '+' {
+        if !line.is_empty() && line.starts_with('+') {
             adds.push_str(&line[1..]);
             adds.push('\n');
             last_line_kind = LastLineKind::Add;
             continue;
-        } else if !line.is_empty() && line.chars().next().unwrap() == '-' {
+        } else if !line.is_empty() && line.starts_with('-') {
             removes.push_str(&line[1..]);
             removes.push('\n');
             last_line_kind = LastLineKind::Remove;
@@ -187,12 +187,12 @@ fn try_pager(pager_name: &str) -> bool {
     }
     command.env(PAGER_FORKBOMB_STOP, "1");
 
-    if !env::var("LESS").is_ok() {
+    if env::var("LESS").is_err() {
         // Set by git when paging
         command.env("LESS", "FRX");
     }
 
-    if !env::var("LV").is_ok() {
+    if env::var("LV").is_err() {
         // Set by git when paging
         command.env("LV", "-c");
     }
@@ -242,7 +242,7 @@ fn print_help(output: &mut dyn io::Write) {
 
     // FIXME: Do this only if we aren't already in the $PATH
     output
-        .write_all("Installing riff in the $PATH:\n".as_bytes())
+        .write_all(b"Installing riff in the $PATH:\n")
         .unwrap();
     output
         .write_all(&format!("  * sudo cp {} /usr/local/bin\n", self_path).as_bytes())
