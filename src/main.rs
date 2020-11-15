@@ -307,9 +307,7 @@ fn main() {
         return;
     }
 
-    let pager_env_var = env::var("PAGER");
-    if pager_env_var.is_ok() {
-        let pager_value = pager_env_var.unwrap();
+    if let Ok(pager_value) = env::var("PAGER") {
         if try_pager(&pager_value) {
             return;
         }
