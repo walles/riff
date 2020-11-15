@@ -13,3 +13,6 @@ cargo clippy
 # <https://docs.travis-ci.com/user/languages/rust/#default-build-script>
 cargo build --workspace
 cargo test --workspace
+
+# If you have an editor that formats on save this will never be a problem
+cargo fmt -- --check

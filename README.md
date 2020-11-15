@@ -37,11 +37,12 @@ git config --global interactive.filter riff
 
 If you put example input and output in the `testdata` directory, then `cargo test` will verify that they match.
 
+Invoke `ci.sh` to run the same thing as CI.
+
 # TODO
 
 ## Before releasing the Rust version as the official one
 
-- Document `ci.sh`'s existence
 - In `ci.sh`, add a test case verifying that our exception handler prints
   backtraces (should fail when stripping the release binary)
 - Document install instructions
@@ -153,3 +154,4 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 - Tune the upper bound on how large regions we should attempt to refine
 - Make a CI script
 - Set up CI calling the CI script
+- Document `ci.sh`'s existence
