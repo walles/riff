@@ -28,6 +28,10 @@ Git integration:
     git config --global pager.diff riff
     git config --global pager.show riff
     git config --global interactive.filter riff
+
+Options:
+    --help:    Print this text
+    --version: Print version number
 "#;
 
 const HELP_TEXT_FOOTER: &str = r#"
@@ -269,7 +273,7 @@ fn main() {
     }));
 
     let mut args: Vec<String> = env::args().collect();
-    if consume("--help", &mut args) {
+    if consume("--help", &mut args) || consume("-h", &mut args) {
         print_help(&mut io::stdout());
         return;
     }
