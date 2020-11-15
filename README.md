@@ -41,10 +41,6 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 
 ## Before releasing the Rust version as the official one
 
-- `--help`: If we aren't in the `$PATH`, present a one-liner for how to fix
-  - Should work for `bash`, `fish` and `zsh`
-- `--help`: If `$PAGER` isn't set to `riff`, present a one-liner for how to fix
-  - Should work for `bash`, `fish` and `zsh`
 - Find out how the LCS algorithm scales and improve the heuristic for
   when not to call it.
 - Tune the upper bound on how large regions we should attempt to refine
@@ -53,13 +49,14 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 - In the CI script, add a test case verifying that our exception handler
   prints backtraces (should fail when stripping the release binary)
 - Document install instructions
-- Add a `--install` command line option
 - Figure out cross compiling to Linux and macOS ARM (look into `cross` which
   uses Docker for cross compiling)
 - Make a release script and document its existence
 
 ## Misc
 
+- `--help`: Only print installing-into-`$PATH` help if we aren't already being
+  executed from inside of the `$PATH`
 - Make a public release
 - Add test case verifying that the `Inspired by` part of
   `git show 77c8f77 -- bin/riff` is highlighted as an upside down L.

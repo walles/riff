@@ -8,6 +8,7 @@ use isatty::{stdin_isatty, stdout_isatty};
 use refiner::Refiner;
 use regex::Regex;
 use std::env;
+use std::fs;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::panic;
 use std::process::exit;
@@ -27,7 +28,9 @@ Git integration:
     git config --global pager.diff riff
     git config --global pager.show riff
     git config --global interactive.filter riff
+"#;
 
+const HELP_TEXT_FOOTER: &str = r#"
 Report issues at <https://github.com/walles/riff>.
 "#;
 
@@ -219,6 +222,23 @@ fn consume(option: &str, argv: &mut Vec<String>) -> bool {
 
 fn print_help(output: &mut dyn io::Write) {
     output.write(HELP_TEXT.trim().as_bytes()).unwrap();
+    output.write(b"\n").unwrap();
+    output.write(b"\n").unwrap();
+
+    let self_path = env::args().into_iter().next().unwrap();
+    let self_path = fs::canonicalize(self_path).unwrap();
+    let self_path = self_path.as_path().to_str().unwrap();
+
+    // FIXME: Do this only if we aren't already in the $PATH
+    output
+        .write("Installing riff in the $PATH:\n".as_bytes())
+        .unwrap();
+    output
+        .write(&format!("  * sudo cp {} /usr/local/bin\n", self_path).as_bytes())
+        .unwrap();
+    output.write(b"\n").unwrap();
+
+    output.write(HELP_TEXT_FOOTER.trim().as_bytes()).unwrap();
     output.write(b"\n").unwrap();
 }
 
