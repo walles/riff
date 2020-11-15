@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
 
+use backtrace::Backtrace;
 use constants::*;
 use git_version::git_version;
 use isatty::{stdin_isatty, stdout_isatty};
@@ -8,6 +9,7 @@ use refiner::Refiner;
 use regex::Regex;
 use std::env;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
+use std::panic;
 use std::process::exit;
 use std::process::{Command, Stdio};
 use std::str;
@@ -27,6 +29,12 @@ Git integration:
     git config --global interactive.filter riff
 
 Report issues at <https://github.com/walles/riff>.
+"#;
+
+const CRASH_FOOTER: &str = r#"
+Please copy all of the above up to the --- RIFF CRASHED --- marker and report it at one of:
+* <https://github.com/walles/riff/issues> (preferred)
+* <johan.walles@gmail.com>
 "#;
 
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
@@ -214,7 +222,32 @@ fn print_help(output: &mut dyn io::Write) {
     output.write(b"\n").unwrap();
 }
 
+fn panic_handler(panic_info: &panic::PanicInfo) {
+    let stderr: &mut dyn Write = &mut io::stderr();
+    let stderr = &mut BufWriter::new(stderr);
+    println(stderr, "\n\n------------ RIFF CRASHED -------------------");
+
+    // Panic message
+    if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+        println(stderr, &format!("Panic message: <{:?}>", s));
+        println(stderr, "");
+    }
+
+    // Backtrace
+    // FIXME: Ditch the Backtrace-internal frames from this backtrace
+    // FIXME: Ditch the panic internal frames at the end of the backtrace
+    println(stderr, &format!("{:?}", Backtrace::new()));
+
+    println(stderr, &format!("Riff version: {}", GIT_VERSION));
+
+    println(stderr, CRASH_FOOTER);
+}
+
 fn main() {
+    panic::set_hook(Box::new(|panic_info: &panic::PanicInfo| {
+        panic_handler(panic_info);
+    }));
+
     let mut args: Vec<String> = env::args().collect();
     if consume("--help", &mut args) {
         print_help(&mut io::stdout());

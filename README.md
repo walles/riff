@@ -41,28 +41,26 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 
 ## Before releasing the Rust version as the official one
 
-- On exceptions, print the current version just like `--version`
 - `--help`: If we aren't in the `$PATH`, present a one-liner for how to fix
   - Should work for `bash`, `fish` and `zsh`
-- `--help`: If we aren't in git's `pager.diff`, `pager.show` and
-  `interactive.diffFilter`, present a one-liner for how to fix
-- `--help`: Describe how to configure `riff` as your `$PAGER`
-- Add test case verifying that our exception handler prints backtraces
-- On exceptions, print the riff.rb @state
-- On exceptions, print the line riff.rb was processing
-- On exceptions, print a link to the issue tracker
-- Set up CI
-- Figure out cross compiling to Linux and macOS ARM (look into `cross` which
-  uses Docker for cross compiling)
-- Document release instructions
+- `--help`: If `$PAGER` isn't set to `riff`, present a one-liner for how to fix
+  - Should work for `bash`, `fish` and `zsh`
 - Find out how the LCS algorithm scales and improve the heuristic for
   when not to call it.
 - Tune the upper bound on how large regions we should attempt to refine
+- Make a CI script and document its existence
+- Set up CI calling the CI script
+- In the CI script, add a test case verifying that our exception handler
+  prints backtraces (should fail when stripping the release binary)
+- Document install instructions
+- Add a `--install` command line option
+- Figure out cross compiling to Linux and macOS ARM (look into `cross` which
+  uses Docker for cross compiling)
+- Make a release script and document its existence
 
 ## Misc
 
 - Make a public release
-- Add a `--install` command line option
 - Add test case verifying that the `Inspired by` part of
   `git show 77c8f77 -- bin/riff` is highlighted as an upside down L.
 - Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
@@ -153,3 +151,5 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 - Add support for `--help`
 - Add support for `--version`
 - Print help and bail if stdin is a terminal
+- On exceptions, print the current version just like `--version`
+- On exceptions, print a link to the issue tracker
