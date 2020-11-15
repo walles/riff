@@ -25,6 +25,8 @@ Git integration:
     git config --global pager.diff riff
     git config --global pager.show riff
     git config --global interactive.filter riff
+
+Report issues at <https://github.com/walles/riff>.
 "#;
 
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
@@ -209,6 +211,7 @@ fn consume(option: &str, argv: &mut Vec<String>) -> bool {
 
 fn print_help(output: &mut dyn io::Write) {
     output.write(HELP_TEXT.trim().as_bytes()).unwrap();
+    output.write(b"\n").unwrap();
 }
 
 fn main() {
@@ -220,6 +223,8 @@ fn main() {
 
     if consume("--version", &mut args) {
         println!("riff {}", GIT_VERSION);
+        println!("");
+        println!("Source code available at <https://github.com/walles/riff>.");
         return;
     }
 
