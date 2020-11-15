@@ -41,9 +41,6 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 
 ## Before releasing the Rust version as the official one
 
-- Find out how the LCS algorithm scales and improve the heuristic for
-  when not to call it.
-- Tune the upper bound on how large regions we should attempt to refine
 - Make a CI script and document its existence
 - Set up CI calling the CI script
 - In the CI script, add a test case verifying that our exception handler
@@ -152,3 +149,6 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 - On exceptions, print a link to the issue tracker
 - Add test case verifying that the `Inspired by` part of
   `git show 77c8f77 -- bin/riff` is highlighted as an upside down L.
+- Find out how the LCS algorithm scales and improve the heuristic for
+  when not to call it.
+- Tune the upper bound on how large regions we should attempt to refine

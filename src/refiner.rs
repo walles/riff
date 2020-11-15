@@ -14,10 +14,6 @@ const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 /// checking the `MAX_HIGHLIGHT_PERCENTAGE`.
 const OK_HIGHLIGHT_COUNT: usize = 5;
 
-/// This constant is mostly made up. The Ruby version of riff had its
-/// limit set to 15_000, and this is more than that because blue.
-const MAX_HIGHLIGHT_LENGTH: usize = 25_000;
-
 pub struct Refiner<'a> {
     adds: &'a str,
     removes: &'a str,
@@ -66,10 +62,6 @@ impl<'a> Refiner<'a> {
         }
 
         if self.removes.is_empty() {
-            return self.simple_format();
-        }
-
-        if self.adds.len() + self.removes.len() > MAX_HIGHLIGHT_LENGTH {
             return self.simple_format();
         }
 
