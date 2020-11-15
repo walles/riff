@@ -41,8 +41,6 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 
 ## Before releasing the Rust version as the official one
 
-- Add support for `--version`
-- Print help and bail if stdin is a terminal
 - On exceptions, print the current version just like `--version`
 - `--help`: If we aren't in the `$PATH`, present a one-liner for how to fix
 - `--help`: If we aren't in git's `pager.diff`, `pager.show` and
@@ -151,3 +149,5 @@ If you put example input and output in the `testdata` directory, then `cargo tes
     `one or`.
 - Do some effort to prevent fork loops if people set `$PAGER` to `riff`
 - Add support for `--help`
+- Add support for `--version`
+- Print help and bail if stdin is a terminal

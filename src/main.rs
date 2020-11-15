@@ -2,6 +2,7 @@
 extern crate lazy_static;
 
 use constants::*;
+use git_version::git_version;
 use isatty::{stdin_isatty, stdout_isatty};
 use refiner::Refiner;
 use regex::Regex;
@@ -28,6 +29,8 @@ Git integration:
 
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
+
+const GIT_VERSION: &str = git_version!();
 
 lazy_static! {
     static ref STATIC_HEADERS: Vec<(Regex, &'static str)> = vec![
@@ -194,7 +197,7 @@ fn try_pager(pager_name: &str) -> bool {
 ///
 /// Returns `true` if `option` was found and consumed, false otherwise.
 #[must_use]
-fn consume(option: &str, mut argv: Vec<String>) -> bool {
+fn consume(option: &str, argv: &mut Vec<String>) -> bool {
     if !argv.contains(&option.to_string()) {
         // Not found
         return false;
@@ -209,9 +212,14 @@ fn print_help(output: &mut dyn io::Write) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if consume("--help", args) {
+    let mut args: Vec<String> = env::args().collect();
+    if consume("--help", &mut args) {
         print_help(&mut io::stdout());
+        return;
+    }
+
+    if consume("--version", &mut args) {
+        println!("riff {}", GIT_VERSION);
         return;
     }
 

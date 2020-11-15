@@ -12,6 +12,7 @@ diffus = "0.9.1"
 regex = "1"
 lazy_static = "1.4.0"
 isatty = "0.1.9"
+git-version = "0.3.4"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
