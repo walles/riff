@@ -1,0 +1,44 @@
+commit 77c8f7736b168e44a0a30064f0209dfb1e278295
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Wed May 6 21:52:51 2015 +0200
+
+    On exceptions, print a link to the issue tracker
+
+diff --git a/bin/riff b/bin/riff
+index 17ded03..92a771a 100755
+--- a/bin/riff
++++ b/bin/riff
+@@ -1,15 +1,23 @@
+ #!/usr/bin/env ruby
+
+-# Inspired by http://timelessrepo.com/making-ruby-gems
+ begin
+-  require 'riff'
+-rescue LoadError
+-  $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
+-  require 'riff'
+-end
+-require 'pager'
++  # Inspired by http://timelessrepo.com/making-ruby-gems
++  begin
++    require 'riff'
++  rescue LoadError
++    $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
++    require 'riff'
++  end
++  require 'pager'
+
+-include Pager
++  include Pager
+
+-refined = Riff.new().do_stream(STDIN)
+-page(refined)
++  refined = Riff.new().do_stream(STDIN)
++  page(refined)
++rescue => e
++  STDERR.puts
++  STDERR.puts e.to_s
++  STDERR.puts e.backtrace.join("\n\t")
++  STDERR.puts
++  STDERR.puts 'Please report this to https://github.com/walles/riff/issues'
++end

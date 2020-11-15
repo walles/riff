@@ -428,7 +428,7 @@ mod tests {
             );
             let expected_result = fs::read_to_string(expected_path).unwrap();
 
-            // FIXME: Assert that the highlighting output matches the contents of .riff-output
+            // Assert that the highlighting output matches the contents of .riff-output
             assert_eq!(actual_result, expected_result);
         }
     }

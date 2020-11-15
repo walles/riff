@@ -55,11 +55,11 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 
 ## Misc
 
+- Make a public release
+- Bound how-much-to-highlight restriction by number of characters highlighted
+  rather than by number of tokens highlighted
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
   executed from inside of the `$PATH`
-- Make a public release
-- Add test case verifying that the `Inspired by` part of
-  `git show 77c8f77 -- bin/riff` is highlighted as an upside down L.
 - Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
   How should we visualize the reformatting of the No-newline-at-eof code?
 - Add a trailing whitespace analysis pass to the Refiner
@@ -150,3 +150,5 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 - Print help and bail if stdin is a terminal
 - On exceptions, print the current version just like `--version`
 - On exceptions, print a link to the issue tracker
+- Add test case verifying that the `Inspired by` part of
+  `git show 77c8f77 -- bin/riff` is highlighted as an upside down L.
