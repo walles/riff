@@ -93,10 +93,12 @@ Click your new release.
 Click the "Edit tag" button.
 
 Attach your "riff" binaries that was just built to the release:
-* riff-VERSION-PLATFORM
-
-After uploading that file, press "Publish release".
 
 EOM
+ls -lh riff-*
+
+echo
+echo 'After uploading that file, press "Publish release".'
+echo
 
 read -r -p "Press ENTER when done: "

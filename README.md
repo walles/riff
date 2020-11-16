@@ -19,19 +19,23 @@ git config --global interactive.filter riff
 
 ... then all future `git diff`s and `git show`s will be refined.
 
-# FIXME: Installation
+# Installation
 
-FIXME: How to place the binary in the PATH?
+1. Go [here](https://github.com/walles/riff/releases/latest) and download the
+   correct binary for your platform
 
-Optionally followed by...
+   - If no binary exists for your platform, please [report
+     it](https://github.com/walles/riff/issues)
+
+1. `chmod a+x riff-*`
+1. `mv riff-* /usr/local/bin/riff`
+1. Optionally followed by this to have riff highlight git output by default:
 
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
 git config --global interactive.filter riff
 ```
-
-... to make git show refined diffs by default.
 
 # Development
 
@@ -41,14 +45,9 @@ Invoke `ci.sh` to run the same thing as CI.
 
 ## Making a new release
 
-Just invoke `release.sh` and follow instructions.
+Just invoke `./release.sh` and follow instructions.
 
 # TODO
-
-## Before releasing the Rust version as the official one
-
-- Verify that the Linux binary works
-- Document install instructions
 
 ## Misc
 
@@ -165,3 +164,5 @@ Just invoke `release.sh` and follow instructions.
   uses Docker for cross compiling)
 - Make a release script
 - Document `release.sh`'s existence
+- Verify that the Linux binary works
+- Document install instructions
