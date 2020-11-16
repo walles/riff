@@ -45,6 +45,7 @@ Invoke `ci.sh` to run the same thing as CI.
 
 - In `ci.sh`, add a test case verifying that our exception handler prints
   backtraces (should fail when stripping the release binary)
+- Put argv contents in crash report
 - Document install instructions
 - Figure out cross compiling to Linux and macOS ARM (look into `cross` which
   uses Docker for cross compiling)
@@ -53,6 +54,7 @@ Invoke `ci.sh` to run the same thing as CI.
 ## Misc
 
 - Make a public release
+- Try to get line numbers into release build crash reports
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
