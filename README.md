@@ -43,20 +43,20 @@ Invoke `ci.sh` to run the same thing as CI.
 
 ## Before releasing the Rust version as the official one
 
-- In `ci.sh`, add a test case verifying that our exception handler prints
-  backtraces (should fail when stripping the release binary)
-- Put argv contents in crash report
+- Make a release script
+- Document `release.sh`'s existence
 - Document install instructions
-- Figure out cross compiling to Linux and macOS ARM (look into `cross` which
-  uses Docker for cross compiling)
-- Make a release script and document its existence
 
 ## Misc
 
 - Make a public release
+- Remedy `release.sh` FIXMEs
+- Put argv contents in crash report
 - Try to get line numbers into release build crash reports
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
+- In `ci.sh`, add a test case verifying that our exception handler prints
+  backtraces (should fail when stripping the release binary)
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
   executed from inside of the `$PATH`
 - Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
@@ -157,3 +157,5 @@ Invoke `ci.sh` to run the same thing as CI.
 - Make a CI script
 - Set up CI calling the CI script
 - Document `ci.sh`'s existence
+- Figure out cross compiling to Linux and macOS ARM (look into `cross` which
+  uses Docker for cross compiling)
