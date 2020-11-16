@@ -80,7 +80,7 @@ cargo build --release --target=x86_64-unknown-linux-musl
 cp "target/x86_64-unknown-linux-musl/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-unknown-linux-musl"
 
 # Mark new release on Github
-# FIXME: git push --tags
+git push --tags
 
 cat << EOM
 
