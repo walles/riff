@@ -39,17 +39,21 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 
 Invoke `ci.sh` to run the same thing as CI.
 
+## Making a new release
+
+Just invoke `release.sh` and follow instructions.
+
 # TODO
 
 ## Before releasing the Rust version as the official one
 
-- Make a release script
-- Document `release.sh`'s existence
+- Verify that the Linux binary works
 - Document install instructions
 
 ## Misc
 
 - Make a public release
+- Make the Linux binary smaller
 - Remedy `release.sh` FIXMEs
 - Put argv contents in crash report
 - Try to get line numbers into release build crash reports
@@ -159,3 +163,5 @@ Invoke `ci.sh` to run the same thing as CI.
 - Document `ci.sh`'s existence
 - Figure out cross compiling to Linux and macOS ARM (look into `cross` which
   uses Docker for cross compiling)
+- Make a release script
+- Document `release.sh`'s existence
