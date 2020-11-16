@@ -15,7 +15,6 @@ use isatty::{stdin_isatty, stdout_isatty};
 use refiner::Refiner;
 use regex::Regex;
 use std::env;
-use std::fs;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::panic;
 use std::process::exit;
@@ -236,16 +235,11 @@ fn print_help(output: &mut dyn io::Write) {
     output.write_all(b"\n").unwrap();
     output.write_all(b"\n").unwrap();
 
-    let self_path = env::args().into_iter().next().unwrap();
-    let self_path = fs::canonicalize(self_path).unwrap();
-    let self_path = self_path.as_path().to_str().unwrap();
-
-    // FIXME: Do this only if we aren't already in the $PATH
     output
         .write_all(b"Installing riff in the $PATH:\n")
         .unwrap();
     output
-        .write_all(&format!("  * sudo cp {} /usr/local/bin\n", self_path).as_bytes())
+        .write_all(b"    sudo cp riff /usr/local/bin\n")
         .unwrap();
     output.write_all(b"\n").unwrap();
 
