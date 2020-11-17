@@ -1,7 +1,14 @@
 # Riff, the Refining Diff
 
-Riff is a wrapper around diff that highlights not only which lines
-have changed, but also which parts of the lines that have changed.
+Riff is a wrapper around `diff` that highlights which parts of lines have changed.
+
+![Screenshot of riff in action](screenshot.png 'git show 036259f5f9')
+
+Much like `git`, Riff sends its output to a pager, trying these in order:
+
+1. Whatever is specified in the `$PAGER` environment variable
+1. [moar](https://github.com/walles/moar) because it is nice
+1. `less` because it is ubiquitous
 
 # Usage
 
@@ -51,9 +58,7 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
-- Make a public release
 - Make the Linux binary smaller
-- Remedy `release.sh` FIXMEs
 - Put argv contents in crash report
 - Try to get line numbers into release build crash reports
 - Bound how-much-to-highlight restriction by number of characters highlighted
@@ -166,3 +171,5 @@ Just invoke `./release.sh` and follow instructions.
 - Document `release.sh`'s existence
 - Verify that the Linux binary works
 - Document install instructions
+- Make a public release
+- Remedy `release.sh` FIXMEs

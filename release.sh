@@ -5,13 +5,13 @@
 set -eu -o pipefail
 
 if uname -a | grep -v Darwin ; then
-  >&2 echo "ERROR: This script requires a macOS machine"
+  >&2 echo "ERROR: This script must be run on macOS"
   exit 1
 fi
 
 # Verify that we're on the right branch
-if [ "$(git rev-parse --abbrev-ref HEAD)" != "walles/rust" ] ; then
-  echo "ERROR: Releases can be done from the 'walles/rust' branch only"
+if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ] ; then
+  echo "ERROR: Releases can be done from the 'master' branch only"
   exit 1
 fi
 
@@ -23,11 +23,34 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
+# Ask user to consider updating the screenshot
+cat << EOM
+Please consider updating the screenshot in README.md before releasing.
+
+Scale your window to 92x28 and do:
+  git show 036259f5f9
+
+Answer yes at this prompt to verify that the Output section is complete.
+EOM
+
+read -r -p "Screenshot up to date: " MAYBE_YES
+if [ "$MAYBE_YES" != "yes" ] ; then
+  echo
+  echo "Please update the screenshot, then try this script again."
+  exit 0
+fi
+
 # Ensure we don't release broken things
 ./ci.sh
 
-# FIXME: List changes since last release
+# List changes since last release
+echo
+echo "List of changes since last release:"
+git log --color --format="format:%Cgreen%s%Creset (%ad)%n%b" --first-parent "$(git describe --abbrev=0)..HEAD" | cat
 
+echo
+echo "=="
+echo "Last version number was $(git describe --abbrev=0), enter new version number."
 read -r -p "New version number: " NEW_VERSION_NUMBER
 
 # Validate new version number
@@ -65,9 +88,7 @@ if ! ./target/x86_64-apple-darwin/release/riff --version | grep -E " $NEW_VERSIO
     ./target/x86_64-apple-darwin/release/riff --version
     exit 1
 fi
-cp "target/x86_64-apple-darwin/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-apple-darwin"
-
-# FIXME: Build a macOS ARM binary
+cp "target/x86_64-apple-darwin/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-macos"
 
 # Build a Linux-x64 binary on macOS
 #
@@ -77,7 +98,7 @@ cp "target/x86_64-apple-darwin/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-ap
 # * rustup target add x86_64-unknown-linux-musl
 # * brew install FiloSottile/musl-cross/musl-cross
 cargo build --release --target=x86_64-unknown-linux-musl
-cp "target/x86_64-unknown-linux-musl/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-unknown-linux-musl"
+cp "target/x86_64-unknown-linux-musl/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-linux"
 
 # Mark new release on Github
 git push --tags
@@ -95,7 +116,7 @@ Click the "Edit tag" button.
 Attach your "riff" binaries that was just built to the release:
 
 EOM
-ls -lh riff-*
+ls -lh riff-"$VERSION"-*
 
 echo
 echo 'After uploading that file, press "Publish release".'
