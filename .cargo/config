@@ -1,2 +1,8 @@
+# This file is here to be able to cross compile from macOS to Linux.
+#
+# See:
+# * https://timryan.org/2018/07/27/cross-compiling-linux-binaries-from-macos.html
+# * Search for "linux" in release.sh
+
 [target.x86_64-unknown-linux-musl]
 linker = "x86_64-linux-musl-gcc"

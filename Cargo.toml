@@ -1,3 +1,5 @@
+# See also .cargo/config
+
 [package]
 name = "riff"
 version = "0.1.0"
