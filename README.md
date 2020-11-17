@@ -2,7 +2,7 @@
 
 Riff is a wrapper around `diff` that highlights which parts of lines have changed.
 
-![Screenshot of riff in action](screenshot.png 'git show 036259f5f9')
+![Screenshot of riff in action](screenshot.png 'git show')
 
 Much like `git`, Riff sends its output to a pager, trying these in order:
 
