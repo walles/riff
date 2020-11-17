@@ -58,24 +58,26 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
-- Make the Linux binary smaller
-- Put argv contents in crash report
-- Try to get line numbers into release build crash reports
-- Bound how-much-to-highlight restriction by number of characters highlighted
-  rather than by number of tokens highlighted
-- In `ci.sh`, add a test case verifying that our exception handler prints
-  backtraces (should fail when stripping the release binary)
-- `--help`: Only print installing-into-`$PATH` help if we aren't already being
-  executed from inside of the `$PATH`
-- Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
-  How should we visualize the reformatting of the No-newline-at-eof code?
 - Add a trailing whitespace analysis pass to the Refiner
 - Let the Refiner highlight whitespace errors among the added lines in
   reverse red.
 - Add highlighting of non-leading tabs to the whitespace analysis
+- Put argv contents in crash report
+- In `ci.sh`, add a test case verifying that our exception handler prints
+  backtraces in release builds (should fail when stripping the release binary)
+- In `ci.sh`, add a test case verifying that our exception handler prints line
+  numbers for the `riff` frames in the backtraces, in release builds. This
+  should fail when stripping the release binary.
+- Make the Linux binary smaller
+- Try to get line numbers into release build crash reports
+- Bound how-much-to-highlight restriction by number of characters highlighted
+  rather than by number of tokens highlighted
+- `--help`: Only print installing-into-`$PATH` help if we aren't already being
+  executed from inside of the `$PATH`
+- Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
+  How should we visualize the reformatting of the No-newline-at-eof code?
 - Add test for never changing the number of lines in the input, that
   messes up `git add -p` behavior.
-- Make a first public release
 - Do `git show 0f5dd84` and think about how to visualize one line
   changing to itself with a comma at the end plus a bunch of entirely
   new lines. Think of a constant array getting one or more extra
@@ -83,17 +85,9 @@ Just invoke `./release.sh` and follow instructions.
 - Do `git show -b 77c8f77` and think about what rule we should use to
   highlight the leading spaces of the `+ refined` and `+ page` lines
   at the end of the file.
-- Don't use --dirty for the gemspec version
-- Rakefile: Refuse to package dirty sources
-- Make sure we can:
-  - test dirty sources
-  - not package dirty sources
-  - package clean sources, dependencies not verified
 - When special highighting an expansion, highlight the added parts in green
   reverse, rather than black reverse. Testcase: `git show 7ea6877`
 - Handle plain non-git diff files
-- Think about highlighting whitespace errors like Git does
-- Make DiffString.add() take a color as well
 - Think about how to visualize an added line break together with some
   indentation on the following line.
 - Do `git show 57f27da` and think about what rule we should use to get

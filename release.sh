@@ -116,7 +116,7 @@ Click the "Edit tag" button.
 Attach your "riff" binaries that was just built to the release:
 
 EOM
-ls -lh riff-"$VERSION"-*
+ls -lh riff-"$NEW_VERSION_NUMBER"-*
 
 echo
 echo 'After uploading that file, press "Publish release".'
