@@ -56,7 +56,7 @@ impl<'a> Refiner<'a> {
 
     /// Returns a vector of ANSI highlighted lines
     #[must_use]
-    pub fn format(self) -> Vec<String> {
+    pub fn refine(self) -> Vec<String> {
         if self.new_text.is_empty() {
             return self.simple_format();
         }
@@ -176,6 +176,24 @@ impl<'a> Refiner<'a> {
 
         return lines;
     }
+
+    /// Returns a vector of ANSI highlighted lines
+    #[must_use]
+    pub fn format(self) -> Vec<String> {
+        // FIXME: Tokenize adds and removes
+
+        // FIXME: Turn adds and removes into lists of styled tokens based on diff
+
+        // FIXME: Re-style any trailing whitespace tokens among the adds to inverse red
+
+        // FIXME: Re-style any non-leading tab tokens among the adds to inverse red
+
+        // FIXME: Render adds + removes into an array of ANSI styled lines
+
+        // FIXME: These two lines are garbage, just to be able to run the tests
+        vec![ERROR.to_string()].len();
+        return self.refine();
+    }
 }
 
 #[cfg(test)]
@@ -235,5 +253,45 @@ mod tests {
                 ),
             ]
         )
+    }
+
+    #[test]
+    fn test_trailing_whitespace() {
+        // Add one trailing whitespace, should be highlighted in red
+        assert_eq!(
+            Refiner::create(&"x \n".to_string(), &"x\n".to_string()).format(),
+            [
+                format!("{}-x{}", OLD, NORMAL),
+                format!("{}+x{}{} {}", NEW, ERROR, INVERSE_VIDEO, NORMAL),
+            ]
+        );
+
+        // Keep one trailing whitespace, should be highlighted in red
+        assert_eq!(
+            Refiner::create(&"y \n".to_string(), &"x \n".to_string()).format(),
+            [
+                format!("{}-x {}", OLD, NORMAL),
+                format!("{}+y{}{} {}", NEW, ERROR, INVERSE_VIDEO, NORMAL),
+            ]
+        );
+
+        // Add trailing whitespace and newline, whitespace should be highlighted in red
+        assert_eq!(
+            Refiner::create(&"..... \nW\n".to_string(), &".....W\n".to_string()).format(),
+            [
+                format!("{}-.....W{}", OLD, NORMAL),
+                format!("{}+.....{}{} {}⏎{}", NEW, ERROR, INVERSE_VIDEO, NEW, NORMAL),
+                format!("{}+W{}", NEW, NORMAL),
+            ]
+        );
+
+        // Remove one trailing whitespace, no special highlighting
+        assert_eq!(
+            Refiner::create(&"x\n".to_string(), &"x \n".to_string()).format(),
+            [
+                format!("{}-x{}", OLD, NORMAL),
+                format!("{}+x{}", NEW, NORMAL),
+            ]
+        );
     }
 }
