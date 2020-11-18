@@ -68,8 +68,8 @@ lazy_static! {
 
 enum LastLineKind {
     Initial,
-    Add,
-    Remove,
+    Old,
+    New,
 }
 
 #[must_use]
@@ -94,8 +94,8 @@ fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
 }
 
 fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
-    let mut adds = String::new();
-    let mut removes = String::new();
+    let mut old_text = String::new();
+    let mut new_text = String::new();
     let input = BufReader::new(input);
     let output = &mut BufWriter::new(output);
     let mut last_line_kind = LastLineKind::Initial;
@@ -109,11 +109,11 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         let fixed_highlight = get_fixed_highlight(&line);
         if !fixed_highlight.is_empty() {
             // Drain outstanding adds / removes
-            for line in Refiner::create(&adds, &removes).format() {
+            for line in Refiner::create(&old_text, &new_text).format() {
                 println(output, &line);
             }
-            adds.clear();
-            removes.clear();
+            old_text.clear();
+            new_text.clear();
 
             print(output, fixed_highlight);
             print(output, &line);
@@ -123,25 +123,25 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
 
         // Collect adds / removes
         if !line.is_empty() && line.starts_with('+') {
-            adds.push_str(&line[1..]);
-            adds.push('\n');
-            last_line_kind = LastLineKind::Add;
+            new_text.push_str(&line[1..]);
+            new_text.push('\n');
+            last_line_kind = LastLineKind::New;
             continue;
         } else if !line.is_empty() && line.starts_with('-') {
-            removes.push_str(&line[1..]);
-            removes.push('\n');
-            last_line_kind = LastLineKind::Remove;
+            old_text.push_str(&line[1..]);
+            old_text.push('\n');
+            last_line_kind = LastLineKind::Old;
             continue;
         }
 
         if line == NO_EOF_NEWLINE_MARKER {
             match last_line_kind {
-                LastLineKind::Add => {
-                    assert!(adds.pop().unwrap() == '\n');
+                LastLineKind::Old => {
+                    assert!(old_text.pop().unwrap() == '\n');
                     continue;
                 }
-                LastLineKind::Remove => {
-                    assert!(removes.pop().unwrap() == '\n');
+                LastLineKind::New => {
+                    assert!(new_text.pop().unwrap() == '\n');
                     continue;
                 }
                 LastLineKind::Initial => {
@@ -153,11 +153,11 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         last_line_kind = LastLineKind::Initial;
 
         // Drain outstanding adds / removes
-        for line in Refiner::create(&adds, &removes).format() {
+        for line in Refiner::create(&old_text, &new_text).format() {
             println(output, &line);
         }
-        adds.clear();
-        removes.clear();
+        old_text.clear();
+        new_text.clear();
 
         // Print current line
         if line == NO_EOF_NEWLINE_MARKER {
@@ -168,7 +168,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
             println(output, &line);
         }
     }
-    for line in Refiner::create(&adds, &removes).format() {
+    for line in Refiner::create(&old_text, &new_text).format() {
         println(output, &line);
     }
 }
@@ -330,12 +330,12 @@ mod tests {
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
-    fn remove(text: &str) -> String {
-        return format!("{}{}{}", REMOVE, text, NORMAL);
+    fn old(text: &str) -> String {
+        return format!("{}{}{}", OLD, text, NORMAL);
     }
 
-    fn add(text: &str) -> String {
-        return format!("{}{}{}", ADD, text, NORMAL);
+    fn new(text: &str) -> String {
+        return format!("{}{}{}", NEW, text, NORMAL);
     }
 
     #[test]
@@ -348,8 +348,8 @@ mod tests {
 
         let expected = format!(
             "{}\n{}\n{}\n",
-            remove(&format!("-hej{}⏎", INVERSE_VIDEO)),
-            add("+hej"),
+            old(&format!("-hej{}⏎", INVERSE_VIDEO)),
+            new("+hej"),
             format!(
                 "{}\\ No newline at end of file{}",
                 NO_EOF_NEWLINE_COLOR, NORMAL
@@ -367,7 +367,7 @@ mod tests {
 
         let expected = format!(
             "{}\n{}\n{}\n",
-            add("+bepa"),
+            new("+bepa"),
             " apa",
             format!(
                 "{}\\ No newline at end of file{}",

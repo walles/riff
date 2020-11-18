@@ -16,3 +16,6 @@ cargo test --workspace
 
 # If you have an editor that formats on save this will never be a problem
 cargo fmt -- --check
+
+echo
+echo "All tests passed!"

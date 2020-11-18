@@ -15,36 +15,36 @@ const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 const OK_HIGHLIGHT_COUNT: usize = 5;
 
 pub struct Refiner<'a> {
-    adds: &'a str,
-    removes: &'a str,
+    old_text: &'a str,
+    new_text: &'a str,
 }
 
 impl<'a> Refiner<'a> {
-    pub fn create(adds: &'a str, removes: &'a str) -> Self {
-        return Refiner { adds, removes };
+    pub fn create(old_text: &'a str, new_text: &'a str) -> Self {
+        return Refiner { old_text, new_text };
     }
 
-    /// Format add and remove lines in ADD and REMOVE colors.
+    /// Format old and new lines in OLD and NEW colors.
     ///
     /// No intra-line refinement.
     #[must_use]
     fn simple_format(&self) -> Vec<String> {
         let mut lines: Vec<String> = Vec::new();
 
-        for remove_line in self.removes.lines() {
-            lines.push(format!("{}-{}{}", REMOVE, remove_line, NORMAL));
+        for old_line in self.old_text.lines() {
+            lines.push(format!("{}-{}{}", OLD, old_line, NORMAL));
         }
-        if (!self.removes.is_empty()) && !self.removes.ends_with('\n') {
+        if (!self.old_text.is_empty()) && !self.old_text.ends_with('\n') {
             lines.push(format!(
                 "{}{}{}",
                 NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
             ));
         }
 
-        for add_line in self.adds.lines() {
-            lines.push(format!("{}+{}{}", ADD, add_line, NORMAL))
+        for add_line in self.new_text.lines() {
+            lines.push(format!("{}+{}{}", NEW, add_line, NORMAL))
         }
-        if (!self.adds.is_empty()) && !self.adds.ends_with('\n') {
+        if (!self.new_text.is_empty()) && !self.new_text.ends_with('\n') {
             lines.push(format!(
                 "{}{}{}",
                 NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
@@ -57,32 +57,32 @@ impl<'a> Refiner<'a> {
     /// Returns a vector of ANSI highlighted lines
     #[must_use]
     pub fn format(self) -> Vec<String> {
-        if self.adds.is_empty() {
+        if self.new_text.is_empty() {
             return self.simple_format();
         }
 
-        if self.removes.is_empty() {
+        if self.old_text.is_empty() {
             return self.simple_format();
         }
 
         // Find diffs between adds and removals
-        let mut highlighted_adds = String::new();
-        let mut highlighted_removes = String::new();
-        let mut adds_is_inverse = false;
-        let mut removes_is_inverse = false;
-        let mut adds_highlight_count = 0;
-        let mut removes_highlight_count = 0;
+        let mut highlighted_old_text = String::new();
+        let mut highlighted_new_text = String::new();
+        let mut old_is_inverse = false;
+        let mut new_is_inverse = false;
+        let mut old_highlight_count = 0;
+        let mut new_highlight_count = 0;
 
         // Tokenize adds and removes before diffing them
-        let tokenized_adds = tokenizer::tokenize(self.adds);
-        let tokenized_removes = tokenizer::tokenize(self.removes);
+        let tokenized_old = tokenizer::tokenize(self.old_text);
+        let tokenized_new = tokenizer::tokenize(self.new_text);
 
-        let diff = tokenized_removes.diff(&tokenized_adds);
+        let diff = tokenized_old.diff(&tokenized_new);
         match diff {
             edit::Edit::Copy(unchanged) => {
                 for token in unchanged {
-                    highlighted_adds.push_str(token);
-                    highlighted_removes.push_str(token);
+                    highlighted_new_text.push_str(token);
+                    highlighted_old_text.push_str(token);
                 }
             }
             edit::Edit::Change(diff) => {
@@ -90,50 +90,50 @@ impl<'a> Refiner<'a> {
                     .map(|edit| {
                         match edit {
                             collection::Edit::Copy(elem) => {
-                                if adds_is_inverse {
-                                    highlighted_adds.push_str(NOT_INVERSE_VIDEO);
+                                if new_is_inverse {
+                                    highlighted_new_text.push_str(NOT_INVERSE_VIDEO);
                                 }
-                                adds_is_inverse = false;
+                                new_is_inverse = false;
 
-                                if removes_is_inverse {
-                                    highlighted_removes.push_str(NOT_INVERSE_VIDEO);
+                                if old_is_inverse {
+                                    highlighted_old_text.push_str(NOT_INVERSE_VIDEO);
                                 }
-                                removes_is_inverse = false;
+                                old_is_inverse = false;
 
-                                highlighted_adds.push_str(elem);
-                                highlighted_removes.push_str(elem);
+                                highlighted_new_text.push_str(elem);
+                                highlighted_old_text.push_str(elem);
                             }
                             collection::Edit::Insert(elem) => {
-                                adds_highlight_count += 1;
-                                if !adds_is_inverse {
-                                    highlighted_adds.push_str(INVERSE_VIDEO);
+                                new_highlight_count += 1;
+                                if !new_is_inverse {
+                                    highlighted_new_text.push_str(INVERSE_VIDEO);
                                 }
-                                adds_is_inverse = true;
+                                new_is_inverse = true;
 
                                 if elem == "\n" {
                                     // Make sure the highlighted linefeed is visible
-                                    highlighted_adds.push('⏎');
+                                    highlighted_new_text.push('⏎');
 
                                     // This will be reset by the linefeed, so we need to re-inverse on the next line
-                                    adds_is_inverse = false;
+                                    new_is_inverse = false;
                                 }
-                                highlighted_adds.push_str(elem);
+                                highlighted_new_text.push_str(elem);
                             }
                             collection::Edit::Remove(elem) => {
-                                removes_highlight_count += 1;
-                                if !removes_is_inverse {
-                                    highlighted_removes.push_str(INVERSE_VIDEO);
+                                old_highlight_count += 1;
+                                if !old_is_inverse {
+                                    highlighted_old_text.push_str(INVERSE_VIDEO);
                                 }
-                                removes_is_inverse = true;
+                                old_is_inverse = true;
 
                                 if elem == "\n" {
                                     // Make sure the highlighted linefeed is visible
-                                    highlighted_removes.push('⏎');
+                                    highlighted_old_text.push('⏎');
 
                                     // This will be reset by the linefeed, so we need to re-inverse on the next line
-                                    removes_is_inverse = false;
+                                    old_is_inverse = false;
                                 }
-                                highlighted_removes.push_str(elem);
+                                highlighted_old_text.push_str(elem);
                             }
                             collection::Edit::Change(_) => panic!("Not implemented, help!"),
                         };
@@ -142,8 +142,8 @@ impl<'a> Refiner<'a> {
             }
         }
 
-        let highlight_count = adds_highlight_count + removes_highlight_count;
-        let token_count = tokenized_adds.len() + tokenized_removes.len();
+        let highlight_count = old_highlight_count + new_highlight_count;
+        let token_count = tokenized_old.len() + tokenized_new.len();
 
         // FIXME: Maybe for this check count how many runs of characters were
         // highlighted rather than how many tokens? Heuristics are difficult...
@@ -154,20 +154,20 @@ impl<'a> Refiner<'a> {
         }
 
         let mut lines: Vec<String> = Vec::new();
-        for highlighted_remove in highlighted_removes.lines() {
-            lines.push(format!("{}-{}{}", REMOVE, highlighted_remove, NORMAL));
+        for highlighted_old_line in highlighted_old_text.lines() {
+            lines.push(format!("{}-{}{}", OLD, highlighted_old_line, NORMAL));
         }
-        if (!self.removes.is_empty()) && !self.removes.ends_with('\n') {
+        if (!self.old_text.is_empty()) && !self.old_text.ends_with('\n') {
             lines.push(format!(
                 "{}{}{}",
                 NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
             ));
         }
 
-        for highlighted_add in highlighted_adds.lines() {
-            lines.push(format!("{}+{}{}", ADD, highlighted_add, NORMAL));
+        for highlighted_new_line in highlighted_new_text.lines() {
+            lines.push(format!("{}+{}{}", NEW, highlighted_new_line, NORMAL));
         }
-        if (!self.adds.is_empty()) && !self.adds.ends_with('\n') {
+        if (!self.new_text.is_empty()) && !self.new_text.ends_with('\n') {
             lines.push(format!(
                 "{}{}{}",
                 NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
@@ -195,27 +195,27 @@ mod tests {
 
         // Test adds-only
         assert_eq!(
-            Refiner::create(&"a\n".to_string(), &"".to_string()).simple_format(),
-            ["".to_string() + ADD + "+a" + NORMAL]
+            Refiner::create(&"".to_string(), &"a\n".to_string()).simple_format(),
+            ["".to_string() + NEW + "+a" + NORMAL]
         );
         assert_eq!(
-            Refiner::create(&"a\nb\n".to_string(), &"".to_string()).simple_format(),
+            Refiner::create(&"".to_string(), &"a\nb\n".to_string()).simple_format(),
             [
-                "".to_string() + ADD + "+a" + NORMAL,
-                "".to_string() + ADD + "+b" + NORMAL,
+                "".to_string() + NEW + "+a" + NORMAL,
+                "".to_string() + NEW + "+b" + NORMAL,
             ]
         );
 
         // Test removes-only
         assert_eq!(
-            Refiner::create(&"".to_string(), &"a\n".to_string()).simple_format(),
-            ["".to_string() + REMOVE + "-a" + NORMAL]
+            Refiner::create(&"a\n".to_string(), &"".to_string()).simple_format(),
+            ["".to_string() + OLD + "-a" + NORMAL]
         );
         assert_eq!(
-            Refiner::create(&"".to_string(), &"a\nb\n".to_string()).simple_format(),
+            Refiner::create(&"a\nb\n".to_string(), &"".to_string()).simple_format(),
             [
-                "".to_string() + REMOVE + "-a" + NORMAL,
-                "".to_string() + REMOVE + "-b" + NORMAL,
+                "".to_string() + OLD + "-a" + NORMAL,
+                "".to_string() + OLD + "-b" + NORMAL,
             ]
         );
     }
@@ -223,20 +223,15 @@ mod tests {
     #[test]
     fn test_quote_change() {
         assert_eq!(
-            Refiner::create(&"[quotes]\n".to_string(), &"<quotes>\n".to_string()).format(),
+            Refiner::create(&"<quotes>\n".to_string(), &"[quotes]\n".to_string()).format(),
             [
                 format!(
                     "{}-{}<{}quotes{}>{}{}",
-                    REMOVE,
-                    INVERSE_VIDEO,
-                    NOT_INVERSE_VIDEO,
-                    INVERSE_VIDEO,
-                    NOT_INVERSE_VIDEO,
-                    NORMAL
+                    OLD, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NOT_INVERSE_VIDEO, NORMAL
                 ),
                 format!(
                     "{}+{}[{}quotes{}]{}{}",
-                    ADD, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NOT_INVERSE_VIDEO, NORMAL
+                    NEW, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NOT_INVERSE_VIDEO, NORMAL
                 ),
             ]
         )

@@ -1,5 +1,5 @@
-pub const ADD: &str = "\x1b[32m"; // Green
-pub const REMOVE: &str = "\x1b[31m"; // Red
+pub const OLD: &str = "\x1b[31m"; // Red
+pub const NEW: &str = "\x1b[32m"; // Green
 
 pub const INVERSE_VIDEO: &str = "\x1b[7m";
 pub const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
