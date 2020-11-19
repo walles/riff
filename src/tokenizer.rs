@@ -1,3 +1,4 @@
+use diffus::{edit, Diffable, Same};
 use std::cmp::Eq;
 use std::cmp::PartialEq;
 use std::fmt::Debug;
@@ -31,6 +32,24 @@ impl StyledToken {
             token: token.to_string(),
             style: Style::Plain,
         };
+    }
+}
+
+impl<'a> Diffable<'a> for StyledToken {
+    type Diff = <str as Diffable<'a>>::Diff;
+
+    fn diff(&'a self, other: &'a Self) -> edit::Edit<Self> {
+        match self.token.diff(&other.token) {
+            edit::Edit::Change(diff) => edit::Edit::Change(diff),
+            edit::Edit::Copy(_) => edit::Edit::Copy(self),
+        }
+    }
+}
+
+// FIXME: Can we use diffus::same::same_for_eq!() instead of this?
+impl Same for StyledToken {
+    fn same(&self, other: &Self) -> bool {
+        return self == other;
     }
 }
 
