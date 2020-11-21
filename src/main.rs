@@ -12,7 +12,6 @@ use backtrace::Backtrace;
 use constants::*;
 use git_version::git_version;
 use isatty::{stdin_isatty, stdout_isatty};
-use refiner::Refiner;
 use regex::Regex;
 use std::env;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
@@ -109,9 +108,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         let fixed_highlight = get_fixed_highlight(&line);
         if !fixed_highlight.is_empty() {
             // Drain outstanding adds / removes
-            for line in Refiner::create(&old_text, &new_text).format() {
-                println(output, &line);
-            }
+            print(output, &refiner::format(&old_text, &new_text));
             old_text.clear();
             new_text.clear();
 
@@ -153,9 +150,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
         last_line_kind = LastLineKind::Initial;
 
         // Drain outstanding adds / removes
-        for line in Refiner::create(&old_text, &new_text).format() {
-            println(output, &line);
-        }
+        print(output, &refiner::format(&old_text, &new_text));
         old_text.clear();
         new_text.clear();
 
@@ -168,9 +163,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
             println(output, &line);
         }
     }
-    for line in Refiner::create(&old_text, &new_text).format() {
-        println(output, &line);
-    }
+    print(output, &refiner::format(&old_text, &new_text));
 }
 
 /// Try paging using the named pager (`$PATH` will be searched).
