@@ -143,21 +143,25 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
         return simple_format(old_text, new_text);
     }
 
+    return to_lines(&highlighted_old_text, &highlighted_new_text);
+}
+
+fn to_lines(old: &str, new: &str) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
-    for highlighted_old_line in highlighted_old_text.lines() {
+    for highlighted_old_line in old.lines() {
         lines.push(format!("{}-{}{}", OLD, highlighted_old_line, NORMAL));
     }
-    if (!old_text.is_empty()) && !old_text.ends_with('\n') {
+    if (!old.is_empty()) && !old.ends_with('\n') {
         lines.push(format!(
             "{}{}{}",
             NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
         ));
     }
 
-    for highlighted_new_line in highlighted_new_text.lines() {
+    for highlighted_new_line in new.lines() {
         lines.push(format!("{}+{}{}", NEW, highlighted_new_line, NORMAL));
     }
-    if (!new_text.is_empty()) && !new_text.ends_with('\n') {
+    if (!new.is_empty()) && !new.ends_with('\n') {
         lines.push(format!(
             "{}{}{}",
             NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
