@@ -21,6 +21,13 @@ pub struct StyledToken {
 }
 
 impl StyledToken {
+    pub fn styled_str(token: &str, style: Style) -> Self {
+        return StyledToken {
+            token: token.to_string(),
+            style,
+        };
+    }
+
     fn from_str(token: &str) -> Self {
         return StyledToken {
             token: token.to_string(),
@@ -42,7 +49,7 @@ impl StyledToken {
         };
     }
 
-    pub fn style(self: &StyledToken, style: Style) {
+    pub fn style(self: &mut StyledToken, style: Style) {
         self.style = style;
     }
 
@@ -114,10 +121,10 @@ impl Style {
 /// ```rust
 /// assert_eq!(tokenize("Adam, Bea"), ["Adam", ", ", " ", "Bea"]);
 /// ```
-pub fn tokenize(input: &str) -> Vec<&StyledToken> {
+pub fn tokenize(input: &str) -> Vec<StyledToken> {
     let mut first_alphanumeric_byte_index = 0;
     let mut last_was_alphanumeric = false;
-    let mut result: Vec<&StyledToken> = Vec::new();
+    let mut result: Vec<StyledToken> = Vec::new();
     let mut byte_index = 0;
     for character in input.chars() {
         let current_is_alphanumeric = character.is_alphanumeric();
@@ -133,11 +140,13 @@ pub fn tokenize(input: &str) -> Vec<&StyledToken> {
             if last_was_alphanumeric {
                 // Push the word that just ended
                 let word = input[first_alphanumeric_byte_index..byte_index].to_string();
-                result.push(&StyledToken::from_str(&word));
+                let styled_token = StyledToken::from_str(&word);
+                result.push(styled_token);
             }
 
             // Push current char
-            result.push(&StyledToken::from_char(character));
+            let styled_token = StyledToken::from_char(character);
+            result.push(styled_token);
         }
 
         last_was_alphanumeric = current_is_alphanumeric;
@@ -147,22 +156,32 @@ pub fn tokenize(input: &str) -> Vec<&StyledToken> {
     if last_was_alphanumeric {
         // Push the ending word
         let word = input[first_alphanumeric_byte_index..].to_string();
-        result.push(&StyledToken::from_str(&word));
+        let styled_token = StyledToken::from_str(&word);
+        result.push(styled_token);
     }
 
     return result;
 }
 
-pub fn to_string_with_line_prefix(line_prefix: &str, tokens: Vec<&StyledToken>) -> String {
-    let return_me = String::new();
+pub fn to_string_with_line_prefix(line_prefix: &StyledToken, tokens: &Vec<StyledToken>) -> String {
+    let mut return_me = String::new();
     let mut is_inverse = false;
     let mut color_code = constants::NORMAL;
+    let mut want_prefix = true;
     for token in tokens {
+        if want_prefix {
+            return_me += line_prefix.style.color_code();
+            return_me += &line_prefix.token;
+            color_code = line_prefix.style.color_code();
+            want_prefix = false;
+        }
+
         if token.token() == "\n" {
             return_me += constants::NORMAL;
             return_me += "\n";
             is_inverse = false;
             color_code = constants::NORMAL;
+            want_prefix = true;
             continue;
         }
 
@@ -196,32 +215,32 @@ mod tests {
 
     #[test]
     fn test_empty() {
-        let no_strings: Vec<&StyledToken> = Vec::new();
+        let no_strings: Vec<StyledToken> = Vec::new();
         assert_eq!(tokenize(""), no_strings);
     }
 
     #[test]
     fn test_words() {
-        assert_eq!(tokenize("word"), [&StyledToken::from_str("word")]);
+        assert_eq!(tokenize("word"), &[StyledToken::from_str("word")]);
         assert_eq!(
             tokenize("Adam Bea"),
-            [
-                &StyledToken::from_str("Adam"),
-                &StyledToken::from_str(" "),
-                &StyledToken::from_str("Bea")
+            &[
+                StyledToken::from_str("Adam"),
+                StyledToken::from_str(" "),
+                StyledToken::from_str("Bea")
             ]
         );
     }
 
     #[test]
     fn test_numbers() {
-        assert_eq!(tokenize("123"), [&StyledToken::from_str("123")]);
+        assert_eq!(tokenize("123"), &[StyledToken::from_str("123")]);
         assert_eq!(
             tokenize("123 456"),
-            [
-                &StyledToken::from_str("123"),
-                &StyledToken::from_str(" "),
-                &StyledToken::from_str("456")
+            &[
+                StyledToken::from_str("123"),
+                StyledToken::from_str(" "),
+                StyledToken::from_str("456")
             ]
         );
     }
@@ -230,7 +249,7 @@ mod tests {
     fn test_alphanumeric() {
         assert_eq!(
             tokenize("0xC0deCafe"),
-            [&StyledToken::from_str("0xC0deCafe")]
+            &[StyledToken::from_str("0xC0deCafe")]
         );
     }
 
@@ -238,22 +257,22 @@ mod tests {
     fn test_others() {
         assert_eq!(
             tokenize("+!,"),
-            [
-                &StyledToken::from_str("+"),
-                &StyledToken::from_str("!"),
-                &StyledToken::from_str(",")
+            &[
+                StyledToken::from_str("+"),
+                StyledToken::from_str("!"),
+                StyledToken::from_str(",")
             ]
         );
     }
 
     #[test]
     fn test_non_breaking_space() {
-        assert_eq!(tokenize("\u{00a0}"), [&StyledToken::from_str("\u{00a0}")]);
+        assert_eq!(tokenize("\u{00a0}"), &[StyledToken::from_str("\u{00a0}")]);
         assert_eq!(
             tokenize("\u{00a0}s"),
-            [
-                &StyledToken::from_str("\u{00a0}"),
-                &StyledToken::from_str("s")
+            &[
+                StyledToken::from_str("\u{00a0}"),
+                StyledToken::from_str("s")
             ]
         );
     }

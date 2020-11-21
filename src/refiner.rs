@@ -19,20 +19,20 @@ const OK_HIGHLIGHT_COUNT: usize = 5;
 /// Returns a vector of ANSI highlighted lines
 #[must_use]
 fn refine<'a>(
-    old: Vec<&'a StyledToken>,
-    new: Vec<&'a StyledToken>,
-) -> (Vec<&'a StyledToken>, Vec<&'a StyledToken>) {
+    old: &'a Vec<StyledToken>,
+    new: &'a Vec<StyledToken>,
+) -> (Vec<StyledToken>, Vec<StyledToken>) {
     if old.is_empty() {
-        return (old, new);
+        return (old.clone(), new.clone());
     }
 
     if new.is_empty() {
-        return (old, new);
+        return (old.clone(), new.clone());
     }
 
     // Find diffs between adds and removals
-    let mut highlighted_old: Vec<&'a StyledToken> = Vec::new();
-    let mut highlighted_new: Vec<&'a StyledToken> = Vec::new();
+    let mut highlighted_old: Vec<StyledToken> = Vec::new();
+    let mut highlighted_new: Vec<StyledToken> = Vec::new();
     let mut old_highlight_count = 0;
     let mut new_highlight_count = 0;
 
@@ -40,8 +40,8 @@ fn refine<'a>(
     match diff {
         edit::Edit::Copy(unchanged) => {
             for token in unchanged {
-                highlighted_old.push(token);
-                highlighted_new.push(token);
+                highlighted_old.push(token.clone());
+                highlighted_new.push(token.clone());
             }
         }
         edit::Edit::Change(diff) => {
@@ -49,18 +49,18 @@ fn refine<'a>(
                 .map(|edit| {
                     match edit {
                         collection::Edit::Copy(copied) => {
-                            highlighted_new.push(copied);
-                            highlighted_old.push(copied);
+                            highlighted_new.push(copied.clone());
+                            highlighted_old.push(copied.clone());
                         }
                         collection::Edit::Insert(inserted) => {
                             new_highlight_count += 1;
 
                             if inserted.token() == "\n" {
                                 // Make sure the highlighted linefeed is visible
-                                highlighted_new
-                                    .push(&StyledToken::styled_newline(Style::AddInverse));
+                                let styled_newline = StyledToken::styled_newline(Style::AddInverse);
+                                highlighted_new.push(styled_newline);
                             }
-                            highlighted_new.push(inserted);
+                            highlighted_new.push(inserted.clone());
                         }
                         collection::Edit::Remove(removed) => {
                             old_highlight_count += 1;
@@ -68,9 +68,9 @@ fn refine<'a>(
                             if removed.token() == "\n" {
                                 // Make sure the highlighted linefeed is visible
                                 highlighted_old
-                                    .push(&StyledToken::styled_newline(Style::RemoveInverse));
+                                    .push(StyledToken::styled_newline(Style::RemoveInverse));
                             }
-                            highlighted_old.push(removed);
+                            highlighted_old.push(removed.clone());
                         }
                         collection::Edit::Change(_) => panic!("Not implemented, help!"),
                     };
@@ -87,7 +87,7 @@ fn refine<'a>(
     if highlight_count <= OK_HIGHLIGHT_COUNT {
         // Few enough highlights, Just do it (tm)
     } else if (100 * highlight_count) / token_count > MAX_HIGHLIGHT_PERCENTAGE {
-        return (old, new);
+        return (old.clone(), new.clone());
     }
 
     return (highlighted_old, highlighted_new);
@@ -97,8 +97,9 @@ fn refine<'a>(
 ///
 /// The returned string is guaranteed to end in a newline.
 #[must_use]
-fn render(old: Vec<&StyledToken>, new: Vec<&StyledToken>) -> String {
-    let mut return_me = tokenizer::to_string_with_line_prefix("-", old);
+fn render(old: &Vec<StyledToken>, new: &Vec<StyledToken>) -> String {
+    let mut return_me =
+        tokenizer::to_string_with_line_prefix(&StyledToken::styled_str(&"-", Style::Remove), old);
 
     if (!old.is_empty()) && old.last().unwrap().token() != "\n" {
         // Last old token is not a newline, add no-newline-at-end-of-file text
@@ -108,8 +109,8 @@ fn render(old: Vec<&StyledToken>, new: Vec<&StyledToken>) -> String {
         );
     }
 
-    return_me += &tokenizer::to_string_with_line_prefix("+", new);
-
+    return_me +=
+        &tokenizer::to_string_with_line_prefix(&StyledToken::styled_str(&"+", Style::Add), new);
     if (!new.is_empty()) && new.last().unwrap().token() != "\n" {
         // Last new token is not a newline, add no-newline-at-end-of-file text
         return_me += &format!(
@@ -123,14 +124,14 @@ fn render(old: Vec<&StyledToken>, new: Vec<&StyledToken>) -> String {
 
 #[must_use]
 pub fn format(old: &str, new: &str) -> String {
-    let old = tokenizer::tokenize(old);
-    let new = tokenizer::tokenize(new);
+    let mut old = tokenizer::tokenize(old);
+    let mut new = tokenizer::tokenize(new);
 
     // Color the tokens
-    for token in old {
+    for token in old.iter_mut() {
         token.style(Style::Remove);
     }
-    for token in new {
+    for token in new.iter_mut() {
         token.style(Style::Add);
     }
 
@@ -139,10 +140,10 @@ pub fn format(old: &str, new: &str) -> String {
     // FIXME: Re-style any non-leading tab tokens among the adds to inverse red
 
     // Highlight what actually changed between old and new
-    let (old, new) = refine(old, new);
+    let (old, new) = refine(&old, &new);
 
     // Render adds + removes into an array of ANSI styled lines
-    return render(old, new);
+    return render(&old, &new);
 }
 
 #[cfg(test)]
@@ -155,10 +156,7 @@ mod tests {
     #[test]
     fn test_quote_change() {
         assert_eq!(
-            format("<quotes>\n", "[quotes]\n")
-                .to_string()
-                .lines()
-                .collect(): Vec<&str>,
+            format("<quotes>\n", "[quotes]\n").lines().collect(): Vec<&str>,
             [
                 format!(
                     "{}-{}<{}quotes{}>{}{}",
