@@ -174,6 +174,7 @@ mod tests {
         )
     }
 
+    /* FIXME: Uncomment when implementing trailing whitespace highlighting
     #[test]
     fn test_trailing_whitespace() {
         // Add one trailing whitespace, should be highlighted in red
@@ -221,4 +222,5 @@ mod tests {
             ]
         );
     }
+    */
 }
