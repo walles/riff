@@ -28,14 +28,14 @@ impl StyledToken {
         };
     }
 
-    fn from_str(token: &str) -> Self {
+    pub fn from_str(token: &str) -> Self {
         return StyledToken {
             token: token.to_string(),
             style: Style::Plain,
         };
     }
 
-    fn from_char(token: char) -> Self {
+    pub fn from_char(token: char) -> Self {
         return StyledToken {
             token: token.to_string(),
             style: Style::Plain,
@@ -49,8 +49,13 @@ impl StyledToken {
         };
     }
 
-    pub fn style(self: &mut StyledToken, style: Style) {
+    pub fn set_style(self: &mut StyledToken, style: Style) {
         self.style = style;
+    }
+
+    #[cfg(test)]
+    pub fn get_style(self: &StyledToken) -> &Style {
+        return &self.style;
     }
 
     pub fn token(self: &StyledToken) -> &str {
@@ -274,6 +279,28 @@ mod tests {
                 StyledToken::from_str("\u{00a0}"),
                 StyledToken::from_str("s")
             ]
+        );
+    }
+
+    #[test]
+    fn test_to_string_with_line_prefix() {
+        assert_eq!(
+            to_string_with_line_prefix(
+                &StyledToken::styled_str("+", Style::Add),
+                &[
+                    StyledToken::styled_str("normal", Style::Add),
+                    StyledToken::styled_str("highlighted", Style::AddInverse),
+                    StyledToken::styled_str("error", Style::Error),
+                    StyledToken::styled_str("\n", Style::Add),
+                ]
+            ),
+            format!(
+                "{}+normal{}highlighted{}error{}\n",
+                constants::NEW,
+                constants::INVERSE_VIDEO,
+                constants::ERROR,
+                constants::NORMAL
+            )
         );
     }
 }

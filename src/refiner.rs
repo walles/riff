@@ -62,7 +62,9 @@ fn refine<'a>(
                                 let styled_newline = StyledToken::styled_newline(Style::AddInverse);
                                 highlighted_new.push(styled_newline);
                             }
-                            highlighted_new.push(inserted.clone());
+                            let mut highlighted_token = inserted.clone();
+                            highlighted_token.set_style(Style::AddInverse);
+                            highlighted_new.push(highlighted_token);
                         }
                         collection::Edit::Remove(removed) => {
                             old_highlight_count += 1;
@@ -72,7 +74,9 @@ fn refine<'a>(
                                 highlighted_old
                                     .push(StyledToken::styled_newline(Style::RemoveInverse));
                             }
-                            highlighted_old.push(removed.clone());
+                            let mut highlighted_token = removed.clone();
+                            highlighted_token.set_style(Style::AddInverse);
+                            highlighted_old.push(highlighted_token);
                         }
                         collection::Edit::Change(_) => panic!("Not implemented, help!"),
                     };
@@ -124,18 +128,20 @@ fn render(old: &[StyledToken], new: &[StyledToken]) -> String {
     return return_me;
 }
 
+fn style_tokens(tokens: &mut [StyledToken], style: Style) {
+    for token in tokens {
+        token.set_style(style.clone());
+    }
+}
+
 #[must_use]
 pub fn format(old: &str, new: &str) -> String {
     let mut old = tokenizer::tokenize(old);
     let mut new = tokenizer::tokenize(new);
 
     // Color the tokens
-    for token in old.iter_mut() {
-        token.style(Style::Remove);
-    }
-    for token in new.iter_mut() {
-        token.style(Style::Add);
-    }
+    style_tokens(&mut old, Style::Remove);
+    style_tokens(&mut new, Style::Add);
 
     // FIXME: Re-style any trailing whitespace tokens among the adds to inverse red
 
@@ -174,53 +180,11 @@ mod tests {
         )
     }
 
-    /* FIXME: Uncomment when implementing trailing whitespace highlighting
     #[test]
-    fn test_trailing_whitespace() {
-        // Add one trailing whitespace, should be highlighted in red
-        let formatted_lines = format("x \n", "x\n");
-        let formatted_lines: Vec<&str> = formatted_lines.lines().collect();
-        assert_eq!(
-            formatted_lines,
-            [
-                format!("{}-x{}", OLD, NORMAL),
-                format!("{}+x{}{} {}", NEW, ERROR, INVERSE_VIDEO, NORMAL),
-            ]
-        );
-
-        // Keep one trailing whitespace, should be highlighted in red
-        let formatted_lines = format("y \n", "x \n");
-        let formatted_lines: Vec<&str> = formatted_lines.lines().collect();
-        assert_eq!(
-            formatted_lines,
-            [
-                format!("{}-x {}", OLD, NORMAL),
-                format!("{}+y{}{} {}", NEW, ERROR, INVERSE_VIDEO, NORMAL),
-            ]
-        );
-
-        // Add trailing whitespace and newline, whitespace should be highlighted in red
-        let formatted_lines = format("..... \nW\n", ".....W\n");
-        let formatted_lines: Vec<&str> = formatted_lines.lines().collect();
-        assert_eq!(
-            formatted_lines,
-            [
-                format!("{}-.....W{}", OLD, NORMAL),
-                format!("{}+.....{}{} {}⏎{}", NEW, ERROR, INVERSE_VIDEO, NEW, NORMAL),
-                format!("{}+W{}", NEW, NORMAL),
-            ]
-        );
-
-        // Remove one trailing whitespace, no special highlighting
-        let formatted_lines = format("x\n", "x \n");
-        let formatted_lines: Vec<&str> = formatted_lines.lines().collect();
-        assert_eq!(
-            formatted_lines,
-            [
-                format!("{}-x{}", OLD, NORMAL),
-                format!("{}+x{}", NEW, NORMAL),
-            ]
-        );
+    fn test_style_tokens() {
+        let mut tokens = [StyledToken::from_str("token")];
+        assert_eq!(tokens[0].get_style(), &Style::Plain);
+        style_tokens(&mut tokens, Style::Add);
+        assert_eq!(tokens[0].get_style(), &Style::Add);
     }
-    */
 }
