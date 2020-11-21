@@ -163,7 +163,7 @@ pub fn tokenize(input: &str) -> Vec<StyledToken> {
     return result;
 }
 
-pub fn to_string_with_line_prefix(line_prefix: &StyledToken, tokens: &Vec<StyledToken>) -> String {
+pub fn to_string_with_line_prefix(line_prefix: &StyledToken, tokens: &[StyledToken]) -> String {
     let mut return_me = String::new();
     let mut is_inverse = false;
     let mut color_code = constants::NORMAL;

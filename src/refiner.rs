@@ -19,15 +19,15 @@ const OK_HIGHLIGHT_COUNT: usize = 5;
 /// Returns a vector of ANSI highlighted lines
 #[must_use]
 fn refine<'a>(
-    old: &'a Vec<StyledToken>,
-    new: &'a Vec<StyledToken>,
+    old: &'a [StyledToken],
+    new: &'a [StyledToken],
 ) -> (Vec<StyledToken>, Vec<StyledToken>) {
     if old.is_empty() {
-        return (old.clone(), new.clone());
+        return (old.to_owned(), new.to_owned());
     }
 
     if new.is_empty() {
-        return (old.clone(), new.clone());
+        return (old.to_owned(), new.to_owned());
     }
 
     // Find diffs between adds and removals
@@ -36,7 +36,9 @@ fn refine<'a>(
     let mut old_highlight_count = 0;
     let mut new_highlight_count = 0;
 
-    let diff = old.diff(&new);
+    let old_vec = old.to_vec();
+    let new_vec = new.to_vec();
+    let diff = old_vec.diff(&new_vec);
     match diff {
         edit::Edit::Copy(unchanged) => {
             for token in unchanged {
@@ -87,7 +89,7 @@ fn refine<'a>(
     if highlight_count <= OK_HIGHLIGHT_COUNT {
         // Few enough highlights, Just do it (tm)
     } else if (100 * highlight_count) / token_count > MAX_HIGHLIGHT_PERCENTAGE {
-        return (old.clone(), new.clone());
+        return (old.to_owned(), new.to_owned());
     }
 
     return (highlighted_old, highlighted_new);
@@ -97,7 +99,7 @@ fn refine<'a>(
 ///
 /// The returned string is guaranteed to end in a newline.
 #[must_use]
-fn render(old: &Vec<StyledToken>, new: &Vec<StyledToken>) -> String {
+fn render(old: &[StyledToken], new: &[StyledToken]) -> String {
     let mut return_me =
         tokenizer::to_string_with_line_prefix(&StyledToken::styled_str(&"-", Style::Remove), old);
 
@@ -155,8 +157,10 @@ mod tests {
 
     #[test]
     fn test_quote_change() {
+        let formatted_lines = format("<quotes>\n", "[quotes]\n");
+        let formatted_lines: Vec<&str> = formatted_lines.lines().collect();
         assert_eq!(
-            format("<quotes>\n", "[quotes]\n").lines().collect(): Vec<&str>,
+            formatted_lines,
             [
                 format!(
                     "{}-{}<{}quotes{}>{}{}",
@@ -173,8 +177,10 @@ mod tests {
     #[test]
     fn test_trailing_whitespace() {
         // Add one trailing whitespace, should be highlighted in red
+        let formatted_lines = format("x \n", "x\n");
+        let formatted_lines: Vec<&str> = formatted_lines.lines().collect();
         assert_eq!(
-            format("x \n", "x\n").to_string().lines().collect(): Vec<&str>,
+            formatted_lines,
             [
                 format!("{}-x{}", OLD, NORMAL),
                 format!("{}+x{}{} {}", NEW, ERROR, INVERSE_VIDEO, NORMAL),
@@ -182,8 +188,10 @@ mod tests {
         );
 
         // Keep one trailing whitespace, should be highlighted in red
+        let formatted_lines = format("y \n", "x \n");
+        let formatted_lines: Vec<&str> = formatted_lines.lines().collect();
         assert_eq!(
-            format("y \n", "x \n").to_string().lines().collect(): Vec<&str>,
+            formatted_lines,
             [
                 format!("{}-x {}", OLD, NORMAL),
                 format!("{}+y{}{} {}", NEW, ERROR, INVERSE_VIDEO, NORMAL),
@@ -191,11 +199,10 @@ mod tests {
         );
 
         // Add trailing whitespace and newline, whitespace should be highlighted in red
+        let formatted_lines = format("..... \nW\n", ".....W\n");
+        let formatted_lines: Vec<&str> = formatted_lines.lines().collect();
         assert_eq!(
-            format("..... \nW\n", ".....W\n")
-                .to_string()
-                .lines()
-                .collect(): Vec<&str>,
+            formatted_lines,
             [
                 format!("{}-.....W{}", OLD, NORMAL),
                 format!("{}+.....{}{} {}⏎{}", NEW, ERROR, INVERSE_VIDEO, NEW, NORMAL),
@@ -204,8 +211,10 @@ mod tests {
         );
 
         // Remove one trailing whitespace, no special highlighting
+        let formatted_lines = format("x\n", "x \n");
+        let formatted_lines: Vec<&str> = formatted_lines.lines().collect();
         assert_eq!(
-            format("x\n", "x \n").to_string().lines().collect(): Vec<&str>,
+            formatted_lines,
             [
                 format!("{}-x{}", OLD, NORMAL),
                 format!("{}+x{}", NEW, NORMAL),
