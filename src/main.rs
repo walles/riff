@@ -355,9 +355,9 @@ mod tests {
             )
         );
 
-        let mut output: Vec<u8> = Vec::new();
-        highlight_diff(&mut input, &mut output);
-        assert_eq!(std::str::from_utf8(&output).unwrap(), expected);
+        let mut actual: Vec<u8> = Vec::new();
+        highlight_diff(&mut input, &mut actual);
+        assert_eq!(std::str::from_utf8(&actual).unwrap(), expected);
     }
 
     #[test]
