@@ -6,6 +6,9 @@
 
 set -ex
 
+# Make sure we're on latest
+rustup update
+
 # Settings are at the top of main.rs
 cargo clippy
 

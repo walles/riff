@@ -232,7 +232,7 @@ fn render(tokens: &[StyledToken]) -> String {
     for token in tokens {
         if token.token == "\n" {
             rendered.push_str(NORMAL);
-            rendered.push_str("\n");
+            rendered.push('\n');
             is_inverse = false;
             color = NORMAL;
             continue;
