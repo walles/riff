@@ -99,7 +99,9 @@ impl TokenCollector {
             return;
         }
 
-        highlight_trailing_whitespace(&mut self.current_row);
+        if self.line_prefix.style == Style::New {
+            highlight_trailing_whitespace(&mut self.current_row);
+        }
 
         // Set inverse from prefix
         let mut is_inverse = self.line_prefix.style.is_inverse();
@@ -157,6 +159,9 @@ fn highlight_trailing_whitespace(row: &mut [StyledToken]) {
 mod tests {
     use super::*;
 
+    #[cfg(test)]
+    use pretty_assertions::assert_eq;
+
     #[test]
     fn test_basic() {
         let mut test_me = TokenCollector::create(StyledToken {
@@ -211,5 +216,15 @@ mod tests {
                 StyledToken::new("x".to_string(), Style::New),
             ]
         );
+    }
+
+    #[test]
+    fn test_removed_trailing_whitespace() {
+        // It shouldn't be highlighted, just added ones should
+        let mut test_me = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
+        test_me.push(StyledToken::new(" ".to_string(), Style::Old));
+        let actual = test_me.render();
+
+        assert_eq!(actual, format!("{}- {}", OLD, NORMAL));
     }
 }

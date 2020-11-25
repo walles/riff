@@ -169,3 +169,4 @@ Just invoke `./release.sh` and follow instructions.
 - Add a trailing whitespace analysis pass to the Refiner
 - Let the Refiner highlight whitespace errors among the added lines in
   reverse red.
+- Highlight whitespace in added parts only
