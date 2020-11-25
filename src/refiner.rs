@@ -1,53 +1,12 @@
-use crate::constants::*;
 use crate::tokenizer;
+use crate::{
+    constants::*,
+    token_collector::{Style, StyledToken, TokenCollector},
+};
 use diffus::{
     edit::{self, collection},
     Diffable,
 };
-
-#[derive(Clone)]
-enum Style {
-    Old,
-    OldInverse,
-    New,
-    NewInverse,
-}
-
-#[derive(Clone)]
-struct StyledToken {
-    token: String,
-    style: Style,
-}
-
-impl Style {
-    pub fn is_inverse(&self) -> bool {
-        match self {
-            Style::OldInverse | Style::NewInverse => {
-                return true;
-            }
-            _ => {
-                return false;
-            }
-        }
-    }
-
-    pub fn color(&self) -> &str {
-        match self {
-            Style::Old => {
-                return OLD;
-            }
-            Style::OldInverse => {
-                return OLD;
-            }
-            Style::New => {
-                return NEW;
-            }
-            Style::NewInverse => {
-                return NEW;
-            }
-        }
-    }
-}
 
 /// If more than this part of either adds or moves is highlighted,
 /// we consider it to be a replacement rather than a move, and skip
@@ -100,8 +59,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     // Find diffs between adds and removals
-    let mut highlighted_old: Vec<StyledToken> = Vec::new();
-    let mut highlighted_new: Vec<StyledToken> = Vec::new();
+    let mut old_collector = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
+    let mut new_collector = TokenCollector::create(StyledToken::new("+".to_string(), Style::New));
     let mut old_highlight_count = 0;
     let mut new_highlight_count = 0;
 
@@ -113,14 +72,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     match diff {
         edit::Edit::Copy(unchanged) => {
             for token in unchanged {
-                highlighted_old.push(StyledToken {
-                    token: token.clone(),
-                    style: Style::Old,
-                });
-                highlighted_new.push(StyledToken {
-                    token: token.to_string(),
-                    style: Style::New,
-                });
+                old_collector.push(StyledToken::new(token.clone(), Style::Old));
+                new_collector.push(StyledToken::new(token.clone(), Style::New));
             }
         }
         edit::Edit::Change(diff) => {
@@ -128,43 +81,27 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                 .map(|edit| {
                     match edit {
                         collection::Edit::Copy(token) => {
-                            highlighted_old.push(StyledToken {
-                                token: token.clone(),
-                                style: Style::Old,
-                            });
-                            highlighted_new.push(StyledToken {
-                                token: token.clone(),
-                                style: Style::New,
-                            });
+                            old_collector.push(StyledToken::new(token.clone(), Style::Old));
+                            new_collector.push(StyledToken::new(token.clone(), Style::New));
                         }
                         collection::Edit::Insert(token) => {
                             new_highlight_count += 1;
                             if token == "\n" {
                                 // Make sure the highlighted linefeed is visible
-                                highlighted_new.push(StyledToken {
-                                    token: "⏎".to_string(),
-                                    style: Style::NewInverse,
-                                });
+                                new_collector
+                                    .push(StyledToken::new("⏎".to_string(), Style::NewInverse));
                             }
-                            highlighted_new.push(StyledToken {
-                                token: token.clone(),
-                                style: Style::NewInverse,
-                            });
+                            new_collector.push(StyledToken::new(token.clone(), Style::NewInverse));
                         }
                         collection::Edit::Remove(token) => {
                             old_highlight_count += 1;
 
                             if token == "\n" {
                                 // Make sure the highlighted linefeed is visible
-                                highlighted_old.push(StyledToken {
-                                    token: "⏎".to_string(),
-                                    style: Style::OldInverse,
-                                });
+                                old_collector
+                                    .push(StyledToken::new("⏎".to_string(), Style::OldInverse));
                             }
-                            highlighted_old.push(StyledToken {
-                                token: token.clone(),
-                                style: Style::OldInverse,
-                            });
+                            old_collector.push(StyledToken::new(token.clone(), Style::OldInverse));
                         }
                         collection::Edit::Change(_) => unimplemented!("Not implemented, help!"),
                     };
@@ -184,82 +121,9 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
         return simple_format(old_text, new_text);
     }
 
-    let highlighted_old = with_line_prefixes(
-        &highlighted_old,
-        StyledToken {
-            token: "-".to_string(),
-            style: Style::Old,
-        },
-    );
-    let highlighted_new = with_line_prefixes(
-        &highlighted_new,
-        StyledToken {
-            token: "+".to_string(),
-            style: Style::New,
-        },
-    );
-
-    let highlighted_old_text = render(&highlighted_old);
-    let highlighted_new_text = render(&highlighted_new);
+    let highlighted_old_text = old_collector.render();
+    let highlighted_new_text = new_collector.render();
     return to_lines(&highlighted_old_text, &highlighted_new_text);
-}
-
-/// Adds prefix in front of every new line
-#[must_use]
-fn with_line_prefixes(without_prefixes: &[StyledToken], prefix: StyledToken) -> Vec<StyledToken> {
-    let mut want_prefix = true;
-    let mut with_prefixes: Vec<StyledToken> = Vec::new();
-    for token in without_prefixes {
-        if want_prefix {
-            with_prefixes.push(prefix.clone());
-            want_prefix = false;
-        }
-
-        with_prefixes.push(token.clone());
-
-        if token.token == "\n" {
-            want_prefix = true;
-        }
-    }
-    return with_prefixes;
-}
-
-#[must_use]
-fn render(tokens: &[StyledToken]) -> String {
-    let mut rendered = String::new();
-    let mut is_inverse = false;
-    let mut color = NORMAL;
-    for token in tokens {
-        if token.token == "\n" {
-            rendered.push_str(NORMAL);
-            rendered.push('\n');
-            is_inverse = false;
-            color = NORMAL;
-            continue;
-        }
-
-        if token.style.is_inverse() && !is_inverse {
-            rendered.push_str(INVERSE_VIDEO);
-        }
-        if is_inverse && !token.style.is_inverse() {
-            rendered.push_str(NOT_INVERSE_VIDEO);
-        }
-        is_inverse = token.style.is_inverse();
-
-        if token.style.color() != color {
-            rendered.push_str(token.style.color());
-            color = token.style.color();
-        }
-
-        rendered.push_str(&token.token);
-    }
-
-    if !rendered.ends_with(&"\n") {
-        // Don't forget to reset even if we don't end in a newline
-        rendered.push_str(NORMAL);
-    }
-
-    return rendered;
 }
 
 #[must_use]

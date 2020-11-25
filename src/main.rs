@@ -22,6 +22,7 @@ use std::str;
 
 mod constants;
 mod refiner;
+mod token_collector;
 mod tokenizer;
 
 const HELP_TEXT: &str = r#"
