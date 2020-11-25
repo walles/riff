@@ -1,14 +1,15 @@
 use crate::constants::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Style {
     Old,
     OldInverse,
     New,
     NewInverse,
+    Error,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct StyledToken {
     token: String,
     style: Style,
@@ -17,6 +18,18 @@ pub struct StyledToken {
 impl StyledToken {
     pub fn new(token: String, style: Style) -> StyledToken {
         return StyledToken { token, style };
+    }
+
+    pub fn is_whitespace(&self) -> bool {
+        let mut chars_iterator = self.token.chars();
+        let first_char = chars_iterator.next().unwrap();
+        if chars_iterator.next().is_some() {
+            // Multiple chars found in this token, but whitespace will only be
+            // one per token.
+            return false;
+        }
+
+        return first_char.is_whitespace();
     }
 }
 
@@ -30,7 +43,7 @@ impl Style {
     #[must_use]
     pub fn is_inverse(&self) -> bool {
         match self {
-            Style::OldInverse | Style::NewInverse => {
+            Style::OldInverse | Style::NewInverse | Style::Error => {
                 return true;
             }
             _ => {
@@ -53,6 +66,9 @@ impl Style {
             }
             Style::NewInverse => {
                 return NEW;
+            }
+            Style::Error => {
+                return ERROR;
             }
         }
     }
@@ -82,6 +98,8 @@ impl TokenCollector {
         if self.current_row.is_empty() {
             return;
         }
+
+        highlight_trailing_whitespace(&mut self.current_row);
 
         // Set inverse from prefix
         let mut is_inverse = self.line_prefix.style.is_inverse();
@@ -125,6 +143,16 @@ impl TokenCollector {
     }
 }
 
+fn highlight_trailing_whitespace(row: &mut [StyledToken]) {
+    for token in row.iter_mut().rev() {
+        if !token.is_whitespace() {
+            return;
+        }
+
+        token.style = Style::Error;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -147,5 +175,41 @@ mod tests {
         });
 
         assert_eq!(test_me.render(), format!("{}+hej{}\n", NEW, NORMAL));
+    }
+
+    #[test]
+    fn test_trailing_whitespace() {
+        // Just a whitespace
+        let mut row = [StyledToken::new(" ".to_string(), Style::New)];
+        highlight_trailing_whitespace(&mut row);
+        assert_eq!(row, [StyledToken::new(" ".to_string(), Style::Error)]);
+
+        // Trailing whitespace
+        let mut row = [
+            StyledToken::new("x".to_string(), Style::New),
+            StyledToken::new(" ".to_string(), Style::New),
+        ];
+        highlight_trailing_whitespace(&mut row);
+        assert_eq!(
+            row,
+            [
+                StyledToken::new("x".to_string(), Style::New),
+                StyledToken::new(" ".to_string(), Style::Error),
+            ]
+        );
+
+        // Leading whitespace
+        let mut row = [
+            StyledToken::new(" ".to_string(), Style::New),
+            StyledToken::new("x".to_string(), Style::New),
+        ];
+        highlight_trailing_whitespace(&mut row);
+        assert_eq!(
+            row,
+            [
+                StyledToken::new(" ".to_string(), Style::New),
+                StyledToken::new("x".to_string(), Style::New),
+            ]
+        );
     }
 }

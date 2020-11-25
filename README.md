@@ -58,9 +58,6 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
-- Add a trailing whitespace analysis pass to the Refiner
-- Let the Refiner highlight whitespace errors among the added lines in
-  reverse red.
 - Add highlighting of non-leading tabs to the whitespace analysis
 - Put argv contents in crash report
 - In `ci.sh`, add a test case verifying that our exception handler prints
@@ -169,3 +166,6 @@ Just invoke `./release.sh` and follow instructions.
 - Document install instructions
 - Make a public release
 - Remedy `release.sh` FIXMEs
+- Add a trailing whitespace analysis pass to the Refiner
+- Let the Refiner highlight whitespace errors among the added lines in
+  reverse red.
