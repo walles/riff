@@ -20,13 +20,10 @@ impl StyledToken {
     }
 }
 
-pub struct TokenCollector<'a> {
+pub struct TokenCollector {
     line_prefix: StyledToken,
     rendered: String,
-    color: &'a str,
-    is_inverse: bool,
-    is_start_of_line: bool,
-    finalized: bool,
+    current_row: Vec<StyledToken>,
 }
 
 impl Style {
@@ -61,66 +58,68 @@ impl Style {
     }
 }
 
-impl TokenCollector<'_> {
+impl TokenCollector {
     #[must_use]
     pub fn create(line_prefix: StyledToken) -> Self {
         return TokenCollector {
             line_prefix,
             rendered: String::new(),
-            color: NORMAL,
-            is_inverse: false,
-            is_start_of_line: true,
-            finalized: false,
+            current_row: Vec::new(),
         };
     }
 
     pub fn push(&mut self, token: StyledToken) {
-        if self.finalized {
-            panic!("Already finalized, can't add more tokens");
-        }
-
         if token.token == "\n" {
-            self.rendered.push_str(NORMAL);
+            self.commit();
             self.rendered.push('\n');
-            self.is_inverse = false;
-            self.is_start_of_line = true;
-            self.color = NORMAL;
             return;
         }
 
-        if self.is_start_of_line {
-            self.is_start_of_line = false;
-            self.push(self.line_prefix.clone());
-        }
-
-        if token.style.is_inverse() && !self.is_inverse {
-            self.rendered.push_str(INVERSE_VIDEO);
-        }
-        if self.is_inverse && !token.style.is_inverse() {
-            self.rendered.push_str(NOT_INVERSE_VIDEO);
-        }
-        self.is_inverse = token.style.is_inverse();
-
-        if token.style.color() != self.color {
-            self.rendered.push_str(token.style.color());
-            self.color = token.style.color();
-        }
-
-        self.rendered.push_str(&token.token);
+        self.current_row.push(token);
     }
 
-    fn finalize(&mut self) {
-        self.finalized = true;
-
-        if !self.rendered.ends_with(&"\n") {
-            // Don't forget to reset even if we don't end in a newline
-            self.rendered.push_str(NORMAL);
+    fn commit(&mut self) {
+        if self.current_row.is_empty() {
+            return;
         }
+
+        // Set inverse from prefix
+        let mut is_inverse = self.line_prefix.style.is_inverse();
+        if is_inverse {
+            self.rendered.push_str(INVERSE_VIDEO);
+        }
+
+        // Set line color from prefix
+        let mut color = self.line_prefix.style.color();
+        self.rendered.push_str(self.line_prefix.style.color());
+
+        // Render prefix
+        self.rendered.push_str(&self.line_prefix.token);
+
+        for token in &self.current_row {
+            if token.style.is_inverse() && !is_inverse {
+                self.rendered.push_str(INVERSE_VIDEO);
+            }
+            if is_inverse && !token.style.is_inverse() {
+                self.rendered.push_str(NOT_INVERSE_VIDEO);
+            }
+            is_inverse = token.style.is_inverse();
+
+            if token.style.color() != color {
+                self.rendered.push_str(token.style.color());
+                color = token.style.color();
+            }
+
+            self.rendered.push_str(&token.token);
+        }
+
+        self.rendered.push_str(NORMAL);
+        self.current_row.clear();
     }
 
     #[must_use]
     pub fn render(&mut self) -> String {
-        self.finalize();
+        self.commit();
 
         return self.rendered.clone();
     }
