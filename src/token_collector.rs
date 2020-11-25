@@ -26,6 +26,7 @@ pub struct TokenCollector<'a> {
     color: &'a str,
     is_inverse: bool,
     is_start_of_line: bool,
+    finalized: bool,
 }
 
 impl Style {
@@ -69,10 +70,15 @@ impl TokenCollector<'_> {
             color: NORMAL,
             is_inverse: false,
             is_start_of_line: true,
+            finalized: false,
         };
     }
 
     pub fn push(&mut self, token: StyledToken) {
+        if self.finalized {
+            panic!("Already finalized, can't add more tokens");
+        }
+
         if token.token == "\n" {
             self.rendered.push_str(NORMAL);
             self.rendered.push('\n');
@@ -103,12 +109,18 @@ impl TokenCollector<'_> {
         self.rendered.push_str(&token.token);
     }
 
-    #[must_use]
-    pub fn render(&mut self) -> String {
+    fn finalize(&mut self) {
+        self.finalized = true;
+
         if !self.rendered.ends_with(&"\n") {
             // Don't forget to reset even if we don't end in a newline
             self.rendered.push_str(NORMAL);
         }
+    }
+
+    #[must_use]
+    pub fn render(&mut self) -> String {
+        self.finalize();
 
         return self.rendered.clone();
     }
