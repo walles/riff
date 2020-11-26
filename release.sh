@@ -28,8 +28,8 @@ cat << EOM
 Please consider updating the screenshot in README.md before releasing.
 
 Scale your window to 92x28, then:
-* Get the px source code: <https://github.com/walles/px>
-* In the px source code, do: "git show 9c91399309"
+* Get the moar source code: <https://github.com/walles/moar>
+* In the moar source code, do: "git show 9c91399309"
 
 Answer yes at this prompt to verify that the Output section is complete.
 EOM
