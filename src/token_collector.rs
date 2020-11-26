@@ -101,6 +101,7 @@ impl TokenCollector {
 
         if self.line_prefix.style == Style::New {
             highlight_trailing_whitespace(&mut self.current_row);
+            highlight_nonleading_tab(&mut self.current_row);
         }
 
         // Set inverse from prefix
@@ -155,6 +156,36 @@ fn highlight_trailing_whitespace(row: &mut [StyledToken]) {
     }
 }
 
+fn highlight_nonleading_tab(row: &mut [StyledToken]) {
+    let mut token_iter = row.iter_mut();
+
+    // Skip leading TABs
+    loop {
+        let next = token_iter.next();
+        if next.is_none() {
+            // Done!
+            return;
+        }
+
+        let token = next.unwrap();
+        if token.token != "\t" {
+            // Not a TAB, this means we're out of skipping the leading TABs
+            break;
+        }
+    }
+
+    // Scan the rest of the line for non-leading TABs
+    for token in token_iter {
+        if token.token != "\t" {
+            // Not a TAB, never mind
+            continue;
+        }
+
+        // Non-leading TAB, mark it!
+        token.style = Style::Error;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -183,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    fn test_trailing_whitespace() {
+    fn test_add_trailing_whitespace() {
         // Just a whitespace
         let mut row = [StyledToken::new(" ".to_string(), Style::New)];
         highlight_trailing_whitespace(&mut row);
@@ -226,5 +257,68 @@ mod tests {
         let actual = test_me.render();
 
         assert_eq!(actual, format!("{}- {}", OLD, NORMAL));
+    }
+
+    #[test]
+    fn test_add_nonleading_tab() {
+        // Trailing TAB
+        let mut row = [
+            StyledToken::new("x".to_string(), Style::New),
+            StyledToken::new("\t".to_string(), Style::New),
+        ];
+        highlight_nonleading_tab(&mut row);
+        assert_eq!(
+            row,
+            [
+                StyledToken::new("x".to_string(), Style::New),
+                StyledToken::new("\t".to_string(), Style::Error),
+            ]
+        );
+
+        // Middle TAB
+        let mut row = [
+            StyledToken::new("x".to_string(), Style::New),
+            StyledToken::new("\t".to_string(), Style::New),
+            StyledToken::new("y".to_string(), Style::New),
+        ];
+        highlight_nonleading_tab(&mut row);
+        assert_eq!(
+            row,
+            [
+                StyledToken::new("x".to_string(), Style::New),
+                StyledToken::new("\t".to_string(), Style::Error),
+                StyledToken::new("y".to_string(), Style::New),
+            ]
+        );
+
+        // Leading TAB (don't highlight)
+        let mut row = [
+            StyledToken::new("\t".to_string(), Style::New),
+            StyledToken::new("x".to_string(), Style::New),
+        ];
+        highlight_nonleading_tab(&mut row);
+        assert_eq!(
+            row,
+            [
+                StyledToken::new("\t".to_string(), Style::New),
+                StyledToken::new("x".to_string(), Style::New),
+            ]
+        );
+
+        // Single TAB (don't highlight because it is leading)
+        let mut row = [StyledToken::new("\t".to_string(), Style::New)];
+        highlight_nonleading_tab(&mut row);
+        assert_eq!(row, [StyledToken::new("\t".to_string(), Style::New),]);
+    }
+
+    #[test]
+    fn test_removed_nonleading_tab() {
+        // It shouldn't be highlighted, just added ones should
+        let mut test_me = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
+        test_me.push(StyledToken::new("x".to_string(), Style::Old));
+        test_me.push(StyledToken::new("\t".to_string(), Style::Old));
+        let actual = test_me.render();
+
+        assert_eq!(actual, format!("{}-x\t{}", OLD, NORMAL));
     }
 }

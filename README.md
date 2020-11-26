@@ -58,7 +58,6 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
-- Add highlighting of non-leading tabs to the whitespace analysis
 - Put argv contents in crash report
 - In `ci.sh`, add a test case verifying that our exception handler prints
   backtraces in release builds (should fail when stripping the release binary)
@@ -66,7 +65,6 @@ Just invoke `./release.sh` and follow instructions.
   numbers for the `riff` frames in the backtraces, in release builds. This
   should fail when stripping the release binary.
 - Make the Linux binary smaller
-- Try to get line numbers into release build crash reports
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
 - Search code for `.clone()` and `.to_string()` and see if we can get rid of
@@ -170,3 +168,4 @@ Just invoke `./release.sh` and follow instructions.
 - Let the Refiner highlight whitespace errors among the added lines in
   reverse red.
 - Highlight whitespace in added parts only
+- Add highlighting of non-leading tabs to the whitespace analysis
