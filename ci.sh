@@ -33,7 +33,7 @@ cargo run --release -- --please-panic 2> "$STDERR" && exit 1
 # No line numbers on macOS in release builds (even though the ticket is closed)
 # on 2020nov27, so we can't check for those:
 # <https://github.com/rust-lang/rust/issues/24346>
-grep "riff::main" "$STDERR"
+grep "riff::main" "$STDERR" || ( cat "$STDERR" ; exit 1 )
 
 echo
 echo Crash reporting tests passed
