@@ -45,7 +45,7 @@ Report issues at <https://github.com/walles/riff>.
 "#;
 
 const CRASH_FOOTER: &str = r#"
-Please copy all of the above up to the --- RIFF CRASHED --- marker and report it at one of:
+Please copy the above crash report and report it at one of:
 * <https://github.com/walles/riff/issues> (preferred)
 * <johan.walles@gmail.com>
 "#;
@@ -252,7 +252,10 @@ fn print_help(output: &mut dyn io::Write) {
 fn panic_handler(panic_info: &panic::PanicInfo) {
     let stderr: &mut dyn Write = &mut io::stderr();
     let stderr = &mut BufWriter::new(stderr);
-    println(stderr, "\n\n------------ RIFF CRASHED -------------------");
+    println(
+        stderr,
+        "\n\n-v-v-v----------- RIFF CRASHED ---------------v-v-v-\n",
+    );
 
     // Panic message
     if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
@@ -266,6 +269,11 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
     println(stderr, &format!("{:?}", Backtrace::new()));
 
     println(stderr, &format!("Riff version: {}", GIT_VERSION));
+
+    println(
+        stderr,
+        "\n-^-^-^------- END OF RIFF CRASH REPORT -------^-^-^-\n",
+    );
 
     println(stderr, CRASH_FOOTER);
 }
@@ -286,6 +294,10 @@ fn main() {
         println!();
         println!("Source code available at <https://github.com/walles/riff>.");
         return;
+    }
+
+    if consume("--please-panic", &mut args) {
+        panic!("Panicking on purpose");
     }
 
     if stdin_isatty() {

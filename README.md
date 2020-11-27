@@ -58,12 +58,9 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
+- On Linux, require line numbers in backtraces in release builds, update panic
+  tests in `ci.sh`
 - Put argv contents in crash report
-- In `ci.sh`, add a test case verifying that our exception handler prints
-  backtraces in release builds (should fail when stripping the release binary)
-- In `ci.sh`, add a test case verifying that our exception handler prints line
-  numbers for the `riff` frames in the backtraces, in release builds. This
-  should fail when stripping the release binary.
 - Make the Linux binary smaller
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
@@ -168,3 +165,8 @@ Just invoke `./release.sh` and follow instructions.
 - Highlight whitespace in added parts only
 - Add highlighting of non-leading tabs to the whitespace analysis
 - Profile and see if we can go faster
+- In `ci.sh`, add a test case verifying that our exception handler prints
+  backtraces in release builds (should fail when stripping the release binary)
+- In `ci.sh`, add a test case verifying that our exception handler prints line
+  numbers for the `riff` frames in the backtraces, in release builds. This
+  should fail when stripping the release binary.
