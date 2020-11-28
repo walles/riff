@@ -20,16 +20,20 @@ cargo test --workspace
 # If you have an editor that formats on save this will never be a problem
 cargo fmt -- --check
 
-# Verify crash reporting
+# Verify production crash reporting
+cargo build --release
 STDERR=$(mktemp -t riff-panic-test.XXX)
 
 echo
 echo Writing test crash report here: "$STDERR"...
 # The && exit 1 means: If the panic run passes, fail this test run
-cargo run --release -- --please-panic 2> "$STDERR" && exit 1
+cargo run --quiet --release -- --please-panic 2> "$STDERR" && exit 1
 
 # Require name and line number for the crash location
 grep -E 'src/main\.rs:[0-9]+' "$STDERR" || ( cat "$STDERR" ; exit 1 )
+
+# Require command line arguments
+grep -E -- '--please-panic' "$STDERR" || ( cat "$STDERR" ; exit 1 )
 
 echo
 echo Crash reporting tests passed

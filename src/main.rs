@@ -264,11 +264,14 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
     }
 
     // Backtrace
-    // FIXME: Ditch the Backtrace-internal frames from this backtrace
-    // FIXME: Ditch the panic internal frames at the end of the backtrace
     println(stderr, &format!("{:?}", Backtrace::new()));
 
     println(stderr, &format!("Riff version: {}", GIT_VERSION));
+
+    println(stderr, "Command line arguments:");
+    for argument in env::args() {
+        println(stderr, &format!("* <{}>", argument));
+    }
 
     println(
         stderr,

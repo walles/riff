@@ -58,7 +58,6 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
-- Put argv contents in crash report
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
@@ -169,3 +168,4 @@ Just invoke `./release.sh` and follow instructions.
   should fail when stripping the release binary.
 - Require line numbers in backtraces in release builds
 - Make the Linux binary smaller
+- Put argv contents in crash report
