@@ -281,6 +281,34 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
     println(stderr, CRASH_FOOTER);
 }
 
+fn highlight_stream(input: &mut dyn io::Read) {
+    if !stdout_isatty() {
+        // We're being piped, just do stdin -> stdout
+        highlight_diff(&mut io::stdin().lock(), &mut io::stdout());
+        return;
+    }
+
+    if let Ok(pager_value) = env::var("PAGER") {
+        if try_pager(&pager_value) {
+            return;
+        }
+
+        // FIXME: Print warning at the end if $PAGER was set to something that
+        // doesn't exist.
+    }
+
+    if try_pager("moar") {
+        return;
+    }
+
+    if try_pager("less") {
+        return;
+    }
+
+    // No pager found, wth?
+    highlight_diff(input, &mut io::stdout());
+}
+
 fn main() {
     panic::set_hook(Box::new(|panic_info: &panic::PanicInfo| {
         panic_handler(panic_info);
@@ -310,31 +338,7 @@ fn main() {
         exit(1);
     }
 
-    if !stdout_isatty() {
-        // We're being piped, just do stdin -> stdout
-        highlight_diff(&mut io::stdin().lock(), &mut io::stdout());
-        return;
-    }
-
-    if let Ok(pager_value) = env::var("PAGER") {
-        if try_pager(&pager_value) {
-            return;
-        }
-
-        // FIXME: Print warning at the end if $PAGER was set to something that
-        // doesn't exist.
-    }
-
-    if try_pager("moar") {
-        return;
-    }
-
-    if try_pager("less") {
-        return;
-    }
-
-    // No pager found, wth?
-    highlight_diff(&mut io::stdin().lock(), &mut io::stdout());
+    highlight_stream(&mut io::stdin().lock());
 }
 
 #[cfg(test)]
