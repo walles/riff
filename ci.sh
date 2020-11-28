@@ -6,8 +6,9 @@
 
 set -ex
 
-# Make sure we're on latest
+# Make sure we're on latest, mostly for Clippy's sake
 rustup update
+rustup component add clippy rustfmt
 
 # Settings are at the top of main.rs
 cargo clippy
@@ -33,7 +34,7 @@ cargo run --quiet --release -- --please-panic 2> "$STDERR" && exit 1
 grep -E 'src/main\.rs:[0-9]+' "$STDERR" || ( cat "$STDERR" ; exit 1 )
 
 # Require command line arguments
-grep -E -- '--please-panic' "$STDERR" || ( cat "$STDERR" ; exit 1 )
+grep -B2 -E -- '--please-panic' "$STDERR" || ( cat "$STDERR" ; exit 1 )
 
 echo
 echo Crash reporting tests passed
