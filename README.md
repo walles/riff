@@ -58,10 +58,7 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
-- On Linux, require line numbers in backtraces in release builds, update panic
-  tests in `ci.sh`
 - Put argv contents in crash report
-- Make the Linux binary smaller
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
@@ -170,3 +167,5 @@ Just invoke `./release.sh` and follow instructions.
 - In `ci.sh`, add a test case verifying that our exception handler prints line
   numbers for the `riff` frames in the backtraces, in release builds. This
   should fail when stripping the release binary.
+- Require line numbers in backtraces in release builds
+- Make the Linux binary smaller

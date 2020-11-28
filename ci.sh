@@ -28,12 +28,8 @@ echo Writing test crash report here: "$STDERR"...
 # The && exit 1 means: If the panic run passes, fail this test run
 cargo run --release -- --please-panic 2> "$STDERR" && exit 1
 
-# Require the name of the crashing function
-#
-# No line numbers on macOS in release builds (even though the ticket is closed)
-# on 2020nov27, so we can't check for those:
-# <https://github.com/rust-lang/rust/issues/24346>
-grep "riff::main" "$STDERR" || ( cat "$STDERR" ; exit 1 )
+# Require name and line number for the crash location
+grep -E 'src/main\.rs:[0-9]+' "$STDERR" || ( cat "$STDERR" ; exit 1 )
 
 echo
 echo Crash reporting tests passed
