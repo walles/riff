@@ -21,7 +21,7 @@ cargo test --workspace
 cargo fmt -- --check
 
 # Verify crash reporting
-STDERR=$(mktemp -t riff-panic-test)
+STDERR=$(mktemp -t riff-panic-test.XXX)
 
 echo
 echo Writing test crash report here: "$STDERR"...
