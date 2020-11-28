@@ -58,14 +58,14 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
+- Given two files on the command line, we should pass them and any
+  options on to `diff` and highlight the result.
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
   executed from inside of the `$PATH`
 - Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
   How should we visualize the reformatting of the No-newline-at-eof code?
-- Add test for never changing the number of lines in the input, that
-  messes up `git add -p` behavior.
 - Do `git show 0f5dd84` and think about how to visualize one line
   changing to itself with a comma at the end plus a bunch of entirely
   new lines. Think of a constant array getting one or more extra
@@ -73,21 +73,16 @@ Just invoke `./release.sh` and follow instructions.
 - Do `git show -b 77c8f77` and think about what rule we should use to
   highlight the leading spaces of the `+ refined` and `+ page` lines
   at the end of the file.
-- When special highighting an expansion, highlight the added parts in green
-  reverse, rather than black reverse. Testcase: `git show 7ea6877`
-- Handle plain non-git diff files
-- Think about how to visualize an added line break together with some
-  indentation on the following line.
 - Do `git show 57f27da` and think about what rule we should use to get
   the REVERSE vs reversed() lines highlighted.
-- Make sure we highlight the output of `git log -p` properly. If we
-  get something unexpected, maybe just go back to :initial?
+- Add test for never changing the number of lines in the input, that
+  messes up `git add -p` behavior.
+- Think about how to visualize an added line break together with some
+  indentation on the following line.
 - Make sure we highlight the output of `git show --stat` properly
 - Make sure we can handle a git conflict
   resolution diff. File format is described at
   http://git-scm.com/docs/git-diff#_combined_diff_format.
-- Given two files on the command line, we should pass them and any
-  options on to `diff` and highlight the result.
 - Given three files on the command line, we should pass them and any
   options on to `diff3` and highlight the result
 
@@ -169,3 +164,4 @@ Just invoke `./release.sh` and follow instructions.
 - Require line numbers in backtraces in release builds
 - Make the Linux binary smaller
 - Put argv contents in crash report
+- Handle plain non-git diff files
