@@ -257,10 +257,8 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
     eprintln!("\n\n-v-v-v----------- RIFF CRASHED ---------------v-v-v-\n",);
 
     // Panic message
-    if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
-        eprintln!("Panic message: <{:?}>", s);
-        eprintln!("");
-    }
+    eprintln!("Panic message: <{:#?}>", panic_info);
+    eprintln!("");
 
     // Backtrace
     eprintln!("{:?}", Backtrace::new());
