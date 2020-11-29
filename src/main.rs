@@ -315,8 +315,7 @@ pub fn type_string(path: &path::Path) -> &str {
     if path.is_dir() {
         return "Directory";
     }
-
-    panic!("Not sure what this is: {}", path.to_string_lossy());
+    return "Not file not dir";
 }
 
 fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool) {

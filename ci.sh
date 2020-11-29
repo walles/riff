@@ -4,7 +4,7 @@
 # * .travis.yml
 # * <http://travis-ci.com/github/walles/riff>
 
-set -ex
+set -euxo pipefail
 
 # Make sure we're on latest, mostly for Clippy's sake
 rustup update
@@ -40,8 +40,8 @@ echo
 echo Crash reporting tests passed
 rm "$STDERR"
 
-# Test diffing two files
-cargo run --quiet -- /dev/null /dev/null | wc -l | grep -E "[^0-9]0$" > /dev/null
+# Test diffing two files (myself vs myself)
+cargo run --quiet -- "$0" "$0" | wc -l | grep -E "[^0-9]0$" > /dev/null
 
 echo
 echo "All tests passed!"
