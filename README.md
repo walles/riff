@@ -26,6 +26,12 @@ git config --global interactive.filter riff
 
 ... then all future `git diff`s and `git show`s will be refined.
 
+Or you can use `riff` as an alias for `diff`:
+
+```
+riff file1.txt file2.txt
+```
+
 # Installation
 
 1. Go [here](https://github.com/walles/riff/releases/latest) and download the
@@ -59,8 +65,6 @@ Just invoke `./release.sh` and follow instructions.
 ## Misc
 
 - Support `riff -b path1 path2` to diff files ignoring whitespace
-- Given two files on the command line, we should pass them and any
-  options on to `diff` and highlight the result.
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
@@ -166,3 +170,5 @@ Just invoke `./release.sh` and follow instructions.
 - Make the Linux binary smaller
 - Put argv contents in crash report
 - Handle plain non-git diff files
+- Given two files on the command line, we should pass them on to `diff` and
+  highlight the result.
