@@ -16,6 +16,7 @@ use regex::Regex;
 use std::env;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::panic;
+use std::path;
 use std::process::exit;
 use std::process::{Command, Stdio};
 use std::str;
@@ -26,9 +27,12 @@ mod token_collector;
 mod tokenizer;
 
 const HELP_TEXT: &str = r#"
-Usage: diff ... | riff
+Usage:
+  diff ... | riff
+  riff <file1> <file2>
+  riff <directory1> <directory2>
 
-Colors diff and highlights what parts of changed lines have changed.
+Colors diff output, highlighting the changed parts of every line.
 
 Git integration:
     git config --global pager.diff riff
@@ -309,17 +313,51 @@ fn highlight_stream(input: &mut dyn io::Read) {
     highlight_diff(input, &mut io::stdout());
 }
 
-fn exec_diff_highlight(file1: &str, file2: &str) {
-    // FIXME: Check that either:
-    // * Both file1 and file2 are files
-    // * Both file1 and file2 are directories
+pub fn type_string(path: &path::Path) -> &str {
+    if !path.exists() {
+        return "Not found";
+    }
+    if path.is_file() {
+        return "File";
+    }
+    if path.is_dir() {
+        return "Directory";
+    }
+
+    panic!("Not sure what this is: {}", path.to_string_lossy());
+}
+
+fn exec_diff_highlight(path1: &str, path2: &str) {
+    let path1 = path::Path::new(path1);
+    let path2 = path::Path::new(path2);
+    let both_paths_are_files = path1.is_file() && path2.is_file();
+    let both_paths_are_dirs = path1.is_dir() && path2.is_dir();
+
+    if !(both_paths_are_files || both_paths_are_dirs) {
+        let stderr: &mut dyn Write = &mut io::stderr();
+        let stderr = &mut BufWriter::new(stderr);
+        println(
+            stderr,
+            "Can only compare file to file or directory to directory, not like this:",
+        );
+        println(
+            stderr,
+            &format!("  {:<9}: {}", type_string(path1), path1.to_string_lossy()),
+        );
+        println(
+            stderr,
+            &format!("  {:<9}: {}", type_string(path2), path2.to_string_lossy()),
+        );
+        let _flush_result = stderr.flush();
+        exit(1);
+    }
 
     // Run "diff -ur file1 file2"
     let command: &mut Command = &mut Command::new("diff");
     let command = command
         .arg("-ur") // "-u = unified diff, -r = recurse subdirectories"
-        .arg(file1)
-        .arg(file2)
+        .arg(path1)
+        .arg(path2)
         .stdout(Stdio::piped());
 
     match command.spawn() {
