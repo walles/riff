@@ -254,35 +254,28 @@ fn print_help(output: &mut dyn io::Write) {
 }
 
 fn panic_handler(panic_info: &panic::PanicInfo) {
-    let stderr: &mut dyn Write = &mut io::stderr();
-    let stderr = &mut BufWriter::new(stderr);
-    println(
-        stderr,
-        "\n\n-v-v-v----------- RIFF CRASHED ---------------v-v-v-\n",
-    );
+    eprintln!("\n\n-v-v-v----------- RIFF CRASHED ---------------v-v-v-\n",);
 
     // Panic message
     if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
-        println(stderr, &format!("Panic message: <{:?}>", s));
-        println(stderr, "");
+        eprintln!("Panic message: <{:?}>", s);
+        eprintln!("");
     }
 
     // Backtrace
-    println(stderr, &format!("{:?}", Backtrace::new()));
+    eprintln!("{:?}", Backtrace::new());
 
-    println(stderr, &format!("Riff version: {}", GIT_VERSION));
+    eprintln!("Riff version: {}", GIT_VERSION);
 
-    println(stderr, "Command line arguments:");
+    eprintln!("");
+    eprintln!("Command line arguments:");
     for argument in env::args() {
-        println(stderr, &format!("* <{}>", argument));
+        eprintln!("* <{}>", argument);
     }
 
-    println(
-        stderr,
-        "\n-^-^-^------- END OF RIFF CRASH REPORT -------^-^-^-\n",
-    );
+    eprintln!("\n-^-^-^------- END OF RIFF CRASH REPORT -------^-^-^-\n",);
 
-    println(stderr, CRASH_FOOTER);
+    eprintln!("{}", CRASH_FOOTER);
 }
 
 fn highlight_stream(input: &mut dyn io::Read) {
@@ -334,21 +327,9 @@ fn exec_diff_highlight(path1: &str, path2: &str) {
     let both_paths_are_dirs = path1.is_dir() && path2.is_dir();
 
     if !(both_paths_are_files || both_paths_are_dirs) {
-        let stderr: &mut dyn Write = &mut io::stderr();
-        let stderr = &mut BufWriter::new(stderr);
-        println(
-            stderr,
-            "Can only compare file to file or directory to directory, not like this:",
-        );
-        println(
-            stderr,
-            &format!("  {:<9}: {}", type_string(path1), path1.to_string_lossy()),
-        );
-        println(
-            stderr,
-            &format!("  {:<9}: {}", type_string(path2), path2.to_string_lossy()),
-        );
-        let _flush_result = stderr.flush();
+        eprintln!("Can only compare file to file or directory to directory, not like this:",);
+        eprintln!("  {:<9}: {}", type_string(path1), path1.to_string_lossy());
+        eprintln!("  {:<9}: {}", type_string(path2), path2.to_string_lossy());
         exit(1);
     }
 

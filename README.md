@@ -58,6 +58,7 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
+- Support `riff -b path1 path2` to diff files ignoring whitespace
 - Given two files on the command line, we should pass them and any
   options on to `diff` and highlight the result.
 - Bound how-much-to-highlight restriction by number of characters highlighted
