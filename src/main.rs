@@ -341,18 +341,16 @@ fn exec_diff_highlight(path1: &str, path2: &str) {
         .arg(path2)
         .stdout(Stdio::piped());
 
-    match command.spawn() {
-        Ok(mut diff) => {
-            let diff_stdout = diff.stdout.as_mut().unwrap();
+    let pretty_command = format!("{:#?}", command);
+    let mut diff_subprocess = command.spawn().expect(&pretty_command);
+    let diff_stdout = diff_subprocess.stdout.as_mut().unwrap();
+    highlight_stream(diff_stdout);
 
-            highlight_stream(diff_stdout);
-
-            let _diff_exit_code = diff.wait();
-            // FIXME: Do we care what happened to diff? How to handle an error here?
-        }
-        Err(_) => {
-            panic!("FIXME: Better error reporting here");
-        }
+    let diff_result = diff_subprocess.wait().unwrap();
+    if !diff_result.success() {
+        eprintln!("{}", pretty_command);
+        let diff_exit_code = diff_result.code().or(Some(1));
+        exit(diff_exit_code.unwrap());
     }
 }
 
