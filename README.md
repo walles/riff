@@ -64,7 +64,6 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
-- Support `riff -b path1 path2` to diff files ignoring whitespace
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
@@ -172,3 +171,4 @@ Just invoke `./release.sh` and follow instructions.
 - Handle plain non-git diff files
 - Given two files on the command line, we should pass them on to `diff` and
   highlight the result.
+- Support `riff -b path1 path2` to diff files ignoring whitespace

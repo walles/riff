@@ -29,8 +29,8 @@ mod tokenizer;
 const HELP_TEXT: &str = r#"
 Usage:
   diff ... | riff
-  riff <file1> <file2>
-  riff <directory1> <directory2>
+  riff [-b] <file1> <file2>
+  riff [-b] <directory1> <directory2>
 
 Colors diff output, highlighting the changed parts of every line.
 
@@ -40,6 +40,7 @@ Git integration:
     git config --global interactive.diffFilter riff
 
 Options:
+    -b:        Ignore changes in amount of whitespace
     --help:    Print this text
     --version: Print version number
 "#;
@@ -318,7 +319,7 @@ pub fn type_string(path: &path::Path) -> &str {
     panic!("Not sure what this is: {}", path.to_string_lossy());
 }
 
-fn exec_diff_highlight(path1: &str, path2: &str) {
+fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool) {
     let path1 = path::Path::new(path1);
     let path2 = path::Path::new(path2);
     let both_paths_are_files = path1.is_file() && path2.is_file();
@@ -332,7 +333,12 @@ fn exec_diff_highlight(path1: &str, path2: &str) {
     }
 
     // Run "diff -ur file1 file2"
-    let command: &mut Command = &mut Command::new("diff");
+    let mut command: &mut Command = &mut Command::new("diff");
+
+    if ignore_space_change {
+        command = command.arg("-b");
+    }
+
     let command = command
         .arg("-ur") // "-u = unified diff, -r = recurse subdirectories"
         .arg(path1)
@@ -370,14 +376,29 @@ fn main() {
         return;
     }
 
+    let ignore_space_change = consume("-b", &mut args);
+
     if consume("--please-panic", &mut args) {
         panic!("Panicking on purpose");
     }
 
     if args.len() == 3 {
         // "riff file1 file2"
-        exec_diff_highlight(args.get(1).unwrap(), args.get(2).unwrap());
+        exec_diff_highlight(
+            args.get(1).unwrap(),
+            args.get(2).unwrap(),
+            ignore_space_change,
+        );
         return;
+    }
+
+    if ignore_space_change {
+        eprintln!(
+            "ERROR: -b is only supported when diffing two named paths (\"riff -b a.txt b.txt\")"
+        );
+        eprintln!("");
+        print_help(&mut io::stderr());
+        exit(1);
     }
 
     if stdin_isatty() {
