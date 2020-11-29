@@ -177,7 +177,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
 ///
 /// Returns `true` if the pager was found, `false` otherwise.
 #[must_use]
-fn try_pager(pager_name: &str) -> bool {
+fn try_pager(input: &mut dyn io::Read, pager_name: &str) -> bool {
     let mut command = Command::new(pager_name);
 
     if env::var(PAGER_FORKBOMB_STOP).is_ok() {
@@ -201,7 +201,7 @@ fn try_pager(pager_name: &str) -> bool {
     match command.spawn() {
         Ok(mut pager) => {
             let pager_stdin = pager.stdin.as_mut().unwrap();
-            highlight_diff(&mut io::stdin().lock(), pager_stdin);
+            highlight_diff(input, pager_stdin);
 
             // FIXME: Report pager exit status if non-zero, together with
             // contents of pager stderr as well if possible.
@@ -284,12 +284,12 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
 fn highlight_stream(input: &mut dyn io::Read) {
     if !stdout_isatty() {
         // We're being piped, just do stdin -> stdout
-        highlight_diff(&mut io::stdin().lock(), &mut io::stdout());
+        highlight_diff(input, &mut io::stdout());
         return;
     }
 
     if let Ok(pager_value) = env::var("PAGER") {
-        if try_pager(&pager_value) {
+        if try_pager(input, &pager_value) {
             return;
         }
 
@@ -297,16 +297,44 @@ fn highlight_stream(input: &mut dyn io::Read) {
         // doesn't exist.
     }
 
-    if try_pager("moar") {
+    if try_pager(input, "moar") {
         return;
     }
 
-    if try_pager("less") {
+    if try_pager(input, "less") {
         return;
     }
 
     // No pager found, wth?
     highlight_diff(input, &mut io::stdout());
+}
+
+fn exec_diff_highlight(file1: &str, file2: &str) {
+    // FIXME: Check that either:
+    // * Both file1 and file2 are files
+    // * Both file1 and file2 are directories
+
+    // Run "diff -ur file1 file2"
+    let command: &mut Command = &mut Command::new("diff");
+    let command = command
+        .arg("-ur") // "-u = unified diff, -r = recurse subdirectories"
+        .arg(file1)
+        .arg(file2)
+        .stdout(Stdio::piped());
+
+    match command.spawn() {
+        Ok(mut diff) => {
+            let diff_stdout = diff.stdout.as_mut().unwrap();
+
+            highlight_stream(diff_stdout);
+
+            let _diff_exit_code = diff.wait();
+            // FIXME: Do we care what happened to diff? How to handle an error here?
+        }
+        Err(_) => {
+            panic!("FIXME: Better error reporting here");
+        }
+    }
 }
 
 fn main() {
@@ -329,6 +357,12 @@ fn main() {
 
     if consume("--please-panic", &mut args) {
         panic!("Panicking on purpose");
+    }
+
+    if args.len() == 3 {
+        // "riff file1 file2"
+        exec_diff_highlight(args.get(1).unwrap(), args.get(2).unwrap());
+        return;
     }
 
     if stdin_isatty() {
