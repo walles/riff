@@ -267,10 +267,7 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
     eprintln!("Riff version: {}", GIT_VERSION);
 
     eprintln!("");
-    eprintln!("Command line arguments:");
-    for argument in env::args() {
-        eprintln!("* <{}>", argument);
-    }
+    eprintln!("Command line arguments: {:?}", env::args());
 
     eprintln!("\n-^-^-^------- END OF RIFF CRASH REPORT -------^-^-^-\n",);
 
@@ -395,6 +392,13 @@ fn main() {
         eprintln!(
             "ERROR: -b is only supported when diffing two named paths (\"riff -b a.txt b.txt\")"
         );
+        eprintln!("");
+        print_help(&mut io::stderr());
+        exit(1);
+    }
+
+    if args.len() != 1 {
+        eprintln!("ERROR: Unknown command line: {:?}", args);
         eprintln!("");
         print_help(&mut io::stderr());
         exit(1);
