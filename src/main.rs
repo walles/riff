@@ -16,6 +16,7 @@ use regex::Regex;
 use std::env;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::panic;
+use std::path;
 use std::process::exit;
 use std::process::{Command, Stdio};
 use std::str;
@@ -26,9 +27,12 @@ mod token_collector;
 mod tokenizer;
 
 const HELP_TEXT: &str = r#"
-Usage: diff ... | riff
+Usage:
+  diff ... | riff
+  riff <file1> <file2>
+  riff <directory1> <directory2>
 
-Colors diff and highlights what parts of changed lines have changed.
+Colors diff output, highlighting the changed parts of every line.
 
 Git integration:
     git config --global pager.diff riff
@@ -177,7 +181,7 @@ fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
 ///
 /// Returns `true` if the pager was found, `false` otherwise.
 #[must_use]
-fn try_pager(pager_name: &str) -> bool {
+fn try_pager(input: &mut dyn io::Read, pager_name: &str) -> bool {
     let mut command = Command::new(pager_name);
 
     if env::var(PAGER_FORKBOMB_STOP).is_ok() {
@@ -201,7 +205,7 @@ fn try_pager(pager_name: &str) -> bool {
     match command.spawn() {
         Ok(mut pager) => {
             let pager_stdin = pager.stdin.as_mut().unwrap();
-            highlight_diff(&mut io::stdin().lock(), pager_stdin);
+            highlight_diff(input, pager_stdin);
 
             // FIXME: Report pager exit status if non-zero, together with
             // contents of pager stderr as well if possible.
@@ -250,46 +254,37 @@ fn print_help(output: &mut dyn io::Write) {
 }
 
 fn panic_handler(panic_info: &panic::PanicInfo) {
-    let stderr: &mut dyn Write = &mut io::stderr();
-    let stderr = &mut BufWriter::new(stderr);
-    println(
-        stderr,
-        "\n\n-v-v-v----------- RIFF CRASHED ---------------v-v-v-\n",
-    );
+    eprintln!("\n\n-v-v-v----------- RIFF CRASHED ---------------v-v-v-\n",);
 
     // Panic message
-    if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
-        println(stderr, &format!("Panic message: <{:?}>", s));
-        println(stderr, "");
-    }
+    eprintln!("Panic message: <{:#?}>", panic_info);
+    eprintln!("");
 
     // Backtrace
-    println(stderr, &format!("{:?}", Backtrace::new()));
+    eprintln!("{:?}", Backtrace::new());
 
-    println(stderr, &format!("Riff version: {}", GIT_VERSION));
+    eprintln!("Riff version: {}", GIT_VERSION);
 
-    println(stderr, "Command line arguments:");
+    eprintln!("");
+    eprintln!("Command line arguments:");
     for argument in env::args() {
-        println(stderr, &format!("* <{}>", argument));
+        eprintln!("* <{}>", argument);
     }
 
-    println(
-        stderr,
-        "\n-^-^-^------- END OF RIFF CRASH REPORT -------^-^-^-\n",
-    );
+    eprintln!("\n-^-^-^------- END OF RIFF CRASH REPORT -------^-^-^-\n",);
 
-    println(stderr, CRASH_FOOTER);
+    eprintln!("{}", CRASH_FOOTER);
 }
 
 fn highlight_stream(input: &mut dyn io::Read) {
     if !stdout_isatty() {
         // We're being piped, just do stdin -> stdout
-        highlight_diff(&mut io::stdin().lock(), &mut io::stdout());
+        highlight_diff(input, &mut io::stdout());
         return;
     }
 
     if let Ok(pager_value) = env::var("PAGER") {
-        if try_pager(&pager_value) {
+        if try_pager(input, &pager_value) {
             return;
         }
 
@@ -297,16 +292,64 @@ fn highlight_stream(input: &mut dyn io::Read) {
         // doesn't exist.
     }
 
-    if try_pager("moar") {
+    if try_pager(input, "moar") {
         return;
     }
 
-    if try_pager("less") {
+    if try_pager(input, "less") {
         return;
     }
 
     // No pager found, wth?
     highlight_diff(input, &mut io::stdout());
+}
+
+pub fn type_string(path: &path::Path) -> &str {
+    if !path.exists() {
+        return "Not found";
+    }
+    if path.is_file() {
+        return "File";
+    }
+    if path.is_dir() {
+        return "Directory";
+    }
+
+    panic!("Not sure what this is: {}", path.to_string_lossy());
+}
+
+fn exec_diff_highlight(path1: &str, path2: &str) {
+    let path1 = path::Path::new(path1);
+    let path2 = path::Path::new(path2);
+    let both_paths_are_files = path1.is_file() && path2.is_file();
+    let both_paths_are_dirs = path1.is_dir() && path2.is_dir();
+
+    if !(both_paths_are_files || both_paths_are_dirs) {
+        eprintln!("Can only compare file to file or directory to directory, not like this:",);
+        eprintln!("  {:<9}: {}", type_string(path1), path1.to_string_lossy());
+        eprintln!("  {:<9}: {}", type_string(path2), path2.to_string_lossy());
+        exit(1);
+    }
+
+    // Run "diff -ur file1 file2"
+    let command: &mut Command = &mut Command::new("diff");
+    let command = command
+        .arg("-ur") // "-u = unified diff, -r = recurse subdirectories"
+        .arg(path1)
+        .arg(path2)
+        .stdout(Stdio::piped());
+
+    let pretty_command = format!("{:#?}", command);
+    let mut diff_subprocess = command.spawn().expect(&pretty_command);
+    let diff_stdout = diff_subprocess.stdout.as_mut().unwrap();
+    highlight_stream(diff_stdout);
+
+    let diff_result = diff_subprocess.wait().unwrap();
+    if !diff_result.success() {
+        eprintln!("{}", pretty_command);
+        let diff_exit_code = diff_result.code().or(Some(1));
+        exit(diff_exit_code.unwrap());
+    }
 }
 
 fn main() {
@@ -329,6 +372,12 @@ fn main() {
 
     if consume("--please-panic", &mut args) {
         panic!("Panicking on purpose");
+    }
+
+    if args.len() == 3 {
+        // "riff file1 file2"
+        exec_diff_highlight(args.get(1).unwrap(), args.get(2).unwrap());
+        return;
     }
 
     if stdin_isatty() {

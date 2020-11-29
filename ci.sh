@@ -40,5 +40,8 @@ echo
 echo Crash reporting tests passed
 rm "$STDERR"
 
+# Test diffing two files
+cargo run --quiet -- /dev/null /dev/null | wc -l | grep -E "[^0-9]0$" > /dev/null
+
 echo
 echo "All tests passed!"
