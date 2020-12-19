@@ -58,16 +58,6 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
         return simple_format(old_text, new_text);
     }
 
-    // These two conditions make us about 30% faster. The idea is that if the
-    // texts are too unequal in length, we're unlikely to highlight just small
-    // parts of them.
-    if (100 * old_text.len()) / (old_text.len() + new_text.len()) < MAX_HIGHLIGHT_PERCENTAGE {
-        return simple_format(old_text, new_text);
-    }
-    if (100 * new_text.len()) / (old_text.len() + new_text.len()) < MAX_HIGHLIGHT_PERCENTAGE {
-        return simple_format(old_text, new_text);
-    }
-
     // Find diffs between adds and removals
     let mut old_collector = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
     let mut new_collector = TokenCollector::create(StyledToken::new("+".to_string(), Style::New));

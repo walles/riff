@@ -1,6 +1,6 @@
 use crate::constants::*;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Style {
     Old,
     OldInverse,
@@ -53,6 +53,20 @@ impl Style {
         }
     }
 
+    pub fn to_unhighlighted(self) -> Style {
+        match self {
+            Style::OldInverse => {
+                return Style::Old;
+            }
+            Style::NewInverse => {
+                return Style::New;
+            }
+            _ => {
+                return self;
+            }
+        }
+    }
+
     #[must_use]
     pub fn color<'a>(&self) -> &'a str {
         match self {
@@ -97,6 +111,8 @@ impl TokenCollector {
         if row.is_empty() {
             return rendered;
         }
+
+        dont_highlight_all(row);
 
         if self.line_prefix.style == Style::New {
             highlight_trailing_whitespace(row);
@@ -174,6 +190,21 @@ impl TokenCollector {
 
     pub fn highlighted_chars_count(&self) -> usize {
         return self.highlighted_bytes_count;
+    }
+}
+
+/// If all tokens are highlighted, remove the highlights and highlight nothing
+/// instead.
+fn dont_highlight_all(row: &mut [StyledToken]) {
+    for token in row.iter() {
+        if !token.style.is_inverse() {
+            return;
+        }
+    }
+
+    // Only higlighted tokens, in this case it's better to highlight nothing
+    for token in row.iter_mut().rev() {
+        token.style = token.style.to_unhighlighted();
     }
 }
 
