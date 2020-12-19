@@ -35,8 +35,7 @@ impl StyledToken {
 
 pub struct TokenCollector {
     line_prefix: StyledToken,
-    rendered: String,
-    current_row: Vec<StyledToken>,
+    tokens: Vec<StyledToken>,
     bytes_count: usize,
     highlighted_bytes_count: usize,
 }
@@ -81,77 +80,92 @@ impl TokenCollector {
     pub fn create(line_prefix: StyledToken) -> Self {
         return TokenCollector {
             line_prefix,
-            rendered: String::new(),
-            current_row: Vec::new(),
+            tokens: Vec::new(),
             bytes_count: 0,
             highlighted_bytes_count: 0,
         };
     }
 
     pub fn push(&mut self, token: StyledToken) {
-        self.bytes_count += token.token.len();
-        if token.style.is_inverse() {
-            self.highlighted_bytes_count += 1;
-        }
-
-        if token.token == "\n" {
-            self.commit();
-            self.rendered.push('\n');
-            return;
-        }
-
-        self.current_row.push(token);
+        self.tokens.push(token);
     }
 
-    fn commit(&mut self) {
-        if self.current_row.is_empty() {
-            return;
+    #[must_use]
+    fn render_row(&self, row: &mut [StyledToken]) -> String {
+        let mut rendered = String::new();
+
+        if row.is_empty() {
+            return rendered;
         }
 
         if self.line_prefix.style == Style::New {
-            highlight_trailing_whitespace(&mut self.current_row);
-            highlight_nonleading_tab(&mut self.current_row);
+            highlight_trailing_whitespace(row);
+            highlight_nonleading_tab(row);
         }
 
         // Set inverse from prefix
         let mut is_inverse = self.line_prefix.style.is_inverse();
         if is_inverse {
-            self.rendered.push_str(INVERSE_VIDEO);
+            rendered.push_str(INVERSE_VIDEO);
         }
 
         // Set line color from prefix
         let mut color = self.line_prefix.style.color();
-        self.rendered.push_str(self.line_prefix.style.color());
+        rendered.push_str(self.line_prefix.style.color());
 
         // Render prefix
-        self.rendered.push_str(&self.line_prefix.token);
+        rendered.push_str(&self.line_prefix.token);
 
-        for token in &self.current_row {
+        for token in row {
             if token.style.is_inverse() && !is_inverse {
-                self.rendered.push_str(INVERSE_VIDEO);
+                rendered.push_str(INVERSE_VIDEO);
             }
             if is_inverse && !token.style.is_inverse() {
-                self.rendered.push_str(NOT_INVERSE_VIDEO);
+                rendered.push_str(NOT_INVERSE_VIDEO);
             }
             is_inverse = token.style.is_inverse();
 
             if token.style.color() != color {
-                self.rendered.push_str(token.style.color());
+                rendered.push_str(token.style.color());
                 color = token.style.color();
             }
 
-            self.rendered.push_str(&token.token);
+            rendered.push_str(&token.token);
         }
 
-        self.rendered.push_str(NORMAL);
-        self.current_row.clear();
+        rendered.push_str(NORMAL);
+
+        return rendered;
     }
 
     #[must_use]
     pub fn render(&mut self) -> String {
-        self.commit();
+        let mut current_row: Vec<StyledToken> = Vec::new();
+        let mut rendered = String::new();
 
-        return self.rendered.clone();
+        for token in &self.tokens {
+            self.bytes_count += token.token.len();
+            if token.style.is_inverse() {
+                self.highlighted_bytes_count += token.token.len();
+            }
+
+            if token.token == "\n" {
+                let rendered_row = &self.render_row(&mut current_row);
+                rendered.push_str(rendered_row);
+                rendered.push('\n');
+                current_row.clear();
+                continue;
+            }
+
+            current_row.push(token.clone());
+        }
+
+        if !current_row.is_empty() {
+            let rendered_row = &self.render_row(&mut current_row);
+            rendered.push_str(rendered_row);
+        }
+
+        return rendered;
     }
 
     pub fn chars_count(&self) -> usize {
@@ -227,7 +241,8 @@ mod tests {
             style: Style::New,
         });
 
-        assert_eq!(test_me.render(), format!("{}+hej{}\n", NEW, NORMAL));
+        let rendered = test_me.render();
+        assert_eq!(rendered, format!("{}+hej{}\n", NEW, NORMAL));
     }
 
     #[test]
