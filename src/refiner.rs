@@ -8,14 +8,14 @@ use diffus::{
     Diffable,
 };
 
-/// If more than this part of either adds or moves is highlighted,
-/// we consider it to be a replacement rather than a move, and skip
-/// highlighting it.
+/// If more than this percentage of either adds or moves is highlighted, we
+/// consider it to be a replacement rather than a move, and skip highlighting
+/// it.
 const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 
-/// If it's only this few highlights, we'll just highligh anyway without
+/// If it's only this few highlighted chars, we'll just highligh anyway without
 /// checking the `MAX_HIGHLIGHT_PERCENTAGE`.
-const OK_HIGHLIGHT_COUNT: usize = 5;
+const OK_HIGHLIGHT_COUNT: usize = 10;
 
 /// Format old and new lines in OLD and NEW colors.
 ///
@@ -71,8 +71,6 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     // Find diffs between adds and removals
     let mut old_collector = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
     let mut new_collector = TokenCollector::create(StyledToken::new("+".to_string(), Style::New));
-    let mut old_highlight_count = 0;
-    let mut new_highlight_count = 0;
 
     // Tokenize adds and removes before diffing them
     let tokenized_old = tokenizer::tokenize(old_text);
@@ -95,7 +93,6 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                             new_collector.push(StyledToken::new(token.clone(), Style::New));
                         }
                         collection::Edit::Insert(token) => {
-                            new_highlight_count += 1;
                             if token == "\n" {
                                 // Make sure the highlighted linefeed is visible
                                 new_collector
@@ -104,8 +101,6 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                             new_collector.push(StyledToken::new(token.clone(), Style::NewInverse));
                         }
                         collection::Edit::Remove(token) => {
-                            old_highlight_count += 1;
-
                             if token == "\n" {
                                 // Make sure the highlighted linefeed is visible
                                 old_collector
@@ -120,14 +115,14 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
         }
     }
 
-    let highlight_count = old_highlight_count + new_highlight_count;
-    let token_count = tokenized_old.len() + tokenized_new.len();
+    let highlighted_bytes_count =
+        old_collector.highlighted_chars_count() + new_collector.highlighted_chars_count();
+    let bytes_count = old_collector.chars_count() + new_collector.chars_count();
 
-    // FIXME: Maybe for this check count how many characters were highlighted
-    // rather than how many tokens? Heuristics are difficult...
-    if highlight_count <= OK_HIGHLIGHT_COUNT {
+    // Don't highlight too much
+    if highlighted_bytes_count <= OK_HIGHLIGHT_COUNT {
         // Few enough highlights, Just do it (tm)
-    } else if (100 * highlight_count) / token_count > MAX_HIGHLIGHT_PERCENTAGE {
+    } else if (100 * highlighted_bytes_count) / bytes_count > MAX_HIGHLIGHT_PERCENTAGE {
         return simple_format(old_text, new_text);
     }
 

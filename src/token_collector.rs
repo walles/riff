@@ -37,6 +37,8 @@ pub struct TokenCollector {
     line_prefix: StyledToken,
     rendered: String,
     current_row: Vec<StyledToken>,
+    bytes_count: usize,
+    highlighted_bytes_count: usize,
 }
 
 impl Style {
@@ -81,10 +83,17 @@ impl TokenCollector {
             line_prefix,
             rendered: String::new(),
             current_row: Vec::new(),
+            bytes_count: 0,
+            highlighted_bytes_count: 0,
         };
     }
 
     pub fn push(&mut self, token: StyledToken) {
+        self.bytes_count += token.token.len();
+        if token.style.is_inverse() {
+            self.highlighted_bytes_count += 1;
+        }
+
         if token.token == "\n" {
             self.commit();
             self.rendered.push('\n');
@@ -143,6 +152,14 @@ impl TokenCollector {
         self.commit();
 
         return self.rendered.clone();
+    }
+
+    pub fn chars_count(&self) -> usize {
+        return self.bytes_count;
+    }
+
+    pub fn highlighted_chars_count(&self) -> usize {
+        return self.highlighted_bytes_count;
     }
 }
 
