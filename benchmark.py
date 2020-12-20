@@ -29,11 +29,23 @@ def print_timings(binary: str, testdata):
     """
     Run the indicated binary and print timings for it
     """
-    t0 = time.time()
-    subprocess.check_call(binary, stdin=testdata, stdout=subprocess.DEVNULL)
-    t1 = time.time()
-    dt_seconds = t1 - t0
-    print(f"{dt_seconds * 1000:3.1f}ms: {binary}")
+    ITERATIONS = 500
+
+    # Throw away the top and bottom 5%, giving us 90% coverage
+    THROW_AWAY_AT_EACH_END = ITERATIONS // 20
+
+    deltas = []
+    for _ in range(ITERATIONS):
+        t0 = time.time()
+        subprocess.check_call(binary, stdin=testdata, stdout=subprocess.DEVNULL)
+        t1 = time.time()
+        dt_seconds = t1 - t0
+        deltas.append(dt_seconds)
+
+    deltas.sort()
+    from_ms = deltas[THROW_AWAY_AT_EACH_END] * 1000
+    to_ms = deltas[-THROW_AWAY_AT_EACH_END - 1] * 1000
+    print(f"{from_ms:.2f}ms-{to_ms:.2f}ms: {binary}")
 
 
 def time_binaries():
