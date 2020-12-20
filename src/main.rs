@@ -522,7 +522,9 @@ mod tests {
             let expected_result = fs::read_to_string(expected_path).unwrap();
 
             // Assert that the highlighting output matches the contents of .riff-output
-            assert_eq!(actual_result, expected_result);
+            let actual_lines: Vec<&str> = actual_result.split('\n').collect();
+            let expected_lines: Vec<&str> = expected_result.split('\n').collect();
+            assert_eq!(actual_lines, expected_lines);
         }
     }
 }
