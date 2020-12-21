@@ -20,12 +20,37 @@ def gather_binaries():
     """
     Gather binaries to benchmark in BINDIR
     """
-    # FIXME: Query git for all Rust versions released and store freshly built
-    # binaries for those in BINDIR
+    # Query git for all Rust versions released and store freshly built binaries
+    # for those in BINDIR
+    tags = subprocess.check_output(["git", "tag"]).split()
+    tags.remove(b"PRERELEASE")
+
+    # Ignore Ruby tags
+    rust_tags = filter(lambda tag: not tag.startswith(b"0"), tags)
+    rust_tags = filter(lambda tag: not tag.startswith(b"1"), rust_tags)
+
+    # Make sure we binaries for older versions
+    with tempfile.TemporaryDirectory(prefix="riff-benchmark") as clonedir:
+        subprocess.run(["git", "clone", ".", clonedir], check=True)
+        for tag in rust_tags:
+            binary_name = os.path.join(BINDIR, f"riff-{tag.decode()}")
+            if os.path.isfile(binary_name):
+                continue
+
+            build_binary(clonedir, tag.decode(), binary_name)
 
     # Build the current version
     subprocess.run(["cargo", "build", "--release"], check=True)
     shutil.copy("target/release/riff", os.path.join(BINDIR, "riff-current"))
+
+
+def build_binary(clonedir: str, tag: str, binary_name: str):
+    """
+    In clonedir, check out tag, build a binary and put it in binary_name.
+    """
+    subprocess.run(["git", "checkout", tag], cwd=clonedir, check=True)
+    subprocess.run(["cargo", "build", "--release"], cwd=clonedir, check=True)
+    shutil.copy(os.path.join(clonedir, "target", "release", "riff"), binary_name)
 
 
 def print_timings(binary: str, testdata_filename: str):
@@ -65,7 +90,7 @@ def time_binaries():
     ) as testdata:
         subprocess.check_call(["git", "log", "-p", "master"], stdout=testdata)
 
-        binaries = glob.glob(os.path.join(BINDIR, "*"))
+        binaries = sorted(glob.glob(os.path.join(BINDIR, "*")))
         for binary in binaries:
             print_timings(binary, testdata.name)
         print_timings("/bin/cat", testdata.name)
