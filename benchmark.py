@@ -40,9 +40,11 @@ def gather_binaries():
             if os.path.isfile(binary_name):
                 continue
 
+            print(f"Building missing binary: {binary_name}")
             build_binary(clonedir, tag.decode(), binary_name)
 
     # Build the current version
+    print("Building current sources...")
     subprocess.run(["cargo", "build", "--release"], check=True)
     shutil.copy("target/release/riff", os.path.join(BINDIR, "riff-current"))
 
