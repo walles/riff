@@ -7,6 +7,9 @@ import shutil
 import tempfile
 import subprocess
 
+# Number of benchmark iterations to run
+ITERATIONS = 50
+
 BINDIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), ".benchmark-binaries"
 )
@@ -25,27 +28,27 @@ def gather_binaries():
     shutil.copy("target/release/riff", os.path.join(BINDIR, "riff-current"))
 
 
-def print_timings(binary: str, testdata):
+def print_timings(binary: str, testdata_filename: str):
     """
     Run the indicated binary and print timings for it
     """
-    ITERATIONS = 500
 
     # Throw away the top and bottom 5%, giving us 90% coverage
     THROW_AWAY_AT_EACH_END = ITERATIONS // 20
 
     deltas = []
     for _ in range(ITERATIONS):
-        t0 = time.time()
-        subprocess.check_call(binary, stdin=testdata, stdout=subprocess.DEVNULL)
-        t1 = time.time()
-        dt_seconds = t1 - t0
-        deltas.append(dt_seconds)
+        with open(testdata_filename) as testdata:
+            t0 = time.time()
+            subprocess.check_call(binary, stdin=testdata, stdout=subprocess.DEVNULL)
+            t1 = time.time()
+            dt_seconds = t1 - t0
+            deltas.append(dt_seconds)
 
     deltas.sort()
     from_ms = deltas[THROW_AWAY_AT_EACH_END] * 1000
     to_ms = deltas[-THROW_AWAY_AT_EACH_END - 1] * 1000
-    print(f"{from_ms:.2f}ms-{to_ms:.2f}ms: {binary}")
+    print(f"{from_ms:.1f}ms-{to_ms:.1f}ms: {binary}")
 
 
 def time_binaries():
@@ -61,8 +64,8 @@ def time_binaries():
 
         binaries = glob.glob(os.path.join(BINDIR, "*"))
         for binary in binaries:
-            print_timings(binary, testdata)
-        print_timings("/bin/cat", testdata)
+            print_timings(binary, testdata.name)
+        print_timings("/bin/cat", testdata.name)
 
 
 gather_binaries()
