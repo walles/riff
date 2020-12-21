@@ -34,16 +34,18 @@ def gather_binaries():
 
     # Make sure we binaries for older versions
     with tempfile.TemporaryDirectory(prefix="riff-benchmark") as clonedir:
-        subprocess.run(["git", "clone", ".", clonedir], check=True)
+        subprocess.run(["git", "clone", "-b", "master", ".", clonedir], check=True)
         for tag in rust_tags:
             binary_name = os.path.join(BINDIR, f"riff-{tag.decode()}")
             if os.path.isfile(binary_name):
                 continue
 
+            print()
             print(f"Building missing binary: {binary_name}")
             build_binary(clonedir, tag.decode(), binary_name)
 
     # Build the current version
+    print()
     print("Building current sources...")
     subprocess.run(["cargo", "build", "--release"], check=True)
     shutil.copy("target/release/riff", os.path.join(BINDIR, "riff-current"))
