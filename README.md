@@ -56,6 +56,9 @@ If you put example input and output in the `testdata` directory, then `cargo tes
 
 Invoke `ci.sh` to run the same thing as CI.
 
+Invoke `benchmark.py` to get numbers for how fast your current source code is
+versus earlier releases.
+
 ## Making a new release
 
 Just invoke `./release.sh` and follow instructions.
