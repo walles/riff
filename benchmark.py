@@ -10,6 +10,9 @@ import subprocess
 # Number of benchmark iterations to run
 ITERATIONS = 60
 
+# Number of throwaway iterations to run before starting the benchmark
+WARMUP_RUNS = 10
+
 BINDIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), ".benchmark-binaries"
 )
@@ -62,8 +65,12 @@ def print_timings(binary: str, testdata_filename: str):
     assert ITERATIONS % 20 == 0
     THROW_AWAY_AT_EACH_END = ITERATIONS // 20
 
-    # FIXME: Do WARMUP_RUNS warmup runs first?
+    # Do some warmup runs
+    for _ in range(WARMUP_RUNS):
+        with open(testdata_filename) as testdata:
+            subprocess.check_call(binary, stdin=testdata, stdout=subprocess.DEVNULL)
 
+    # Do the actual benchmarking runs
     deltas = []
     for _ in range(ITERATIONS):
         with open(testdata_filename) as testdata:
