@@ -8,7 +8,7 @@ import tempfile
 import subprocess
 
 # Number of benchmark iterations to run
-ITERATIONS = 50
+ITERATIONS = 60
 
 BINDIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), ".benchmark-binaries"
@@ -34,7 +34,10 @@ def print_timings(binary: str, testdata_filename: str):
     """
 
     # Throw away the top and bottom 5%, giving us 90% coverage
+    assert ITERATIONS % 20 == 0
     THROW_AWAY_AT_EACH_END = ITERATIONS // 20
+
+    # FIXME: Do WARMUP_RUNS warmup runs first?
 
     deltas = []
     for _ in range(ITERATIONS):
