@@ -1,0 +1,36 @@
+[1mdiff --git a/m/reader.go b/m/reader.go[0m
+[1mindex 0cec7f2..7091f6a 100644[0m
+[1m--- a/m/reader.go[0m
+[1m+++ b/m/reader.go[0m
+[36m@@ -146,11 +146,19 @@ func readStream(stream io.Reader, reader *Reader, fromFilter *exec.Cmd) {[0m
+ }
+
+ // NewReaderFromStream creates a new stream reader
+[31m-func NewReaderFromStream(name *string, reader io.Reader) *Reader {[0m
+[32m+//[0m
+[32m+// The name can be an empty string ("").[0m
+[32m+//[0m
+[32m+// If non-empty, the name will be displayed by the pager in the bottom left[0m
+[32m+// corner to help the user keep track of what is being paged.[0m
+[32m+func NewReaderFromStream(name string, reader io.Reader) *Reader {[0m
+    mReader := newReaderFromStream(reader, nil)
+[31m-   mReader.lock.Lock()[0m
+[31m-   mReader.name = name[0m
+[31m-   mReader.lock.Unlock()[0m
+[32m+[7m⏎⏎[0m
+[32m+[7m   if len(name) > 0 {⏎⏎[0m
+[32m+[7m    [27m   mReader.lock.Lock()[0m
+[32m+[7m    [27m   mReader.name = [7m&[27mname[0m
+[32m+[7m    [27m   mReader.lock.Unlock()[7m⏎⏎[0m
+[32m+[7m   }[0m
+
+    return mReader
+ }
+[36m@@ -342,7 +350,7 @@ func NewReaderFromFilename(filename string) (*Reader, error) {[0m
+        return nil, err
+    }
+
+[31m-   reader := NewReaderFromStream([7m&[27mfilename, stream)[0m
+[32m+   reader := NewReaderFromStream(filename, stream)[0m
+    return reader, nil
+ }

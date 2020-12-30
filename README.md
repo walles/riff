@@ -67,7 +67,6 @@ Just invoke `./release.sh` and follow instructions.
 
 ## Misc
 
-- Get ourselves some kind of benchmark suite / example(s)
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
   executed from inside of the `$PATH`
 - Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
@@ -176,3 +175,4 @@ Just invoke `./release.sh` and follow instructions.
 - Support `riff -b path1 path2` to diff files ignoring whitespace
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
+- Get ourselves some kind of benchmark suite / example(s)
