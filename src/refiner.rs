@@ -15,8 +15,8 @@ use diffus::{
 /// it.
 const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 
-const LARGE_BYTE_COUNT_CHANGE_PERCENT: usize = 100;
-const SMALL_BYTE_COUNT_CHANGE: usize = 10;
+const LARGE_COUNT_CHANGE_PERCENT: usize = 100;
+const SMALL_COUNT_CHANGE: usize = 10;
 
 /// Format old and new lines in OLD and NEW colors.
 ///
@@ -55,9 +55,12 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
         return simple_format(old_text, new_text);
     }
 
-    // This check makes us faster, please use the benchmark.py script before and
-    // after if you change this.
+    // These checks make us faster, please use the benchmark.py script before
+    // and after if you change this.
     if is_large_byte_count_change(old_text, new_text) {
+        return simple_format(old_text, new_text);
+    }
+    if is_large_newline_count_change(old_text, new_text) {
         return simple_format(old_text, new_text);
     }
 
@@ -124,22 +127,33 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
 }
 
 #[must_use]
-fn is_large_byte_count_change(old_text: &str, new_text: &str) -> bool {
+fn is_large_count_change(count1: usize, count2: usize) -> bool {
     // This check makes us ignore some changes, thus making us faster. Please
     // use the benchmark.py script before and after if you touch this code.
 
-    let high_count = max(old_text.len(), new_text.len());
-    let low_count = min(old_text.len(), new_text.len());
+    let high_count = max(count1, count2);
+    let low_count = min(count1, count2);
 
-    if high_count - low_count <= SMALL_BYTE_COUNT_CHANGE {
+    if high_count - low_count <= SMALL_COUNT_CHANGE {
         return false;
     }
 
     // "+ 99" makes the result round up, so 0->0, 1->2.
-    let low_count_plus_percentage =
-        (low_count * (LARGE_BYTE_COUNT_CHANGE_PERCENT + 100) + 99) / 100;
+    let low_count_plus_percentage = (low_count * (LARGE_COUNT_CHANGE_PERCENT + 100) + 99) / 100;
 
     return high_count >= low_count_plus_percentage;
+}
+
+#[must_use]
+fn is_large_byte_count_change(old_text: &str, new_text: &str) -> bool {
+    return is_large_count_change(old_text.len(), new_text.len());
+}
+
+#[must_use]
+fn is_large_newline_count_change(old_text: &str, new_text: &str) -> bool {
+    let old_newline_count = bytecount::count(old_text.as_bytes(), b'\n');
+    let new_newline_count = bytecount::count(new_text.as_bytes(), b'\n');
+    return is_large_count_change(old_newline_count, new_newline_count);
 }
 
 #[must_use]
@@ -239,16 +253,16 @@ mod tests {
         assert_eq!(is_large_byte_count_change("", ""), false);
 
         assert_eq!(
-            is_large_byte_count_change("", &"x".repeat(SMALL_BYTE_COUNT_CHANGE)),
+            is_large_byte_count_change("", &"x".repeat(SMALL_COUNT_CHANGE)),
             false
         );
         assert_eq!(
-            is_large_byte_count_change("", &"x".repeat(SMALL_BYTE_COUNT_CHANGE + 1)),
+            is_large_byte_count_change("", &"x".repeat(SMALL_COUNT_CHANGE + 1)),
             true
         );
 
         // Verify that doubling the length counts as large
-        let base_len = SMALL_BYTE_COUNT_CHANGE * 2;
+        let base_len = SMALL_COUNT_CHANGE * 2;
         let double_len = base_len * 2;
         let almost_double_len = double_len - 1;
         assert_eq!(

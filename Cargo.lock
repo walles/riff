@@ -54,6 +54,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytecount"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72feb31ffc86498dacdbd0fcebb56138e7177a8cc5cea4516031d15ae85a742e"
+
+[[package]]
 name = "cfg-if"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -253,6 +259,7 @@ name = "riff"
 version = "0.1.0"
 dependencies = [
  "backtrace",
+ "bytecount",
  "diffus",
  "git-version",
  "isatty",
