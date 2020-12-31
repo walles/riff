@@ -213,4 +213,14 @@ mod tests {
             ]
         )
     }
+
+    #[test]
+    fn test_almost_empty_changes() {
+        let result = format(&"x\n".to_string(), &"".to_string());
+        assert_eq!(result, [format!("{}-x{}", OLD, NORMAL),]);
+
+        let result = format(&"".to_string(), &"x\n".to_string());
+        assert_eq!(result, [format!("{}+x{}", NEW, NORMAL),]);
+    }
+
 }
