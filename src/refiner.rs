@@ -1,3 +1,5 @@
+use std::cmp::{max, min};
+
 use crate::tokenizer;
 use crate::{
     constants::*,
@@ -16,6 +18,8 @@ const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 /// If it's only this few highlighted chars, we'll just highligh anyway without
 /// checking the `MAX_HIGHLIGHT_PERCENTAGE`.
 const OK_HIGHLIGHT_COUNT: usize = 10;
+
+const LARGE_BYTE_COUNT_CHANGE_PERCENT: usize = 100;
 
 /// Format old and new lines in OLD and NEW colors.
 ///
@@ -50,21 +54,9 @@ fn simple_format(old_text: &str, new_text: &str) -> Vec<String> {
 /// Returns a vector of ANSI highlighted lines
 #[must_use]
 pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
-    if new_text.is_empty() {
-        return simple_format(old_text, new_text);
-    }
-
-    if old_text.is_empty() {
-        return simple_format(old_text, new_text);
-    }
-
-    // These two conditions make us about 30% faster. The idea is that if the
-    // texts are too unequal in length, we're unlikely to highlight just small
-    // parts of them.
-    if (100 * old_text.len()) / (old_text.len() + new_text.len()) < MAX_HIGHLIGHT_PERCENTAGE {
-        return simple_format(old_text, new_text);
-    }
-    if (100 * new_text.len()) / (old_text.len() + new_text.len()) < MAX_HIGHLIGHT_PERCENTAGE {
+    // This check makes us faster, please use the benchmark.py script before and
+    // after if you change this.
+    if is_large_byte_count_change(old_text, new_text) {
         return simple_format(old_text, new_text);
     }
 
@@ -129,6 +121,21 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     let highlighted_old_text = old_collector.render();
     let highlighted_new_text = new_collector.render();
     return to_lines(&highlighted_old_text, &highlighted_new_text);
+}
+
+#[must_use]
+fn is_large_byte_count_change(old_text: &str, new_text: &str) -> bool {
+    // This check makes us ignore some changes, thus making us faster. Please
+    // use the benchmark.py script before and after if you touch this code.
+
+    let high_count = max(old_text.len(), new_text.len());
+    let low_count = min(old_text.len(), new_text.len());
+
+    // "+ 99" makes the result round up, so 0->0, 1->2.
+    let low_count_plus_percentage =
+        (low_count * (LARGE_BYTE_COUNT_CHANGE_PERCENT + 100) + 99) / 100;
+
+    return high_count > low_count_plus_percentage;
 }
 
 #[must_use]
@@ -223,4 +230,12 @@ mod tests {
         assert_eq!(result, [format!("{}+x{}", NEW, NORMAL),]);
     }
 
+    #[test]
+    fn test_is_large_byte_count_change() {
+        assert_eq!(is_large_byte_count_change("", ""), false);
+        assert_eq!(is_large_byte_count_change("", "x"), true);
+        assert_eq!(is_large_byte_count_change("x", "x"), false);
+        assert_eq!(is_large_byte_count_change("x", "xy"), false);
+        assert_eq!(is_large_byte_count_change("x", "xyz"), true);
+    }
 }
