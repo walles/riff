@@ -146,7 +146,8 @@ impl TokenCollector {
         let mut current_row: Vec<StyledToken> = Vec::new();
         let mut rendered = String::new();
 
-        for token in &self.tokens {
+        let tokens = std::mem::take(&mut self.tokens);
+        for token in tokens {
             self.bytes_count += token.token.len();
             if token.style.is_inverse() {
                 self.highlighted_bytes_count += token.token.len();
@@ -160,7 +161,7 @@ impl TokenCollector {
                 continue;
             }
 
-            current_row.push(token.clone());
+            current_row.push(token);
         }
 
         if !current_row.is_empty() {
