@@ -76,8 +76,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     match diff {
         edit::Edit::Copy(unchanged) => {
             for token in unchanged {
-                old_collector.push(StyledToken::new(token.clone(), Style::Old));
-                new_collector.push(StyledToken::new(token.clone(), Style::New));
+                old_collector.push(StyledToken::new(token.to_string(), Style::Old));
+                new_collector.push(StyledToken::new(token.to_string(), Style::New));
             }
         }
         edit::Edit::Change(diff) => {
@@ -85,24 +85,26 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                 .map(|edit| {
                     match edit {
                         collection::Edit::Copy(token) => {
-                            old_collector.push(StyledToken::new(token.clone(), Style::Old));
-                            new_collector.push(StyledToken::new(token.clone(), Style::New));
+                            old_collector.push(StyledToken::new(token.to_string(), Style::Old));
+                            new_collector.push(StyledToken::new(token.to_string(), Style::New));
                         }
                         collection::Edit::Insert(token) => {
-                            if token == "\n" {
+                            if *token == "\n" {
                                 // Make sure the highlighted linefeed is visible
                                 new_collector
                                     .push(StyledToken::new("⏎".to_string(), Style::NewInverse));
                             }
-                            new_collector.push(StyledToken::new(token.clone(), Style::NewInverse));
+                            new_collector
+                                .push(StyledToken::new(token.to_string(), Style::NewInverse));
                         }
                         collection::Edit::Remove(token) => {
-                            if token == "\n" {
+                            if *token == "\n" {
                                 // Make sure the highlighted linefeed is visible
                                 old_collector
                                     .push(StyledToken::new("⏎".to_string(), Style::OldInverse));
                             }
-                            old_collector.push(StyledToken::new(token.clone(), Style::OldInverse));
+                            old_collector
+                                .push(StyledToken::new(token.to_string(), Style::OldInverse));
                         }
                         collection::Edit::Change(_) => unimplemented!("Not implemented, help!"),
                     };
