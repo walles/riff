@@ -38,6 +38,7 @@ pub struct TokenCollector {
     tokens: Vec<StyledToken>,
     bytes_count: usize,
     highlighted_bytes_count: usize,
+    rendered: bool,
 }
 
 impl Style {
@@ -83,6 +84,7 @@ impl TokenCollector {
             tokens: Vec::new(),
             bytes_count: 0,
             highlighted_bytes_count: 0,
+            rendered: false,
         };
     }
 
@@ -140,6 +142,7 @@ impl TokenCollector {
 
     #[must_use]
     pub fn render(&mut self) -> String {
+        assert!(!self.rendered);
         let mut current_row: Vec<StyledToken> = Vec::new();
         let mut rendered = String::new();
 
@@ -165,14 +168,17 @@ impl TokenCollector {
             rendered.push_str(rendered_row);
         }
 
+        self.rendered = true;
         return rendered;
     }
 
     pub fn chars_count(&self) -> usize {
+        assert!(self.rendered); // It's the rendering that does the counting
         return self.bytes_count;
     }
 
     pub fn highlighted_chars_count(&self) -> usize {
+        assert!(self.rendered); // It's the rendering that does the counting
         return self.highlighted_bytes_count;
     }
 }

@@ -15,11 +15,8 @@ use diffus::{
 /// it.
 const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 
-/// If it's only this few highlighted chars, we'll just highligh anyway without
-/// checking the `MAX_HIGHLIGHT_PERCENTAGE`.
-const OK_HIGHLIGHT_COUNT: usize = 10;
-
 const LARGE_BYTE_COUNT_CHANGE_PERCENT: usize = 100;
+const SMALL_BYTE_COUNT_CHANGE: usize = 10;
 
 /// Format old and new lines in OLD and NEW colors.
 ///
@@ -54,6 +51,10 @@ fn simple_format(old_text: &str, new_text: &str) -> Vec<String> {
 /// Returns a vector of ANSI highlighted lines
 #[must_use]
 pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
+    if old_text.is_empty() || new_text.is_empty() {
+        return simple_format(old_text, new_text);
+    }
+
     // This check makes us faster, please use the benchmark.py script before and
     // after if you change this.
     if is_large_byte_count_change(old_text, new_text) {
@@ -107,19 +108,18 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
         }
     }
 
+    let highlighted_old_text = old_collector.render();
+    let highlighted_new_text = new_collector.render();
+
     let highlighted_bytes_count =
         old_collector.highlighted_chars_count() + new_collector.highlighted_chars_count();
     let bytes_count = old_collector.chars_count() + new_collector.chars_count();
 
     // Don't highlight too much
-    if highlighted_bytes_count <= OK_HIGHLIGHT_COUNT {
-        // Few enough highlights, Just do it (tm)
-    } else if (100 * highlighted_bytes_count) / bytes_count > MAX_HIGHLIGHT_PERCENTAGE {
+    if (100 * highlighted_bytes_count) / bytes_count > MAX_HIGHLIGHT_PERCENTAGE {
         return simple_format(old_text, new_text);
     }
 
-    let highlighted_old_text = old_collector.render();
-    let highlighted_new_text = new_collector.render();
     return to_lines(&highlighted_old_text, &highlighted_new_text);
 }
 
@@ -131,11 +131,15 @@ fn is_large_byte_count_change(old_text: &str, new_text: &str) -> bool {
     let high_count = max(old_text.len(), new_text.len());
     let low_count = min(old_text.len(), new_text.len());
 
+    if high_count - low_count <= SMALL_BYTE_COUNT_CHANGE {
+        return false;
+    }
+
     // "+ 99" makes the result round up, so 0->0, 1->2.
     let low_count_plus_percentage =
         (low_count * (LARGE_BYTE_COUNT_CHANGE_PERCENT + 100) + 99) / 100;
 
-    return high_count > low_count_plus_percentage;
+    return high_count >= low_count_plus_percentage;
 }
 
 #[must_use]
@@ -233,9 +237,27 @@ mod tests {
     #[test]
     fn test_is_large_byte_count_change() {
         assert_eq!(is_large_byte_count_change("", ""), false);
-        assert_eq!(is_large_byte_count_change("", "x"), true);
-        assert_eq!(is_large_byte_count_change("x", "x"), false);
-        assert_eq!(is_large_byte_count_change("x", "xy"), false);
-        assert_eq!(is_large_byte_count_change("x", "xyz"), true);
+
+        assert_eq!(
+            is_large_byte_count_change("", &"x".repeat(SMALL_BYTE_COUNT_CHANGE)),
+            false
+        );
+        assert_eq!(
+            is_large_byte_count_change("", &"x".repeat(SMALL_BYTE_COUNT_CHANGE + 1)),
+            true
+        );
+
+        // Verify that doubling the length counts as large
+        let base_len = SMALL_BYTE_COUNT_CHANGE * 2;
+        let double_len = base_len * 2;
+        let almost_double_len = double_len - 1;
+        assert_eq!(
+            is_large_byte_count_change(&"x".repeat(base_len), &"y".repeat(almost_double_len)),
+            false
+        );
+        assert_eq!(
+            is_large_byte_count_change(&"x".repeat(base_len), &"y".repeat(double_len)),
+            true
+        );
     }
 }

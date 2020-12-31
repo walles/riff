@@ -432,16 +432,16 @@ mod tests {
 
     #[test]
     fn test_remove_trailing_newline() {
-        let mut input = "-hej\n\
-            +hej\n\
+        let mut input = "-hejhopp\n\
+            +hejhopp\n\
             \\ No newline at end of file\n\
             "
         .as_bytes();
 
         let expected = format!(
             "{}\n{}\n{}\n",
-            old(&format!("-hej{}⏎", INVERSE_VIDEO)),
-            new("+hej"),
+            old(&format!("-hejhopp{}⏎", INVERSE_VIDEO)),
+            new("+hejhopp"),
             format!(
                 "{}\\ No newline at end of file{}",
                 NO_EOF_NEWLINE_COLOR, NORMAL
@@ -450,7 +450,15 @@ mod tests {
 
         let mut actual: Vec<u8> = Vec::new();
         highlight_diff(&mut input, &mut actual);
-        assert_eq!(std::str::from_utf8(&actual).unwrap(), expected);
+        // collect()ing into line vectors inside of this assert() statement
+        // splits test failure output into lines, making it easier to digest.
+        assert_eq!(
+            std::str::from_utf8(&actual)
+                .unwrap()
+                .lines()
+                .collect::<Vec<_>>(),
+            expected.lines().collect::<Vec<_>>()
+        );
     }
 
     #[test]
@@ -469,7 +477,15 @@ mod tests {
 
         let mut output: Vec<u8> = Vec::new();
         highlight_diff(&mut input, &mut output);
-        assert_eq!(std::str::from_utf8(&output).unwrap(), expected);
+        // collect()ing into line vectors inside of this assert() statement
+        // splits test failure output into lines, making it easier to digest.
+        assert_eq!(
+            std::str::from_utf8(&output)
+                .unwrap()
+                .lines()
+                .collect::<Vec<_>>(),
+            expected.lines().collect::<Vec<_>>()
+        );
     }
 
     #[test]
