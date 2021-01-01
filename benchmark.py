@@ -19,6 +19,29 @@ BINDIR = os.path.join(
 os.makedirs(BINDIR, exist_ok=True)
 
 
+def build_latest_commit(clonedir: str):
+    # From: https://stackoverflow.com/a/949391/473672
+    latest_sha = (
+        subprocess.check_output(["git", "rev-parse", "--verify", "--short", "HEAD"])
+        .strip()
+        .decode("utf-8")
+    )
+    latest_commit_bin_name = f"riff-latest-commit-{latest_sha}"
+
+    # Remove any outdated riff-latest-commit built
+    for committed in glob.glob(os.path.join(BINDIR, "riff-latest-commit-*")):
+        if os.path.basename(committed) != latest_commit_bin_name:
+            print(f"Removing build for earlier unreleased commit: {committed}")
+            os.remove(committed)
+
+    # Do we already have our build? If so, do nothing.
+    full_path = os.path.join(BINDIR, latest_commit_bin_name)
+    if os.path.isfile(full_path):
+        return
+
+    build_binary(clonedir, latest_sha, full_path)
+
+
 def gather_binaries():
     """
     Gather binaries to benchmark in BINDIR
@@ -35,6 +58,9 @@ def gather_binaries():
     # Make sure we binaries for older versions
     with tempfile.TemporaryDirectory(prefix="riff-benchmark") as clonedir:
         subprocess.run(["git", "clone", "-b", "master", ".", clonedir], check=True)
+
+        build_latest_commit(clonedir)
+
         for tag in rust_tags:
             binary_name = os.path.join(BINDIR, f"riff-{tag.decode()}")
             if os.path.isfile(binary_name):
@@ -55,7 +81,12 @@ def build_binary(clonedir: str, tag: str, binary_name: str):
     """
     In clonedir, check out tag, build a binary and put it in binary_name.
     """
-    subprocess.run(["git", "checkout", tag], cwd=clonedir, check=True)
+    # Detatched HEAD warning disabling: https://stackoverflow.com/a/45652159/473672
+    subprocess.run(
+        ["git", "-c", "advice.detachedHead=false", "checkout", tag],
+        cwd=clonedir,
+        check=True,
+    )
     subprocess.run(["cargo", "build", "--release"], cwd=clonedir, check=True)
     shutil.copy(os.path.join(clonedir, "target", "release", "riff"), binary_name)
 
@@ -102,6 +133,10 @@ def time_binaries():
         subprocess.check_call(["git", "log", "-p", "master"], stdout=testdata)
 
         binaries = sorted(glob.glob(os.path.join(BINDIR, "*")))
+
+        # Do riff-current last: https://stackoverflow.com/a/20320940/473672
+        binaries.sort(key=lambda s: s.endswith("riff-current"))
+
         for binary in binaries:
             print_timings(binary, testdata.name)
         print_timings("/bin/cat", testdata.name)
