@@ -31,6 +31,20 @@ impl StyledToken {
 
         return first_char.is_whitespace();
     }
+
+    pub fn is_word(&self) -> bool {
+        let mut chars_iterator = self.token.chars();
+        let first_char = chars_iterator.next().unwrap();
+        let second_char = chars_iterator.next();
+        if second_char.is_some() {
+            // We consist of multiple characters, that means we are a word
+            return true;
+        }
+
+        // If we get here, it means our token consists of one character only. If
+        // that single character is alphanumeric, we are a word, otherwise not.
+        return first_char.is_alphanumeric();
+    }
 }
 
 pub struct TokenCollector {
@@ -52,6 +66,16 @@ impl Style {
                 return false;
             }
         }
+    }
+
+    pub fn inverted(&self) -> Style {
+        return match self {
+            Style::Old => Style::OldInverse,
+            Style::New => Style::NewInverse,
+            Style::OldInverse => Style::OldInverse,
+            Style::NewInverse => Style::NewInverse,
+            Style::Error => Style::Error,
+        };
     }
 
     #[must_use]
@@ -104,6 +128,7 @@ impl TokenCollector {
             highlight_trailing_whitespace(row);
             highlight_nonleading_tab(row);
         }
+        highlight_space_between_words(row);
 
         // Set inverse from prefix
         let mut is_inverse = self.line_prefix.style.is_inverse();
@@ -221,6 +246,54 @@ fn highlight_nonleading_tab(row: &mut [StyledToken]) {
 
         // Non-leading TAB, mark it!
         token.style = Style::Error;
+    }
+}
+
+/// Highlight single space between two highlighted words
+fn highlight_space_between_words(row: &mut [StyledToken]) {
+    enum FoundState {
+        Nothing,
+        HighlightedWord,
+        WordSpace,
+    };
+
+    let mut found_state = FoundState::Nothing;
+    let mut previous_token: Option<&mut StyledToken> = None;
+    for token in row.iter_mut() {
+        match found_state {
+            FoundState::Nothing => {
+                if token.style.is_inverse() && token.is_word() {
+                    // Found "Monkey"
+                    found_state = FoundState::HighlightedWord;
+                }
+            }
+
+            FoundState::HighlightedWord => {
+                if token.is_whitespace() {
+                    // Found "Monkey " (note trailing space)
+                    found_state = FoundState::WordSpace;
+                } else if token.style.is_inverse() && token.is_word() {
+                    found_state = FoundState::HighlightedWord;
+                } else {
+                    found_state = FoundState::Nothing;
+                }
+            }
+
+            FoundState::WordSpace => {
+                if token.style.is_inverse() && token.is_word() {
+                    // Found "Monkey Dance"
+                    if let Some(_previous_token) = previous_token {
+                        _previous_token.style = _previous_token.style.inverted();
+                    }
+
+                    found_state = FoundState::HighlightedWord;
+                } else {
+                    found_state = FoundState::Nothing;
+                }
+            }
+        }
+
+        previous_token = Some(token);
     }
 }
 
@@ -359,5 +432,25 @@ mod tests {
         let actual = test_me.render();
 
         assert_eq!(actual, format!("{}-x\t{}", OLD, NORMAL));
+    }
+
+    #[test]
+    fn test_highlight_space_between_words() {
+        let mut row = [
+            StyledToken::new("Monkey".to_string(), Style::NewInverse),
+            StyledToken::new(" ".to_string(), Style::New),
+            StyledToken::new("Dance".to_string(), Style::NewInverse),
+        ];
+
+        highlight_space_between_words(&mut row);
+
+        assert_eq!(
+            row,
+            [
+                StyledToken::new("Monkey".to_string(), Style::NewInverse),
+                StyledToken::new(" ".to_string(), Style::NewInverse),
+                StyledToken::new("Dance".to_string(), Style::NewInverse),
+            ]
+        );
     }
 }

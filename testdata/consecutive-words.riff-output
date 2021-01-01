@@ -1,0 +1,35 @@
+commit bbc4309d726819512f9b5fb72b187eeb63d34680
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Thu Dec 31 15:22:09 2020 +0100
+
+    Skip highlighting based on newline counts
+
+    If old text and new text have very different line counts, just do the
+    simplistic highlighting.
+
+[1mdiff --git a/src/refiner.rs b/src/refiner.rs[0m
+[1mindex d1ebdc1..40ae0df 100644[0m
+[1m--- a/src/refiner.rs[0m
+[1m+++ b/src/refiner.rs[0m
+[36m@@ -15,8 +15,8 @@ use diffus::{[0m
+ /// it.
+ const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
+
+[31m-const LARGE[7m_BYTE[27m_COUNT_CHANGE_PERCENT: usize = 100;[0m
+[31m-const SMALL[7m_BYTE[27m_COUNT_CHANGE: usize = 10;[0m
+[32m+const LARGE_COUNT_CHANGE_PERCENT: usize = 100;[0m
+[32m+const SMALL_COUNT_CHANGE: usize = 10;[0m
+
+ /// Format old and new lines in OLD and NEW colors.
+ ///
+[36m@@ -55,11 +55,14 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {[0m
+         return simple_format(old_text, new_text);
+     }
+
+[31m-    // [7mThis check makes[27m us faster, please use the benchmark.py script before[7m and[0m
+[31m-    // after if you change this.[0m
+[32m+    // [7mThese checks make[27m us faster, please use the benchmark.py script before[0m
+[32m+    //[7m and[27m after if you change this.[0m
+     if is_large_byte_count_change(old_text, new_text) {
+         return simple_format(old_text, new_text);
+     }
