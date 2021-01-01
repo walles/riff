@@ -1,0 +1,35 @@
+commit bbc4309d726819512f9b5fb72b187eeb63d34680
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Thu Dec 31 15:22:09 2020 +0100
+
+    Skip highlighting based on newline counts
+
+    If old text and new text have very different line counts, just do the
+    simplistic highlighting.
+
+diff --git a/src/refiner.rs b/src/refiner.rs
+index d1ebdc1..40ae0df 100644
+--- a/src/refiner.rs
++++ b/src/refiner.rs
+@@ -15,8 +15,8 @@ use diffus::{
+ /// it.
+ const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
+
+-const LARGE_BYTE_COUNT_CHANGE_PERCENT: usize = 100;
+-const SMALL_BYTE_COUNT_CHANGE: usize = 10;
++const LARGE_COUNT_CHANGE_PERCENT: usize = 100;
++const SMALL_COUNT_CHANGE: usize = 10;
+
+ /// Format old and new lines in OLD and NEW colors.
+ ///
+@@ -55,11 +55,14 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
+         return simple_format(old_text, new_text);
+     }
+
+-    // This check makes us faster, please use the benchmark.py script before and
+-    // after if you change this.
++    // These checks make us faster, please use the benchmark.py script before
++    // and after if you change this.
+     if is_large_byte_count_change(old_text, new_text) {
+         return simple_format(old_text, new_text);
+     }
