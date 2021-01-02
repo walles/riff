@@ -118,7 +118,9 @@ def print_timings(binary: str, testdata_filename: str):
     deltas.sort()
     from_ms = deltas[THROW_AWAY_AT_EACH_END] * 1000
     to_ms = deltas[-THROW_AWAY_AT_EACH_END - 1] * 1000
-    print(f"{from_ms:.1f}ms-{to_ms:.1f}ms: {binary}")
+    mid_ms = (from_ms + to_ms) / 2
+    spread_ms = to_ms - from_ms
+    print(f"{mid_ms:.1f}ms±{spread_ms:.1f}ms: {binary}")
 
 
 def time_binaries():
