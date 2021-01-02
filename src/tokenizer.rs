@@ -8,7 +8,7 @@
 pub fn tokenize(input: &str) -> Vec<&str> {
     let mut first_alphanumeric_byte_index = 0;
     let mut last_was_alphanumeric = false;
-    let mut result: Vec<&str> = Vec::new();
+    let mut result: Vec<&str> = Vec::with_capacity(input.len());
     let mut byte_index = 0;
     for character in input.chars() {
         let current_is_alphanumeric = character.is_alphanumeric();
