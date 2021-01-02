@@ -18,6 +18,16 @@ const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 const LARGE_COUNT_CHANGE_PERCENT: usize = 100;
 const SMALL_COUNT_CHANGE: usize = 10;
 
+/// Like format!(), but faster for our special case
+fn format_simple_line(old_new: &str, plus_minus: char, contents: &str) -> String {
+    let mut line = String::with_capacity(old_new.len() + 1 + contents.len() + NORMAL.len());
+    line.push_str(old_new);
+    line.push(plus_minus);
+    line.push_str(contents);
+    line.push_str(NORMAL);
+    return line;
+}
+
 /// Format old and new lines in OLD and NEW colors.
 ///
 /// No intra-line refinement.
@@ -26,7 +36,8 @@ fn simple_format(old_text: &str, new_text: &str) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
     for old_line in old_text.lines() {
-        lines.push(format!("{}-{}{}", OLD, old_line, NORMAL));
+        // Use a specialized line formatter since this code is in a hot path
+        lines.push(format_simple_line(OLD, '-', old_line));
     }
     if (!old_text.is_empty()) && !old_text.ends_with('\n') {
         lines.push(format!(
@@ -36,7 +47,8 @@ fn simple_format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     for add_line in new_text.lines() {
-        lines.push(format!("{}+{}{}", NEW, add_line, NORMAL))
+        // Use a specialized line formatter since this code is in a hot path
+        lines.push(format_simple_line(NEW, '+', add_line));
     }
     if (!new_text.is_empty()) && !new_text.ends_with('\n') {
         lines.push(format!(
