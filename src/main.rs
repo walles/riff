@@ -488,6 +488,43 @@ mod tests {
         );
     }
 
+    /// Test for https://github.com/walles/riff/issues/14
+    #[test]
+    fn test_14() {
+        let mut input = "-the hole black\n\
+            -spot\n\
+            +the hole\n\
+            +black spot\n\
+            "
+        .as_bytes();
+
+        let expected = format!(
+            "{}\n{}\n{}\n{}\n",
+            old(&format!(
+                "-the hole{} {}black{}⏎",
+                INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO
+            )),
+            old("-spot"),
+            new(&format!("+the hole{}⏎", INVERSE_VIDEO)),
+            new(&format!(
+                "+black{} {}spot",
+                INVERSE_VIDEO, NOT_INVERSE_VIDEO
+            )),
+        );
+
+        let mut actual: Vec<u8> = Vec::new();
+        highlight_diff(&mut input, &mut actual);
+        // collect()ing into line vectors inside of this assert() statement
+        // splits test failure output into lines, making it easier to digest.
+        assert_eq!(
+            std::str::from_utf8(&actual)
+                .unwrap()
+                .lines()
+                .collect::<Vec<_>>(),
+            expected.lines().collect::<Vec<_>>()
+        );
+    }
+
     #[test]
     fn test_testdata_examples() {
         // Example value: `/Users/johan/src/riff/target/debug/deps/riff-7a8916c06b0d3d6c`
