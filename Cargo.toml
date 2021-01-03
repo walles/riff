@@ -24,7 +24,15 @@ pretty_assertions = "0.6.1"
 # See: https://doc.rust-lang.org/cargo/reference/profiles.html
 [profile.release]
 debug = 1  # 1 = Line number information only
-lto = "thin"  # Supposedly about as fast as "false"
+
+# Benchmark execution times with different lto settings (lower is better):
+# "off" : 67.5ms
+# "thin": 40ms
+# "fat" : 38.5ms
+#
+# Let's go with thin which is fast at building but still provides good
+# performance.
+lto = "thin"
 
 # See: https://doc.rust-lang.org/cargo/reference/profiles.html
 # Configure dependencies of the release profile
