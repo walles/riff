@@ -10,6 +10,9 @@ import subprocess
 # Number of benchmark iterations to run
 ITERATIONS = 60
 
+# Confidence interval to present
+PRECISION_PERCENT = 50
+
 # Number of throwaway iterations to run before starting the benchmark
 WARMUP_RUNS = 10
 
@@ -96,9 +99,9 @@ def print_timings(binary: str, testdata_filename: str):
     Run the indicated binary and print timings for it
     """
 
-    # Throw away the top and bottom 5%, giving us 90% coverage
-    assert ITERATIONS % 20 == 0
-    THROW_AWAY_AT_EACH_END = ITERATIONS // 20
+    # Ensure we throw away an integer number of iterations
+    assert ((100 - PRECISION_PERCENT) * ITERATIONS) % 200 == 0
+    THROW_AWAY_AT_EACH_END = ((100 - PRECISION_PERCENT) * ITERATIONS) // 200
 
     # Do some warmup runs
     for _ in range(WARMUP_RUNS):
