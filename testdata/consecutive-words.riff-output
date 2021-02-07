@@ -15,8 +15,8 @@ Date:   Thu Dec 31 15:22:09 2020 +0100
  /// it.
  const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 
-[31m-const LARGE[7m_BYTE[27m_COUNT_CHANGE_PERCENT: usize = 100;[0m
-[31m-const SMALL[7m_BYTE[27m_COUNT_CHANGE: usize = 10;[0m
+[31m-const LARGE_BYTE_COUNT_CHANGE_PERCENT: usize = 100;[0m
+[31m-const SMALL_BYTE_COUNT_CHANGE: usize = 10;[0m
 [32m+const LARGE_COUNT_CHANGE_PERCENT: usize = 100;[0m
 [32m+const SMALL_COUNT_CHANGE: usize = 10;[0m
 
