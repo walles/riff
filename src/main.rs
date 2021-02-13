@@ -11,6 +11,7 @@ extern crate lazy_static;
 use backtrace::Backtrace;
 use constants::*;
 use git_version::git_version;
+use io::ErrorKind;
 use isatty::{stdin_isatty, stdout_isatty};
 use regex::Regex;
 use std::env;
@@ -90,7 +91,15 @@ fn get_fixed_highlight(line: &str) -> &str {
 }
 
 fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
-    stream.write_all(text.as_bytes()).unwrap();
+    if let Err(error) = stream.write_all(text.as_bytes()) {
+        if error.kind() == ErrorKind::BrokenPipe {
+            // This is fine, somebody probably just quit their pager before it
+            // was done reading our output.
+            exit(0);
+        }
+
+        panic!("Error writing diff to pager: {:?}", error);
+    }
 }
 
 fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
