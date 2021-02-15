@@ -60,6 +60,17 @@ fn simple_format(old_text: &str, new_text: &str) -> Vec<String> {
     return lines;
 }
 
+/// Check whether old or new has the least amount of lines.
+///
+/// Take the shortest one and try diffing it against both the start and the end
+/// of the longer one.
+///
+/// Check some goodness solution for both flavors and go for the best one.
+#[must_use]
+fn partial_format(old_text: &str, new_text: &str) -> Vec<String> {
+    return simple_format(old_text, new_text);
+}
+
 /// Returns a vector of ANSI highlighted lines
 #[must_use]
 pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
@@ -69,10 +80,10 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
 
     // These checks make us faster, please use the benchmark.py script before
     // and after if you change this.
-    if is_large_byte_count_change(old_text, new_text) {
-        return simple_format(old_text, new_text);
-    }
     if is_large_newline_count_change(old_text, new_text) {
+        return partial_format(old_text, new_text);
+    }
+    if is_large_byte_count_change(old_text, new_text) {
         return simple_format(old_text, new_text);
     }
 
@@ -134,7 +145,7 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
 
     // Don't highlight too much
     if (100 * highlighted_bytes_count) / bytes_count > MAX_HIGHLIGHT_PERCENTAGE {
-        return simple_format(old_text, new_text);
+        return partial_format(old_text, new_text);
     }
 
     return to_lines(&highlighted_old_text, &highlighted_new_text);
