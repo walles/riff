@@ -134,11 +134,11 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
 
     // These checks make us faster, please use the benchmark.py script before
     // and after if you change this.
-    if is_large_newline_count_change(old_text, new_text) {
+    if is_large_byte_count_change(old_text, new_text) {
         return partial_format(old_text, new_text);
     }
-    if is_large_byte_count_change(old_text, new_text) {
-        return simple_format(old_text, new_text);
+    if is_large_newline_count_change(old_text, new_text) {
+        return partial_format(old_text, new_text);
     }
 
     // Find diffs between adds and removals
