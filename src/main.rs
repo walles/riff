@@ -14,13 +14,13 @@ use git_version::git_version;
 use io::ErrorKind;
 use isatty::{stdin_isatty, stdout_isatty};
 use regex::Regex;
-use std::env;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::panic;
 use std::path;
 use std::process::exit;
 use std::process::{Command, Stdio};
 use std::str;
+use std::{env, fs::File};
 
 mod constants;
 mod refiner;
@@ -324,6 +324,20 @@ pub fn type_string(path: &path::Path) -> &str {
     return "Not file not dir";
 }
 
+fn ensure_readable(path: &path::Path) {
+    if let Err(why) = File::open(path) {
+        eprintln!("ERROR: {}: {}", why, path.to_string_lossy());
+        exit(1);
+    };
+}
+
+fn ensure_listable(path: &path::Path) {
+    if let Err(why) = std::fs::read_dir(path) {
+        eprintln!("ERROR: {}: {}", why, path.to_string_lossy());
+        exit(1);
+    }
+}
+
 fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool) {
     let path1 = path::Path::new(path1);
     let path2 = path::Path::new(path2);
@@ -335,6 +349,14 @@ fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool) {
         eprintln!("  {:<9}: {}", type_string(path1), path1.to_string_lossy());
         eprintln!("  {:<9}: {}", type_string(path2), path2.to_string_lossy());
         exit(1);
+    }
+
+    if both_paths_are_files {
+        ensure_readable(path1);
+        ensure_readable(path2);
+    } else {
+        ensure_listable(path1);
+        ensure_listable(path2);
     }
 
     // Run "diff -ur file1 file2"
@@ -356,10 +378,12 @@ fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool) {
     highlight_stream(diff_stdout);
 
     let diff_result = diff_subprocess.wait().unwrap();
-    if !diff_result.success() {
-        eprintln!("{}", pretty_command);
-        let diff_exit_code = diff_result.code().or(Some(1));
-        exit(diff_exit_code.unwrap());
+    let diff_exit_code = diff_result.code().unwrap_or(2);
+    if diff_exit_code != 0 && diff_exit_code != 1 {
+        // diff exit code was neither 0 (comparees identical) or 1 (differences
+        // found), this means trouble.
+        eprintln!("Exit code {}: {}", diff_exit_code, pretty_command);
+        exit(diff_exit_code);
     }
 }
 
