@@ -81,15 +81,18 @@ read -r -p "Press ENTER when ready: "
 
 git tag --annotate "$NEW_VERSION_NUMBER"
 
-# Build a macOS AMD64 binary
-cargo build --release --target=x86_64-apple-darwin
-if ! ./target/x86_64-apple-darwin/release/riff --version | grep -E " $NEW_VERSION_NUMBER\$" > /dev/null ; then
-    >&2 echo ""
-    >&2 echo "ERROR: Version number <$NEW_VERSION_NUMBER> not found in --version output:"
-    ./target/x86_64-apple-darwin/release/riff --version
-    exit 1
-fi
-cp "target/x86_64-apple-darwin/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-macos"
+# Build macOS binaries
+targets=(aarch64-apple-darwin x86_64-apple-darwin)
+for target in $targets; do
+  cargo build --release "--target=$target"
+  if ! ./target/$target/release/riff --version | grep -E " $NEW_VERSION_NUMBER\$" > /dev/null ; then
+      >&2 echo ""
+      >&2 echo "ERROR: Version number <$NEW_VERSION_NUMBER> not found in --version output:"
+      ./target/$target/release/riff --version
+      exit 1
+  fi
+  cp "target/$target/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-macos"
+done
 
 # Build a Linux-x64 binary on macOS
 #
