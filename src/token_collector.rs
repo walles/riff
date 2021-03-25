@@ -255,7 +255,7 @@ fn highlight_space_between_words(row: &mut [StyledToken]) {
         Nothing,
         HighlightedWord,
         WordSpace,
-    };
+    }
 
     let mut found_state = FoundState::Nothing;
     let mut previous_token: Option<&mut StyledToken> = None;
