@@ -8,7 +8,6 @@
 # -------------
 #
 # Cross compile Linux from macOS:
-# * rustup target add x86_64-unknown-linux-musl
 # * brew install FiloSottile/musl-cross/musl-cross
 
 set -eu -o pipefail
@@ -113,6 +112,7 @@ EXPECTED_VERSION_NUMBER=$(git describe --dirty=-modified)
 # Build macOS binaries
 targets=(aarch64-apple-darwin x86_64-apple-darwin)
 for target in $targets; do
+  rustup target add $target
   cargo build --release "--target=$target"
   if ! ./target/$target/release/riff --version | grep -E " $EXPECTED_VERSION_NUMBER\$" >/dev/null; then
     echo >&2 ""
@@ -126,6 +126,7 @@ done
 # Build a Linux-x64 binary on macOS
 #
 # From: https://timryan.org/2018/07/27/cross-compiling-linux-binaries-from-macos.html
+rustup target add x86_64-unknown-linux-musl
 cargo build --release --target=x86_64-unknown-linux-musl
 $LIVE && cp "target/x86_64-unknown-linux-musl/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-linux"
 
@@ -159,3 +160,5 @@ $LIVE && echo 'After uploading that file, press "Publish release".'
 $LIVE && echo
 
 $LIVE && read -r -p "Press ENTER when done: "
+
+true # This makes dry runs exit with 0 if they get this far
