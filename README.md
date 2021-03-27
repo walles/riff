@@ -63,6 +63,12 @@ versus earlier releases.
 
 Just invoke `./release.sh` and follow instructions.
 
+If you want to test the release script without actually releasing anything, do:
+
+```
+./release.sh --dry
+```
+
 # TODO
 
 ## Misc
