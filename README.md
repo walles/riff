@@ -21,7 +21,6 @@ Or if you do...
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
-git config --global interactive.filter riff
 git config --global interactive.diffFilter riff
 ```
 
@@ -48,7 +47,6 @@ riff file1.txt file2.txt
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
-git config --global interactive.filter riff
 git config --global interactive.diffFilter riff
 ```
 
