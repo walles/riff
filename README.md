@@ -21,7 +21,7 @@ Or if you do...
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
-git config --global interactive.filter riff
+git config --global interactive.diffFilter riff
 ```
 
 ... then all future `git diff`s and `git show`s will be refined.
@@ -47,7 +47,7 @@ riff file1.txt file2.txt
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
-git config --global interactive.filter riff
+git config --global interactive.diffFilter riff
 ```
 
 # Development
