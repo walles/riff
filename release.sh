@@ -105,18 +105,34 @@ else
   echo
 fi
 
-# Build a macOS AMD64 binary
-rustup target add x86_64-apple-darwin
-cargo build --release --target=x86_64-apple-darwin
-
+# On $LIVE builds this will be the same as $NEW_VERSION_NUMBER since we just
+# made a tag with $NEW_VERSION_NUMBER.
 EXPECTED_VERSION_NUMBER=$(git describe --dirty=-modified)
-if ! ./target/x86_64-apple-darwin/release/riff --version | grep -E " $EXPECTED_VERSION_NUMBER\$" >/dev/null; then
+
+# Build macOS binaries
+targets="aarch64-apple-darwin x86_64-apple-darwin"
+for target in $targets; do
+  rustup target add $target
+
+  # From: https://stackoverflow.com/a/66875783/473672
+  SDKROOT=$(xcrun -sdk macosx11.1 --show-sdk-path) \
+  MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx11.1 --show-sdk-platform-version) \
+    cargo build --release "--target=$target"
+done
+
+# From: https://developer.apple.com/documentation/apple-silicon/building-a-universal-macos-binary#Update-the-Architecture-List-of-Custom-Makefiles
+lipo -create \
+  -output target/riff-universal-apple-darwin-release \
+  target/aarch64-apple-darwin/release/riff \
+  target/x86_64-apple-darwin/release/riff
+
+if ! target/riff-universal-apple-darwin-release --version | grep -E " $EXPECTED_VERSION_NUMBER\$" >/dev/null; then
   echo >&2 ""
   echo >&2 "ERROR: Version number <$EXPECTED_VERSION_NUMBER> not found in --version output:"
-  ./target/x86_64-apple-darwin/release/riff --version
+  target/riff-universal-apple-darwin-release --version
   exit 1
 fi
-$LIVE && cp "target/x86_64-apple-darwin/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-macos"
+$LIVE && cp "target/riff-universal-apple-darwin-release" "riff-$EXPECTED_VERSION_NUMBER-universal-macos"
 
 # Build a Linux-x64 binary on macOS
 #
