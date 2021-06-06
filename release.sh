@@ -172,4 +172,11 @@ $LIVE && echo
 
 $LIVE && read -r -p "Press ENTER when done: "
 
+$LIVE && echo
+$LIVE && echo "Now, make a PR to bump the Homebrew packaged version to $NEW_VERSION_NUMBER:"
+$LIVE && echo '  https://github.com/walles/homebrew-johan/blob/main/Formula/riffdiff.rb'
+$LIVE && echo
+
+$LIVE && read -r -p "Press ENTER when done: "
+
 true # This makes dry runs exit with 0 if they get this far

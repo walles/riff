@@ -34,6 +34,14 @@ riff file1.txt file2.txt
 
 # Installation
 
+## With [Homebrew](https://brew.sh)
+
+```
+brew install walles/johan/riffdiff
+```
+
+## Manual Install
+
 1. Go [here](https://github.com/walles/riff/releases/latest) and download the
    correct binary for your platform
 
