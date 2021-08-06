@@ -1,6 +1,6 @@
 // Clippy settings, full list here:
 // <https://rust-lang.github.io/rust-clippy/master/index.html>
-#![allow(clippy::clippy::clippy::needless_return)]
+#![allow(clippy::needless_return)]
 //
 // Fail build on Clippy warnings
 #![deny(warnings)]
@@ -103,7 +103,7 @@ fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
 }
 
 fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
-    print(stream, &text);
+    print(stream, text);
     print(stream, "\n");
 }
 
