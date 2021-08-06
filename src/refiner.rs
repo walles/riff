@@ -92,9 +92,7 @@ fn partial_format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     if old_linecount > new_linecount {
-        // FIXME: Do a partial diff in this case as well rather than just giving
-        // up and simple_format()ting the text.
-        return simple_format(old_text, new_text);
+        return partial_format_shortened(old_text, new_text);
     }
 
     // Invariant at this point: old_text has fewer lines than new_text
@@ -122,6 +120,47 @@ fn partial_format(old_text: &str, new_text: &str) -> Vec<String> {
     let mut return_me: Vec<String> = Vec::new();
     return_me.append(&mut old_text_vs_new_initial_lines);
     return_me.append(&mut new_remaining_lines);
+    return return_me;
+}
+
+/// If old has 30 lines and new 2, try highlighting changes between the first 2
+/// lines of old and new.
+///
+/// Test case: testdata/shorten-section.diff
+///
+/// See also partial_format() which is the opposite of this function.
+#[must_use]
+fn partial_format_shortened(old_text: &str, new_text: &str) -> Vec<String> {
+    // Invariant at this point: old_text has more lines than new_text
+
+    if !new_text.ends_with('\n') {
+        // new_text does *not* end in a newline
+
+        // FIXME: Write tests for and handle this case, needs some thought on
+        // how to poplulate old_initial_lines, and how to merge the results at
+        // the end of this function.
+        return simple_format(old_text, new_text);
+    }
+
+    // Extract the new_linecount initial lines from old_text.
+    let new_linecount = new_text.lines().count();
+    let old_initial_lines_last_offset = last_byte_index_of_nth_line(old_text, new_linecount);
+    let old_remaining_lines_first_offset = old_initial_lines_last_offset + 1;
+    let old_initial_lines = &old_text[0..old_remaining_lines_first_offset];
+
+    let mut new_text_vs_old_initial_lines = format(old_initial_lines, new_text);
+
+    // Extract the remaining lines from new_text
+    let old_remaining_lines = &old_text[old_remaining_lines_first_offset..];
+    let mut old_remaining_lines = simple_format(old_remaining_lines, "");
+
+    let mut return_me: Vec<String> = Vec::new();
+
+    // FIXME: These lines need to be appended *between* the old and new lines
+    // returned by new_text_vs_old_initial_lines
+    return_me.append(&mut old_remaining_lines);
+
+    return_me.append(&mut new_text_vs_old_initial_lines);
     return return_me;
 }
 
