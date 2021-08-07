@@ -1,0 +1,17 @@
+diff --git a/app.yaml b/app.yaml
+index 2da370d..f7f39fc 100644
+--- a/app.yaml
++++ b/app.yaml
+@@ -11,10 +11,8 @@ handlers:
+ -   url: /api/.*
+     script: auto
+ -   url: /(.*)
+-    static_files: ui/dist/\1
+-    upload: ui/dist/(.*)
+-error_handlers:
+--   file: ui/dist/default_error.html
++    static_files: ui/build/\1
++    upload: ui/build/(.*)
+ env_variables:
+     PGUSER: postgres
+     CLOUD_SQL_CONNECTION_NAME: /cloudsql/animated-sniffle:europe-west1:pg-animated-sniffle

@@ -31,16 +31,19 @@ fn format_simple_line(old_new: &str, plus_minus: char, contents: &str) -> String
 /// Format old and new lines in OLD and NEW colors.
 ///
 /// No intra-line refinement.
+///
+/// Returns one old and one new line array.
 #[must_use]
-fn simple_format(old_text: &str, new_text: &str) -> Vec<String> {
-    let mut lines: Vec<String> = Vec::new();
+fn simple_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
+    let mut old_lines: Vec<String> = Vec::new();
+    let mut new_lines: Vec<String> = Vec::new();
 
     for old_line in old_text.lines() {
         // Use a specialized line formatter since this code is in a hot path
-        lines.push(format_simple_line(OLD, '-', old_line));
+        old_lines.push(format_simple_line(OLD, '-', old_line));
     }
     if (!old_text.is_empty()) && !old_text.ends_with('\n') {
-        lines.push(format!(
+        old_lines.push(format!(
             "{}{}{}",
             NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
         ));
@@ -48,16 +51,16 @@ fn simple_format(old_text: &str, new_text: &str) -> Vec<String> {
 
     for add_line in new_text.lines() {
         // Use a specialized line formatter since this code is in a hot path
-        lines.push(format_simple_line(NEW, '+', add_line));
+        new_lines.push(format_simple_line(NEW, '+', add_line));
     }
     if (!new_text.is_empty()) && !new_text.ends_with('\n') {
-        lines.push(format!(
+        new_lines.push(format!(
             "{}{}{}",
             NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
         ));
     }
 
-    return lines;
+    return (old_lines, new_lines);
 }
 
 /// Returns the last byte index of the nth line of the given string.
@@ -83,7 +86,7 @@ fn last_byte_index_of_nth_line(text: &str, line_count: usize) -> usize {
 ///
 /// Test case: testdata/partial-refine.diff
 #[must_use]
-fn partial_format(old_text: &str, new_text: &str) -> Vec<String> {
+fn partial_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
     let old_linecount = old_text.lines().count();
     let new_linecount = new_text.lines().count();
 
@@ -92,9 +95,7 @@ fn partial_format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     if old_linecount > new_linecount {
-        // FIXME: Do a partial diff in this case as well rather than just giving
-        // up and simple_format()ting the text.
-        return simple_format(old_text, new_text);
+        return partial_format_shortened(old_text, new_text);
     }
 
     // Invariant at this point: old_text has fewer lines than new_text
@@ -113,21 +114,80 @@ fn partial_format(old_text: &str, new_text: &str) -> Vec<String> {
     let new_remaining_lines_first_offset = new_initial_lines_last_offset + 1;
     let new_initial_lines = &new_text[0..new_remaining_lines_first_offset];
 
-    let mut old_text_vs_new_initial_lines = format(old_text, new_initial_lines);
+    let (mut old_text_vs_new_initial_lines_old, mut old_text_vs_new_initial_lines_new) =
+        format_split(old_text, new_initial_lines);
 
     // Extract the remaining lines from new_text
     let new_remaining_lines = &new_text[new_remaining_lines_first_offset..];
-    let mut new_remaining_lines = simple_format("", new_remaining_lines);
+    let (_, mut new_remaining_lines) = simple_format("", new_remaining_lines);
 
-    let mut return_me: Vec<String> = Vec::new();
-    return_me.append(&mut old_text_vs_new_initial_lines);
-    return_me.append(&mut new_remaining_lines);
-    return return_me;
+    let mut old_lines: Vec<String> = Vec::new();
+    old_lines.append(&mut old_text_vs_new_initial_lines_old);
+
+    let mut new_lines: Vec<String> = Vec::new();
+    new_lines.append(&mut old_text_vs_new_initial_lines_new);
+    new_lines.append(&mut new_remaining_lines);
+
+    return (old_lines, new_lines);
+}
+
+/// If old has 30 lines and new 2, try highlighting changes between the first 2
+/// lines of old and new.
+///
+/// Test case: testdata/shorten-section.diff
+///
+/// See also partial_format() which is the opposite of this function.
+#[must_use]
+fn partial_format_shortened(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
+    // Invariant at this point: old_text has more lines than new_text
+
+    if !new_text.ends_with('\n') {
+        // new_text does *not* end in a newline
+
+        // FIXME: Write tests for and handle this case, needs some thought on
+        // how to poplulate old_initial_lines, and how to merge the results at
+        // the end of this function.
+        return simple_format(old_text, new_text);
+    }
+
+    // Extract the new_linecount initial lines from old_text.
+    let new_linecount = new_text.lines().count();
+    let old_initial_lines_last_offset = last_byte_index_of_nth_line(old_text, new_linecount);
+    let old_remaining_lines_first_offset = old_initial_lines_last_offset + 1;
+    let old_initial_lines = &old_text[0..old_remaining_lines_first_offset];
+
+    let (mut new_text_vs_old_initial_lines_old, mut new_text_vs_old_initial_lines_new) =
+        format_split(old_initial_lines, new_text);
+
+    // Extract the remaining lines from new_text
+    let old_remaining_lines = &old_text[old_remaining_lines_first_offset..];
+    let (mut old_remaining_lines, _) = simple_format(old_remaining_lines, "");
+
+    let mut return_me_old: Vec<String> = Vec::new();
+    let mut return_me_new: Vec<String> = Vec::new();
+
+    return_me_old.append(&mut new_text_vs_old_initial_lines_old);
+    return_me_old.append(&mut old_remaining_lines);
+    return_me_new.append(&mut new_text_vs_old_initial_lines_new);
+
+    return (return_me_old, return_me_new);
 }
 
 /// Returns a vector of ANSI highlighted lines
 #[must_use]
 pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
+    let (mut old_lines, mut new_lines) = format_split(old_text, new_text);
+
+    let mut merged: Vec<String> = Vec::new();
+    merged.append(&mut old_lines);
+    merged.append(&mut new_lines);
+    return merged;
+}
+
+/// Returns two vectors of ANSI highlighted lines, the old lines and the new
+/// lines.
+#[must_use]
+fn format_split(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
     if old_text.is_empty() || new_text.is_empty() {
         return simple_format(old_text, new_text);
     }
@@ -236,29 +296,30 @@ fn is_large_newline_count_change(old_text: &str, new_text: &str) -> bool {
 }
 
 #[must_use]
-fn to_lines(old: &str, new: &str) -> Vec<String> {
-    let mut lines: Vec<String> = Vec::new();
+fn to_lines(old: &str, new: &str) -> (Vec<String>, Vec<String>) {
+    let mut old_lines: Vec<String> = Vec::new();
     for highlighted_old_line in old.lines() {
-        lines.push(highlighted_old_line.to_string());
+        old_lines.push(highlighted_old_line.to_string());
     }
     if (!old.is_empty()) && !old.ends_with('\n') {
-        lines.push(format!(
+        old_lines.push(format!(
             "{}{}{}",
             NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
         ));
     }
 
+    let mut new_lines: Vec<String> = Vec::new();
     for highlighted_new_line in new.lines() {
-        lines.push(highlighted_new_line.to_string());
+        new_lines.push(highlighted_new_line.to_string());
     }
     if (!new.is_empty()) && !new.ends_with('\n') {
-        lines.push(format!(
+        new_lines.push(format!(
             "{}{}{}",
             NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
         ));
     }
 
-    return lines;
+    return (old_lines, new_lines);
 }
 
 #[cfg(test)]
@@ -268,18 +329,30 @@ mod tests {
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
+    fn simple_format_merged(old_text: &str, new_text: &str) -> Vec<String> {
+        let (mut old_lines, mut new_lines) = simple_format(old_text, new_text);
+
+        let mut merged: Vec<String> = Vec::new();
+        merged.append(&mut old_lines);
+        merged.append(&mut new_lines);
+        return merged;
+    }
+
     #[test]
     fn test_simple_format_adds_and_removes() {
         let empty: Vec<String> = Vec::new();
-        assert_eq!(simple_format(&"".to_string(), &"".to_string()), empty);
+        assert_eq!(
+            simple_format_merged(&"".to_string(), &"".to_string()),
+            empty
+        );
 
         // Test adds-only
         assert_eq!(
-            simple_format(&"".to_string(), &"a\n".to_string()),
+            simple_format_merged(&"".to_string(), &"a\n".to_string()),
             ["".to_string() + NEW + "+a" + NORMAL]
         );
         assert_eq!(
-            simple_format(&"".to_string(), &"a\nb\n".to_string()),
+            simple_format_merged(&"".to_string(), &"a\nb\n".to_string()),
             [
                 "".to_string() + NEW + "+a" + NORMAL,
                 "".to_string() + NEW + "+b" + NORMAL,
@@ -288,11 +361,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            simple_format(&"a\n".to_string(), &"".to_string()),
+            simple_format_merged(&"a\n".to_string(), &"".to_string()),
             ["".to_string() + OLD + "-a" + NORMAL]
         );
         assert_eq!(
-            simple_format(&"a\nb\n".to_string(), &"".to_string()),
+            simple_format_merged(&"a\nb\n".to_string(), &"".to_string()),
             [
                 "".to_string() + OLD + "-a" + NORMAL,
                 "".to_string() + OLD + "-b" + NORMAL,
