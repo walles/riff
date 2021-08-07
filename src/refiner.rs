@@ -109,6 +109,10 @@ fn partial_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) 
         return simple_format(old_text, new_text);
     }
 
+    // FIXME: We should try the old_text lines vs both the first and the last
+    // lines of new_text and pick the response that has the smallest amount of
+    // changes. Currently we just compare old_text to the start of new_text.
+
     // Extract the old_linecount initial lines from new_text.
     let new_initial_lines_last_offset = last_byte_index_of_nth_line(new_text, old_linecount);
     let new_remaining_lines_first_offset = new_initial_lines_last_offset + 1;
@@ -149,6 +153,10 @@ fn partial_format_shortened(old_text: &str, new_text: &str) -> (Vec<String>, Vec
         // the end of this function.
         return simple_format(old_text, new_text);
     }
+
+    // FIXME: We should try the new_text lines vs both the first and the last
+    // lines of old_text and pick the response that has the smallest amount of
+    // changes. Currently we just compare new_text to the start of old_text.
 
     // Extract the new_linecount initial lines from old_text.
     let new_linecount = new_text.lines().count();
