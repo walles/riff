@@ -5,6 +5,7 @@ import glob
 import time
 import shutil
 import tempfile
+import fileinput
 import subprocess
 
 # Number of benchmark iterations to run
@@ -45,6 +46,31 @@ def build_latest_commit(clonedir: str):
     build_binary(clonedir, latest_sha, full_path)
 
 
+def replace_line_in_file(filename: str, line_prefix: str, replacement: str) -> None:
+    # Inspired by: https://stackoverflow.com/a/290494/473672
+    for line in fileinput.input(filename, inplace=True):
+        if line.startswith(line_prefix):
+            print(replacement)
+            continue
+        print(line, end="")
+
+
+def cargo_build(cwd=None):
+    main_rs_path = "src/main.rs"
+    if cwd:
+        main_rs_path = f"{cwd}/{main_rs_path}"
+
+    # Accept any warnings when building. I'd prefer to do this using the cargo
+    # build command line, but was unable to figure out how. Better suggestions
+    # welcome.
+    replace_line_in_file(main_rs_path, "#![deny(warnings)]", "#![allow(warnings)]")
+
+    subprocess.run(["cargo", "build", "--release"], check=True, cwd=cwd)
+
+    # Restore the warnings line
+    replace_line_in_file(main_rs_path, "#![allow(warnings)]", "#![deny(warnings)]")
+
+
 def gather_binaries():
     """
     Gather binaries to benchmark in BINDIR
@@ -76,7 +102,7 @@ def gather_binaries():
     # Build the current version
     print()
     print("Building current sources...")
-    subprocess.run(["cargo", "build", "--release"], check=True)
+    cargo_build()
     shutil.copy("target/release/riff", os.path.join(BINDIR, "riff-current"))
 
 
@@ -84,13 +110,14 @@ def build_binary(clonedir: str, tag: str, binary_name: str):
     """
     In clonedir, check out tag, build a binary and put it in binary_name.
     """
-    # Detatched HEAD warning disabling: https://stackoverflow.com/a/45652159/473672
+    # Detached HEAD warning disabling:
+    # https://stackoverflow.com/a/45652159/473672
     subprocess.run(
         ["git", "-c", "advice.detachedHead=false", "checkout", tag],
         cwd=clonedir,
         check=True,
     )
-    subprocess.run(["cargo", "build", "--release"], cwd=clonedir, check=True)
+    cargo_build(cwd=clonedir)
     shutil.copy(os.path.join(clonedir, "target", "release", "riff"), binary_name)
 
 
