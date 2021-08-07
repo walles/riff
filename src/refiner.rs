@@ -173,7 +173,8 @@ fn partial_format_shortened(old_text: &str, new_text: &str) -> (Vec<String>, Vec
     return (return_me_old, return_me_new);
 }
 
-/// Returns a vector of ANSI highlighted lines#[must_use]
+/// Returns a vector of ANSI highlighted lines
+#[must_use]
 pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     let (mut old_lines, mut new_lines) = format_split(old_text, new_text);
 
