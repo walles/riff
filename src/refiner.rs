@@ -89,8 +89,19 @@ fn extract_initial_lines(count: usize, text: &str) -> &str {
     return initial_lines;
 }
 
-/// If old has 2 lines and new 30, try highlighting changes between old and the
-/// first 2 lines of new.
+#[must_use]
+fn extract_trailing_lines(count: usize, text: &str) -> &str {
+    let newline_count: usize = text.matches('\n').count();
+    let count_from_start = newline_count - count; // FIXME: Validate this maths with a test
+
+    let initial_lines_last_offset = last_byte_index_of_nth_line(text, count_from_start);
+    let trailing_lines_first_offset = initial_lines_last_offset + 1;
+    let trailing_lines = &text[trailing_lines_first_offset..];
+    return trailing_lines;
+}
+
+/// If old and new have different amounts of lines, try matching the shorter one
+/// vs the start and end of the longer one and use highlights from one of those.
 ///
 /// Test case: testdata/partial-refine.diff
 #[must_use]
@@ -98,119 +109,95 @@ fn partial_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) 
     let old_linecount = old_text.lines().count();
     let new_linecount = new_text.lines().count();
 
-    if old_linecount == new_linecount {
+    if !(old_text.ends_with('\n') && new_text.ends_with('\n')) {
+        // FIXME: Write tests for and handle these cases rather than just
+        // bailing here by doing simple_format()
         return simple_format(old_text, new_text);
     }
 
-    if old_linecount > new_linecount {
-        return partial_format_shortened(old_text, new_text);
+    if new_linecount > old_linecount {
+        // First, try old text vs start of new text
+        let initial_new_text = extract_initial_lines(old_linecount, new_text);
+        if let Some((formatted_old_lines, mut formatted_initial_new_lines)) =
+            format_split(old_text, initial_new_text)
+        {
+            // Got a refinement of the old text vs start of new_text
+
+            // Extract the remaining lines from new_text
+            let remaining_new_text = &new_text[initial_new_text.len()..];
+            let (_, mut formatted_remaining_new_lines) = simple_format("", remaining_new_text);
+
+            let mut new_lines: Vec<String> = Vec::new();
+            new_lines.append(&mut formatted_initial_new_lines);
+            new_lines.append(&mut formatted_remaining_new_lines);
+
+            return (formatted_old_lines, new_lines);
+        }
+
+        // Try old text vs end of new text
+        let trailing_new_text: &str = extract_trailing_lines(old_linecount, new_text);
+        if let Some((formatted_old_lines, mut formatted_trailing_new_lines)) =
+            format_split(old_text, trailing_new_text)
+        {
+            // Got a refinement of the old text vs end of new_text
+
+            // Extract the remaining lines from new_text
+            let initial_new_text: &str = &new_text[0..(new_text.len() - trailing_new_text.len())];
+            let (_, mut formatted_initial_new_lines) = simple_format("", initial_new_text);
+
+            let mut new_lines: Vec<String> = Vec::new();
+            new_lines.append(&mut formatted_initial_new_lines);
+            new_lines.append(&mut formatted_trailing_new_lines);
+
+            return (formatted_old_lines, new_lines);
+        }
     }
 
-    // Invariant at this point: old_text has fewer lines than new_text
+    // FIXME: Handle the case where the old text is longer
 
-    if !old_text.ends_with('\n') {
-        // old_text does *not* end in a newline
-
-        // FIXME: Write tests for and handle this case, needs some thought on
-        // how to poplulate new_initial_lines, and how to merge the results at
-        // the end of this function.
-        return simple_format(old_text, new_text);
-    }
-
-    // FIXME: We should try the old_text lines vs both the first and the last
-    // lines of new_text and pick the response that has the smallest amount of
-    // changes. Currently we just compare old_text to the start of new_text.
-
-    // Extract the old_linecount initial lines from new_text.
-    let new_initial_lines = extract_initial_lines(old_linecount, new_text);
-
-    let (mut old_text_vs_new_initial_lines_old, mut old_text_vs_new_initial_lines_new) =
-        format_split(old_text, new_initial_lines);
-
-    // Extract the remaining lines from new_text
-    let new_remaining_lines = &new_text[new_initial_lines.len()..];
-    let (_, mut new_remaining_lines) = simple_format("", new_remaining_lines);
-
-    let mut old_lines: Vec<String> = Vec::new();
-    old_lines.append(&mut old_text_vs_new_initial_lines_old);
-
-    let mut new_lines: Vec<String> = Vec::new();
-    new_lines.append(&mut old_text_vs_new_initial_lines_new);
-    new_lines.append(&mut new_remaining_lines);
-
-    return (old_lines, new_lines);
-}
-
-/// If old has 30 lines and new 2, try highlighting changes between the first 2
-/// lines of old and new.
-///
-/// Test case: testdata/shorten-section.diff
-///
-/// See also partial_format() which is the opposite of this function.
-#[must_use]
-fn partial_format_shortened(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
-    // Invariant at this point: old_text has more lines than new_text
-
-    if !new_text.ends_with('\n') {
-        // new_text does *not* end in a newline
-
-        // FIXME: Write tests for and handle this case, needs some thought on
-        // how to poplulate old_initial_lines, and how to merge the results at
-        // the end of this function.
-        return simple_format(old_text, new_text);
-    }
-
-    // FIXME: We should try the new_text lines vs both the first and the last
-    // lines of old_text and pick the response that has the smallest amount of
-    // changes. Currently we just compare new_text to the start of old_text.
-
-    // Extract the new_linecount initial lines from old_text.
-    let new_linecount = new_text.lines().count();
-    let old_initial_lines = extract_initial_lines(new_linecount, old_text);
-
-    let (mut new_text_vs_old_initial_lines_old, mut new_text_vs_old_initial_lines_new) =
-        format_split(old_initial_lines, new_text);
-
-    // Extract the remaining lines from new_text
-    let old_remaining_lines = &old_text[old_initial_lines.len()..];
-    let (mut old_remaining_lines, _) = simple_format(old_remaining_lines, "");
-
-    let mut return_me_old: Vec<String> = Vec::new();
-    let mut return_me_new: Vec<String> = Vec::new();
-
-    return_me_old.append(&mut new_text_vs_old_initial_lines_old);
-    return_me_old.append(&mut old_remaining_lines);
-    return_me_new.append(&mut new_text_vs_old_initial_lines_new);
-
-    return (return_me_old, return_me_new);
+    // All partial attempts failed
+    return simple_format(old_text, new_text);
 }
 
 /// Returns a vector of ANSI highlighted lines
 #[must_use]
 pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
-    let (mut old_lines, mut new_lines) = format_split(old_text, new_text);
+    // FIXME: The two code blocks contain almost the same thing, refactor that somehow!
+    match format_split(old_text, new_text) {
+        None => {
+            let (mut old_lines, mut new_lines) = partial_format(old_text, new_text);
+            let mut merged: Vec<String> = Vec::new();
+            merged.append(&mut old_lines);
+            merged.append(&mut new_lines);
+            return merged;
+        }
 
-    let mut merged: Vec<String> = Vec::new();
-    merged.append(&mut old_lines);
-    merged.append(&mut new_lines);
-    return merged;
+        Some((mut old_lines, mut new_lines)) => {
+            let mut merged: Vec<String> = Vec::new();
+            merged.append(&mut old_lines);
+            merged.append(&mut new_lines);
+            return merged;
+        }
+    }
 }
 
 /// Returns two vectors of ANSI highlighted lines, the old lines and the new
 /// lines.
+///
+/// A return value of None means you should try partial_format() instead.
 #[must_use]
-fn format_split(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
+fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<String>)> {
     if old_text.is_empty() || new_text.is_empty() {
-        return simple_format(old_text, new_text);
+        return Some(simple_format(old_text, new_text));
     }
 
     // These checks make us faster, please use the benchmark.py script before
     // and after if you change this.
     if is_large_byte_count_change(old_text, new_text) {
-        return partial_format(old_text, new_text);
+        return None;
     }
     if is_large_newline_count_change(old_text, new_text) {
-        return partial_format(old_text, new_text);
+        return None;
     }
 
     // Find diffs between adds and removals
@@ -271,10 +258,10 @@ fn format_split(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
 
     // Don't highlight too much
     if (100 * highlighted_bytes_count) / bytes_count > MAX_HIGHLIGHT_PERCENTAGE {
-        return partial_format(old_text, new_text);
+        return None;
     }
 
-    return to_lines(&highlighted_old_text, &highlighted_new_text);
+    return Some(to_lines(&highlighted_old_text, &highlighted_new_text));
 }
 
 #[must_use]
