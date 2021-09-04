@@ -81,6 +81,14 @@ fn last_byte_index_of_nth_line(text: &str, line_count: usize) -> usize {
     panic!("Line {} not found in \n{}", line_count, text);
 }
 
+#[must_use]
+fn extract_initial_lines(count: usize, text: &str) -> &str {
+    let initial_lines_last_offset = last_byte_index_of_nth_line(text, count);
+    let remaining_lines_first_offset = initial_lines_last_offset + 1;
+    let initial_lines = &text[0..remaining_lines_first_offset];
+    return initial_lines;
+}
+
 /// If old has 2 lines and new 30, try highlighting changes between old and the
 /// first 2 lines of new.
 ///
@@ -114,15 +122,13 @@ fn partial_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) 
     // changes. Currently we just compare old_text to the start of new_text.
 
     // Extract the old_linecount initial lines from new_text.
-    let new_initial_lines_last_offset = last_byte_index_of_nth_line(new_text, old_linecount);
-    let new_remaining_lines_first_offset = new_initial_lines_last_offset + 1;
-    let new_initial_lines = &new_text[0..new_remaining_lines_first_offset];
+    let new_initial_lines = extract_initial_lines(old_linecount, new_text);
 
     let (mut old_text_vs_new_initial_lines_old, mut old_text_vs_new_initial_lines_new) =
         format_split(old_text, new_initial_lines);
 
     // Extract the remaining lines from new_text
-    let new_remaining_lines = &new_text[new_remaining_lines_first_offset..];
+    let new_remaining_lines = &new_text[new_initial_lines.len()..];
     let (_, mut new_remaining_lines) = simple_format("", new_remaining_lines);
 
     let mut old_lines: Vec<String> = Vec::new();
@@ -160,15 +166,13 @@ fn partial_format_shortened(old_text: &str, new_text: &str) -> (Vec<String>, Vec
 
     // Extract the new_linecount initial lines from old_text.
     let new_linecount = new_text.lines().count();
-    let old_initial_lines_last_offset = last_byte_index_of_nth_line(old_text, new_linecount);
-    let old_remaining_lines_first_offset = old_initial_lines_last_offset + 1;
-    let old_initial_lines = &old_text[0..old_remaining_lines_first_offset];
+    let old_initial_lines = extract_initial_lines(new_linecount, old_text);
 
     let (mut new_text_vs_old_initial_lines_old, mut new_text_vs_old_initial_lines_new) =
         format_split(old_initial_lines, new_text);
 
     // Extract the remaining lines from new_text
-    let old_remaining_lines = &old_text[old_remaining_lines_first_offset..];
+    let old_remaining_lines = &old_text[old_initial_lines.len()..];
     let (mut old_remaining_lines, _) = simple_format(old_remaining_lines, "");
 
     let mut return_me_old: Vec<String> = Vec::new();
