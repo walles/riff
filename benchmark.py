@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 
 import os
+import re
 import glob
 import time
 import shutil
 import tempfile
 import fileinput
 import subprocess
+
+from typing import Union
+
 
 # Number of benchmark iterations to run
 ITERATIONS = 60
@@ -71,18 +75,32 @@ def cargo_build(cwd=None):
     replace_line_in_file(main_rs_path, "#![allow(warnings)]", "#![deny(warnings)]")
 
 
+def atoi(text: str) -> Union[str, int]:
+    return int(text) if text.isdigit() else text
+
+
+def natural_keys(text: str):
+    """
+    From: https://stackoverflow.com/a/5967539/473672
+    """
+    return [atoi(c) for c in re.split(r"(\d+)", text)]
+
+
 def gather_binaries():
     """
     Gather binaries to benchmark in BINDIR
     """
     # Query git for all Rust versions released and store freshly built binaries
     # for those in BINDIR
-    tags = subprocess.check_output(["git", "tag"]).split()
-    tags.remove(b"PRERELEASE")
+    tags = [tag.decode() for tag in subprocess.check_output(["git", "tag"]).split()]
+    tags.remove("PRERELEASE")
 
     # Ignore Ruby tags
-    rust_tags = filter(lambda tag: not tag.startswith(b"0"), tags)
-    rust_tags = filter(lambda tag: not tag.startswith(b"1"), rust_tags)
+    rust_tags = list(filter(lambda tag: not tag.startswith("0"), tags))
+    rust_tags = list(filter(lambda tag: not tag.startswith("1"), rust_tags))
+
+    # Just do the three last releases
+    rust_tags = list(sorted(rust_tags, key=natural_keys))[-3:]
 
     # Make sure we binaries for older versions
     with tempfile.TemporaryDirectory(prefix="riff-benchmark") as clonedir:
@@ -91,13 +109,13 @@ def gather_binaries():
         build_latest_commit(clonedir)
 
         for tag in rust_tags:
-            binary_name = os.path.join(BINDIR, f"riff-{tag.decode()}")
+            binary_name = os.path.join(BINDIR, f"riff-{tag}")
             if os.path.isfile(binary_name):
                 continue
 
             print()
             print(f"Building missing binary: {binary_name}")
-            build_binary(clonedir, tag.decode(), binary_name)
+            build_binary(clonedir, tag, binary_name)
 
     # Build the current version
     print()
@@ -164,7 +182,7 @@ def time_binaries():
     ) as testdata:
         subprocess.check_call(["git", "log", "-p", "master"], stdout=testdata)
 
-        binaries = sorted(glob.glob(os.path.join(BINDIR, "*")))
+        binaries = sorted(glob.glob(os.path.join(BINDIR, "*")), key=natural_keys)
 
         # Do riff-current last: https://stackoverflow.com/a/20320940/473672
         binaries.sort(key=lambda s: s.endswith("riff-current"))
