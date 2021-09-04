@@ -127,33 +127,69 @@ fn partial_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) 
             let remaining_new_text = &new_text[initial_new_text.len()..];
             let (_, mut formatted_remaining_new_lines) = simple_format("", remaining_new_text);
 
-            let mut new_lines: Vec<String> = Vec::new();
-            new_lines.append(&mut formatted_initial_new_lines);
-            new_lines.append(&mut formatted_remaining_new_lines);
+            let mut formatted_new_lines: Vec<String> = Vec::new();
+            formatted_new_lines.append(&mut formatted_initial_new_lines);
+            formatted_new_lines.append(&mut formatted_remaining_new_lines);
 
-            return (formatted_old_lines, new_lines);
+            return (formatted_old_lines, formatted_new_lines);
         }
 
         // Try old text vs end of new text
-        let trailing_new_text: &str = extract_trailing_lines(old_linecount, new_text);
+        let trailing_new_text = extract_trailing_lines(old_linecount, new_text);
         if let Some((formatted_old_lines, mut formatted_trailing_new_lines)) =
             format_split(old_text, trailing_new_text)
         {
             // Got a refinement of the old text vs end of new_text
 
             // Extract the remaining lines from new_text
-            let initial_new_text: &str = &new_text[0..(new_text.len() - trailing_new_text.len())];
+            let initial_new_text = &new_text[0..(new_text.len() - trailing_new_text.len())];
             let (_, mut formatted_initial_new_lines) = simple_format("", initial_new_text);
 
-            let mut new_lines: Vec<String> = Vec::new();
-            new_lines.append(&mut formatted_initial_new_lines);
-            new_lines.append(&mut formatted_trailing_new_lines);
+            let mut formatted_new_lines: Vec<String> = Vec::new();
+            formatted_new_lines.append(&mut formatted_initial_new_lines);
+            formatted_new_lines.append(&mut formatted_trailing_new_lines);
 
-            return (formatted_old_lines, new_lines);
+            return (formatted_old_lines, formatted_new_lines);
         }
     }
 
-    // FIXME: Handle the case where the old text is longer
+    if old_linecount > new_linecount {
+        // First, try start of old text vs new text
+        let initial_old_text = extract_initial_lines(new_linecount, old_text);
+        if let Some((mut formatted_initial_old_lines, formatted_new_lines)) =
+            format_split(initial_old_text, new_text)
+        {
+            // Got a refinement of the start of the old text vs the new_text
+
+            // Extract the remaining lines from old_text
+            let remaining_old_text = &old_text[initial_old_text.len()..];
+            let (mut formatted_remaining_old_lines, _) = simple_format(remaining_old_text, "");
+
+            let mut formatted_old_lines: Vec<String> = Vec::new();
+            formatted_old_lines.append(&mut formatted_initial_old_lines);
+            formatted_old_lines.append(&mut formatted_remaining_old_lines);
+
+            return (formatted_old_lines, formatted_new_lines);
+        }
+
+        // Try end of old text vs new text
+        let trailing_old_text = extract_trailing_lines(new_linecount, old_text);
+        if let Some((mut formatted_trailing_old_lines, formatted_new_lines)) =
+            format_split(trailing_old_text, new_text)
+        {
+            // Got a refinement of the end of the old text vs the new_text
+
+            // Extract initial lines from old_text
+            let initial_old_text = &old_text[0..(old_text.len() - trailing_old_text.len())];
+            let (mut formatted_initial_old_lines, _) = simple_format(initial_old_text, "");
+
+            let mut formatted_old_lines: Vec<String> = Vec::new();
+            formatted_old_lines.append(&mut formatted_initial_old_lines);
+            formatted_old_lines.append(&mut formatted_trailing_old_lines);
+
+            return (formatted_old_lines, formatted_new_lines);
+        }
+    }
 
     // All partial attempts failed
     return simple_format(old_text, new_text);
