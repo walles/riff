@@ -9,13 +9,10 @@
 extern crate lazy_static;
 
 use backtrace::Backtrace;
-use constants::*;
 use git_version::git_version;
-use io::ErrorKind;
 use isatty::{stdin_isatty, stdout_isatty};
 use line_collector::LineCollector;
-use regex::Regex;
-use std::io::{self, BufRead, BufReader, BufWriter, Write};
+use std::io::{self, BufRead, BufReader};
 use std::panic;
 use std::path;
 use std::process::exit;
@@ -58,144 +55,17 @@ Please copy the above crash report and report it at one of:
 * <johan.walles@gmail.com>
 "#;
 
-const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 
 const GIT_VERSION: &str = git_version!();
 
-lazy_static! {
-    static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> = vec![
-        ("diff ", BOLD),
-        ("index ", BOLD),
-        ("--- ", BOLD),
-        ("+++ ", BOLD),
-        ("@@ ", HUNK_HEADER),
-    ];
-    static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
-}
-
-enum LastLineKind {
-    Initial,
-    Old,
-    New,
-}
-
-#[must_use]
-fn get_fixed_highlight(line: &str) -> &str {
-    for static_header_prefix in STATIC_HEADER_PREFIXES.iter() {
-        let prefix = static_header_prefix.0;
-        if line.starts_with(prefix) {
-            return static_header_prefix.1;
-        }
-    }
-
-    return "";
-}
-
-fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
-    if let Err(error) = stream.write_all(text.as_bytes()) {
-        if error.kind() == ErrorKind::BrokenPipe {
-            // This is fine, somebody probably just quit their pager before it
-            // was done reading our output.
-            exit(0);
-        }
-
-        panic!("Error writing diff to pager: {:?}", error);
-    }
-}
-
-fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
-    print(stream, text);
-    print(stream, "\n");
-}
-
 fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
-    let line_collector = LineCollector::new(output);
+    let mut line_collector = LineCollector::new(output);
 
     let input = BufReader::new(input);
     for line in input.lines() {
         let line = line.unwrap();
         line_collector.consume_line(line);
-    }
-}
-
-fn remove_this_old_highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
-    let mut old_text = String::new();
-    let mut new_text = String::new();
-    let input = BufReader::new(input);
-    let output = &mut BufWriter::new(output);
-    let mut last_line_kind = LastLineKind::Initial;
-    for line in input.lines() {
-        let line = line.unwrap();
-
-        // Strip out incoming ANSI formatting. This enables us to highlight
-        // already-colored input.
-        let line = ANSI_COLOR_REGEX.replace_all(&line, "");
-
-        let fixed_highlight = get_fixed_highlight(&line);
-        if !fixed_highlight.is_empty() {
-            // Drain outstanding adds / removes
-            for line in refiner::format(&old_text, &new_text) {
-                println(output, &line);
-            }
-            old_text.clear();
-            new_text.clear();
-
-            print(output, fixed_highlight);
-            print(output, &line);
-            println(output, NORMAL);
-            continue;
-        }
-
-        // Collect adds / removes
-        if !line.is_empty() && line.starts_with('+') {
-            new_text.push_str(&line[1..]);
-            new_text.push('\n');
-            last_line_kind = LastLineKind::New;
-            continue;
-        } else if !line.is_empty() && line.starts_with('-') {
-            old_text.push_str(&line[1..]);
-            old_text.push('\n');
-            last_line_kind = LastLineKind::Old;
-            continue;
-        }
-
-        if line == NO_EOF_NEWLINE_MARKER {
-            match last_line_kind {
-                LastLineKind::Old => {
-                    assert!(old_text.pop().unwrap() == '\n');
-                    continue;
-                }
-                LastLineKind::New => {
-                    assert!(new_text.pop().unwrap() == '\n');
-                    continue;
-                }
-                LastLineKind::Initial => {
-                    // This block intentionally left blank
-                }
-            }
-        }
-
-        last_line_kind = LastLineKind::Initial;
-
-        // Drain outstanding adds / removes
-        for line in refiner::format(&old_text, &new_text) {
-            println(output, &line);
-        }
-        old_text.clear();
-        new_text.clear();
-
-        // Print current line
-        if line == NO_EOF_NEWLINE_MARKER {
-            print(output, NO_EOF_NEWLINE_COLOR);
-            print(output, &line);
-            println(output, NORMAL);
-        } else {
-            println(output, &line);
-        }
-    }
-    for line in refiner::format(&old_text, &new_text) {
-        println(output, &line);
     }
 }
 
@@ -461,6 +331,8 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use crate::constants::*;
+
     use super::*;
     use std::fs;
 

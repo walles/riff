@@ -95,7 +95,7 @@ impl<'a> LineCollector<'a> {
 
     fn consume_plain_line(&mut self, line: &str) {
         self.drain_oldnew();
-        self.plain_text.push_str(&line);
+        self.plain_text.push_str(line);
         self.plain_text.push('\n');
     }
 
