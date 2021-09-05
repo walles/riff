@@ -110,7 +110,7 @@ fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
 }
 
 fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
-    let line_collector = LineCollector::new();
+    let line_collector = LineCollector::new(output);
 
     let input = BufReader::new(input);
     for line in input.lines() {

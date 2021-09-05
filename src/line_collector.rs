@@ -1,4 +1,8 @@
-use crate::{constants::*, consume};
+use crate::io::ErrorKind;
+use std::io::{self, BufWriter, Write};
+use std::process::exit;
+
+use crate::{constants::*, refiner};
 use regex::Regex;
 
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
@@ -26,18 +30,38 @@ fn get_fixed_highlight(line: &str) -> &str {
     return "";
 }
 
-pub struct LineCollector {
+fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
+    if let Err(error) = stream.write_all(text.as_bytes()) {
+        if error.kind() == ErrorKind::BrokenPipe {
+            // This is fine, somebody probably just quit their pager before it
+            // was done reading our output.
+            exit(0);
+        }
+
+        panic!("Error writing diff to pager: {:?}", error);
+    }
+}
+
+fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
+    print(stream, text);
+    print(stream, "\n");
+}
+
+pub struct LineCollector<'a> {
     old_text: String,
     new_text: String,
     plain_text: String,
+    output: &'a mut BufWriter<&'a mut dyn Write>,
 }
 
-impl LineCollector {
-    pub fn new() -> LineCollector {
+impl LineCollector<'_> {
+    pub fn new(output: &mut dyn io::Write) -> LineCollector {
+        let output = &mut BufWriter::new(output);
         return LineCollector {
             old_text: String::from(""),
             new_text: String::from(""),
             plain_text: String::from(""),
+            output,
         };
     }
 
@@ -45,8 +69,22 @@ impl LineCollector {
         // FIXME: Flush any outstanding lines
     }
 
+    fn drain_oldnew(&self) {
+        if self.old_text.is_empty() && self.new_text.is_empty() {
+            return;
+        }
+
+        for line in refiner::format(&self.old_text, &self.new_text) {
+            println(self.output, &line);
+        }
+        self.old_text.clear();
+        self.new_text.clear();
+    }
+
     fn consume_plain_line(&self, line: &str) {
-        adgagd
+        self.drain_oldnew();
+        self.plain_text.push_str(&line[1..]);
+        self.plain_text.push('\n');
     }
 
     fn consume_old_line(&self, line: &str) {
