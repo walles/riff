@@ -54,7 +54,7 @@ pub struct LineCollector<'a> {
     output: &'a mut BufWriter<&'a mut dyn Write>,
 }
 
-impl LineCollector<'_> {
+impl<'a> LineCollector<'a> {
     pub fn new(output: &mut dyn io::Write) -> LineCollector {
         let output = &mut BufWriter::new(output);
         return LineCollector {
@@ -81,18 +81,29 @@ impl LineCollector<'_> {
         self.new_text.clear();
     }
 
+    fn drain_plain(&self) {
+        if self.plain_text.is_empty() {
+            return;
+        }
+
+        print(self.output, &self.plain_text);
+        self.plain_text.clear();
+    }
+
     fn consume_plain_line(&self, line: &str) {
         self.drain_oldnew();
-        self.plain_text.push_str(&line[1..]);
+        self.plain_text.push_str(&line);
         self.plain_text.push('\n');
     }
 
     fn consume_old_line(&self, line: &str) {
-        adgagd
+        self.drain_plain();
+        self.old_text.push_str(&line[1..])
     }
 
     fn consume_new_line(&self, line: &str) {
-        adgagd
+        self.drain_plain();
+        self.new_text.push_str(&line[1..])
     }
 
     fn consume_no_eof_newline_marker(&self) {
