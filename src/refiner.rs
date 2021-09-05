@@ -100,6 +100,7 @@ fn extract_trailing_lines(count: usize, text: &str) -> &str {
     return trailing_lines;
 }
 
+#[must_use]
 fn concat(mut a: Vec<String>, mut b: Vec<String>) -> Vec<String> {
     let mut merged: Vec<String> = Vec::new();
     merged.append(&mut a);
