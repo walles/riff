@@ -103,12 +103,14 @@ impl<'a> LineCollector<'a> {
 
     fn consume_old_line(&mut self, line: &str) {
         self.drain_plain();
-        self.old_text.push_str(&line[1..])
+        self.old_text.push_str(&line[1..]);
+        self.old_text.push('\n');
     }
 
     fn consume_new_line(&mut self, line: &str) {
         self.drain_plain();
-        self.new_text.push_str(&line[1..])
+        self.new_text.push_str(&line[1..]);
+        self.new_text.push('\n');
     }
 
     fn consume_no_eof_newline_marker(&mut self) {
