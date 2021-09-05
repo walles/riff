@@ -92,7 +92,7 @@ fn extract_initial_lines(count: usize, text: &str) -> &str {
 #[must_use]
 fn extract_trailing_lines(count: usize, text: &str) -> &str {
     let newline_count: usize = text.matches('\n').count();
-    let count_from_start = newline_count - count; // FIXME: Validate this maths with a test
+    let count_from_start = newline_count - count;
 
     let initial_lines_last_offset = last_byte_index_of_nth_line(text, count_from_start);
     let trailing_lines_first_offset = initial_lines_last_offset + 1;
@@ -460,5 +460,13 @@ mod tests {
             is_large_byte_count_change(&"x".repeat(base_len), &"y".repeat(double_len)),
             true
         );
+    }
+
+    #[test]
+    fn test_extract_trailing_lines() {
+        assert_eq!(
+            extract_trailing_lines(2, "apa\nbepa\ncepa\n"),
+            "bepa\ncepa\n"
+        )
     }
 }
