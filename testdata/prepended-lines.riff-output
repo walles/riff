@@ -1,0 +1,13 @@
+[1mdiff --git benchmark.py benchmark.py[0m
+[1mindex a191ee0..d99c8a8 100755[0m
+[1m--- benchmark.py[0m
+[1m+++ benchmark.py[0m
+[36m@@ -76,7 +76,9 @@ def gather_binaries():[0m
+     # Build the current version
+     print()
+     print("Building current sources...")
+[31m-    subprocess.run(["cargo", "build", "--release"], check=True)[0m
+[32m+    buildenv = os.environ.copy()[0m
+[32m+    buildenv["RUSTFLAGS"] = "-Awarnings"[0m
+[32m+    subprocess.run(["cargo", "build", "--release"], check=True[7m, env=buildenv[27m)[0m
+     shutil.copy("target/release/riff", os.path.join(BINDIR, "riff-current"))

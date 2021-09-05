@@ -6,7 +6,7 @@
  }
 
  // NewReaderFromStream creates a new stream reader
-[31m-func NewReaderFromStream(name *string, reader io.Reader) *Reader {[0m
+[31m-func NewReaderFromStream(name [7m*[27mstring, reader io.Reader) *Reader {[0m
 [32m+//[0m
 [32m+// The name can be an empty string ("").[0m
 [32m+//[0m
