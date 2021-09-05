@@ -100,6 +100,13 @@ fn extract_trailing_lines(count: usize, text: &str) -> &str {
     return trailing_lines;
 }
 
+fn concat(mut a: Vec<String>, mut b: Vec<String>) -> Vec<String> {
+    let mut merged: Vec<String> = Vec::new();
+    merged.append(&mut a);
+    merged.append(&mut b);
+    return merged;
+}
+
 /// If old and new have different amounts of lines, try matching the shorter one
 /// vs the start and end of the longer one and use highlights from one of those.
 ///
@@ -118,76 +125,72 @@ fn partial_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) 
     if new_linecount > old_linecount {
         // First, try old text vs start of new text
         let initial_new_text = extract_initial_lines(old_linecount, new_text);
-        if let Some((formatted_old_lines, mut formatted_initial_new_lines)) =
+        if let Some((formatted_old_lines, formatted_initial_new_lines)) =
             format_split(old_text, initial_new_text)
         {
             // Got a refinement of the old text vs start of new_text
 
             // Extract the remaining lines from new_text
             let remaining_new_text = &new_text[initial_new_text.len()..];
-            let (_, mut formatted_remaining_new_lines) = simple_format("", remaining_new_text);
+            let (_, formatted_remaining_new_lines) = simple_format("", remaining_new_text);
 
-            let mut formatted_new_lines: Vec<String> = Vec::new();
-            formatted_new_lines.append(&mut formatted_initial_new_lines);
-            formatted_new_lines.append(&mut formatted_remaining_new_lines);
-
-            return (formatted_old_lines, formatted_new_lines);
+            return (
+                formatted_old_lines,
+                concat(formatted_initial_new_lines, formatted_remaining_new_lines),
+            );
         }
 
         // Try old text vs end of new text
         let trailing_new_text = extract_trailing_lines(old_linecount, new_text);
-        if let Some((formatted_old_lines, mut formatted_trailing_new_lines)) =
+        if let Some((formatted_old_lines, formatted_trailing_new_lines)) =
             format_split(old_text, trailing_new_text)
         {
             // Got a refinement of the old text vs end of new_text
 
             // Extract the remaining lines from new_text
             let initial_new_text = &new_text[0..(new_text.len() - trailing_new_text.len())];
-            let (_, mut formatted_initial_new_lines) = simple_format("", initial_new_text);
+            let (_, formatted_initial_new_lines) = simple_format("", initial_new_text);
 
-            let mut formatted_new_lines: Vec<String> = Vec::new();
-            formatted_new_lines.append(&mut formatted_initial_new_lines);
-            formatted_new_lines.append(&mut formatted_trailing_new_lines);
-
-            return (formatted_old_lines, formatted_new_lines);
+            return (
+                formatted_old_lines,
+                concat(formatted_initial_new_lines, formatted_trailing_new_lines),
+            );
         }
     }
 
     if old_linecount > new_linecount {
         // First, try start of old text vs new text
         let initial_old_text = extract_initial_lines(new_linecount, old_text);
-        if let Some((mut formatted_initial_old_lines, formatted_new_lines)) =
+        if let Some((formatted_initial_old_lines, formatted_new_lines)) =
             format_split(initial_old_text, new_text)
         {
             // Got a refinement of the start of the old text vs the new_text
 
             // Extract the remaining lines from old_text
             let remaining_old_text = &old_text[initial_old_text.len()..];
-            let (mut formatted_remaining_old_lines, _) = simple_format(remaining_old_text, "");
+            let (formatted_remaining_old_lines, _) = simple_format(remaining_old_text, "");
 
-            let mut formatted_old_lines: Vec<String> = Vec::new();
-            formatted_old_lines.append(&mut formatted_initial_old_lines);
-            formatted_old_lines.append(&mut formatted_remaining_old_lines);
-
-            return (formatted_old_lines, formatted_new_lines);
+            return (
+                concat(formatted_initial_old_lines, formatted_remaining_old_lines),
+                formatted_new_lines,
+            );
         }
 
         // Try end of old text vs new text
         let trailing_old_text = extract_trailing_lines(new_linecount, old_text);
-        if let Some((mut formatted_trailing_old_lines, formatted_new_lines)) =
+        if let Some((formatted_trailing_old_lines, formatted_new_lines)) =
             format_split(trailing_old_text, new_text)
         {
             // Got a refinement of the end of the old text vs the new_text
 
             // Extract initial lines from old_text
             let initial_old_text = &old_text[0..(old_text.len() - trailing_old_text.len())];
-            let (mut formatted_initial_old_lines, _) = simple_format(initial_old_text, "");
+            let (formatted_initial_old_lines, _) = simple_format(initial_old_text, "");
 
-            let mut formatted_old_lines: Vec<String> = Vec::new();
-            formatted_old_lines.append(&mut formatted_initial_old_lines);
-            formatted_old_lines.append(&mut formatted_trailing_old_lines);
-
-            return (formatted_old_lines, formatted_new_lines);
+            return (
+                concat(formatted_initial_old_lines, formatted_trailing_old_lines),
+                formatted_new_lines,
+            );
         }
     }
 
@@ -198,21 +201,14 @@ fn partial_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) 
 /// Returns a vector of ANSI highlighted lines
 #[must_use]
 pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
-    // FIXME: The two code blocks contain almost the same thing, refactor that somehow!
     match format_split(old_text, new_text) {
         None => {
-            let (mut old_lines, mut new_lines) = partial_format(old_text, new_text);
-            let mut merged: Vec<String> = Vec::new();
-            merged.append(&mut old_lines);
-            merged.append(&mut new_lines);
-            return merged;
+            let (old_lines, new_lines) = partial_format(old_text, new_text);
+            return concat(old_lines, new_lines);
         }
 
-        Some((mut old_lines, mut new_lines)) => {
-            let mut merged: Vec<String> = Vec::new();
-            merged.append(&mut old_lines);
-            merged.append(&mut new_lines);
-            return merged;
+        Some((old_lines, new_lines)) => {
+            return concat(old_lines, new_lines);
         }
     }
 }
@@ -365,12 +361,9 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn simple_format_merged(old_text: &str, new_text: &str) -> Vec<String> {
-        let (mut old_lines, mut new_lines) = simple_format(old_text, new_text);
+        let (old_lines, new_lines) = simple_format(old_text, new_text);
 
-        let mut merged: Vec<String> = Vec::new();
-        merged.append(&mut old_lines);
-        merged.append(&mut new_lines);
-        return merged;
+        return concat(old_lines, new_lines);
     }
 
     #[test]
