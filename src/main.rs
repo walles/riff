@@ -13,6 +13,7 @@ use constants::*;
 use git_version::git_version;
 use io::ErrorKind;
 use isatty::{stdin_isatty, stdout_isatty};
+use line_collector::LineCollector;
 use regex::Regex;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::panic;
@@ -23,6 +24,7 @@ use std::str;
 use std::{env, fs::File};
 
 mod constants;
+mod line_collector;
 mod refiner;
 mod token_collector;
 mod tokenizer;
@@ -108,6 +110,16 @@ fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
 }
 
 fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
+    let line_collector = LineCollector::new();
+
+    let input = BufReader::new(input);
+    for line in input.lines() {
+        let line = line.unwrap();
+        line_collector.consume_line(line);
+    }
+}
+
+fn remove_this_old_highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
     let mut old_text = String::new();
     let mut new_text = String::new();
     let input = BufReader::new(input);
