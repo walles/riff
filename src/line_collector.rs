@@ -54,6 +54,15 @@ pub struct LineCollector<'a> {
     output: BufWriter<&'a mut dyn Write>,
 }
 
+impl<'a> Drop for LineCollector<'a> {
+    fn drop(&mut self) {
+        // Flush any outstanding lines. This can be done in any order, at most
+        // one of them is going to do anything anyway.
+        self.drain_oldnew();
+        self.drain_plain();
+    }
+}
+
 impl<'a> LineCollector<'a> {
     pub fn new(output: &mut dyn io::Write) -> LineCollector {
         let output = BufWriter::new(output);
@@ -63,13 +72,6 @@ impl<'a> LineCollector<'a> {
             plain_text: String::from(""),
             output,
         };
-    }
-
-    fn drop(&mut self) {
-        // Flush any outstanding lines. This can be done in any order, at most
-        // one of them is going to do anything anyway.
-        self.drain_oldnew();
-        self.drain_plain();
     }
 
     fn drain_oldnew(&mut self) {
