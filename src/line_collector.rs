@@ -51,12 +51,12 @@ pub struct LineCollector<'a> {
     old_text: String,
     new_text: String,
     plain_text: String,
-    output: &'a mut BufWriter<&'a mut dyn Write>,
+    output: BufWriter<&'a mut dyn Write>,
 }
 
 impl<'a> LineCollector<'a> {
     pub fn new(output: &mut dyn io::Write) -> LineCollector {
-        let output = &mut BufWriter::new(output);
+        let output = BufWriter::new(output);
         return LineCollector {
             old_text: String::from(""),
             new_text: String::from(""),
@@ -66,51 +66,73 @@ impl<'a> LineCollector<'a> {
     }
 
     fn drop(&mut self) {
-        // FIXME: Flush any outstanding lines
+        // Flush any outstanding lines. This can be done in any order, at most
+        // one of them is going to do anything anyway.
+        self.drain_oldnew();
+        self.drain_plain();
     }
 
-    fn drain_oldnew(&self) {
+    fn drain_oldnew(&mut self) {
         if self.old_text.is_empty() && self.new_text.is_empty() {
             return;
         }
 
         for line in refiner::format(&self.old_text, &self.new_text) {
-            println(self.output, &line);
+            println(&mut self.output, &line);
         }
         self.old_text.clear();
         self.new_text.clear();
     }
 
-    fn drain_plain(&self) {
+    fn drain_plain(&mut self) {
         if self.plain_text.is_empty() {
             return;
         }
 
-        print(self.output, &self.plain_text);
+        print(&mut self.output, &self.plain_text);
         self.plain_text.clear();
     }
 
-    fn consume_plain_line(&self, line: &str) {
+    fn consume_plain_line(&mut self, line: &str) {
         self.drain_oldnew();
         self.plain_text.push_str(&line);
         self.plain_text.push('\n');
     }
 
-    fn consume_old_line(&self, line: &str) {
+    fn consume_old_line(&mut self, line: &str) {
         self.drain_plain();
         self.old_text.push_str(&line[1..])
     }
 
-    fn consume_new_line(&self, line: &str) {
+    fn consume_new_line(&mut self, line: &str) {
         self.drain_plain();
         self.new_text.push_str(&line[1..])
     }
 
-    fn consume_no_eof_newline_marker(&self) {
-        adgagd
+    fn consume_no_eof_newline_marker(&mut self) {
+        if !self.new_text.is_empty() {
+            // New section comes after old, so if we get in here it's a new
+            // section that doesn't end in a newline. Remove its trailing
+            // newline.
+            assert!(self.new_text.pop().unwrap() == '\n');
+            return;
+        }
+
+        if !self.old_text.is_empty() {
+            // Old text doesn't end in a newline, remove its trailing newline
+            assert!(self.old_text.pop().unwrap() == '\n');
+            return;
+        }
+
+        // It's a piece of unchanged text that doesn't end in a newline, just
+        // consume the colorized marker as plain text
+        self.consume_plain_line(&format!(
+            "{}{}{}",
+            NO_EOF_NEWLINE_COLOR, &NO_EOF_NEWLINE_MARKER, NORMAL
+        ))
     }
 
-    pub fn consume_line(&self, line: String) {
+    pub fn consume_line(&mut self, line: String) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
         let line = ANSI_COLOR_REGEX.replace_all(&line, "");
