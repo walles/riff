@@ -12,6 +12,15 @@
 
 set -eu -o pipefail
 
+CROSSBUILD_MACOS_SDK="macosx11.1"
+
+# If this fails, try "xcodebuild -showsdks" to find one that exists
+if ! xcrun -sdk $CROSSBUILD_MACOS_SDK --show-sdk-path >/dev/null; then
+  echo >&2
+  echo >&2 "ERROR: $CROSSBUILD_MACOS_SDK not found, try \"xcodebuild -showsdks\" to find a better one, then update release.sh and try again"
+  exit 1
+fi
+
 LIVE=true
 if [ $# -eq 1 ] && [ "$1" = "--dry" ]; then
   echo "DRY RUN: No changes will be made"
@@ -115,8 +124,8 @@ for target in $targets; do
   rustup target add $target
 
   # From: https://stackoverflow.com/a/66875783/473672
-  SDKROOT=$(xcrun -sdk macosx11.1 --show-sdk-path) \
-  MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx11.1 --show-sdk-platform-version) \
+  SDKROOT=$(xcrun -sdk $CROSSBUILD_MACOS_SDK --show-sdk-path) \
+  MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk $CROSSBUILD_MACOS_SDK --show-sdk-platform-version) \
     cargo build --release "--target=$target"
 done
 
