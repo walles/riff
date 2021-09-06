@@ -1,6 +1,7 @@
 use crate::io::ErrorKind;
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{constants::*, refiner};
 use regex::Regex;
@@ -42,16 +43,13 @@ fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
     }
 }
 
-fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
-    print(stream, text);
-    print(stream, "\n");
-}
-
 pub struct LineCollector<'a> {
     old_text: String,
     new_text: String,
     plain_text: String,
     output: BufWriter<&'a mut dyn Write>,
+    queue_putter: Sender<String>,
+    queue_getter: Receiver<String>,
 }
 
 impl<'a> Drop for LineCollector<'a> {
@@ -60,17 +58,42 @@ impl<'a> Drop for LineCollector<'a> {
         // one of them is going to do anything anyway.
         self.drain_oldnew();
         self.drain_plain();
+
+        // FIXME: As an intermediate step until we have a queue draining thread,
+        // just drain the queue here and print everything in it
+        while let Ok(print_me) = self.queue_getter.try_recv() {
+            print(&mut self.output, &print_me);
+        }
+
+        // FIXME: Tell the consumer thread to drain and quit
+
+        // FIXME: Wait for the consumer thread to finish
+
+        // FIXME: Do we need to shut down our executor as well?
     }
 }
 
 impl<'a> LineCollector<'a> {
     pub fn new(output: &mut dyn io::Write) -> LineCollector {
+        // FIXME: Start an executor here with one thread per logical CPU core
+
+        // FIXME: Start a consumer thread here which takes futures and prints
+        // their results
+
+        // Allocate a queue where we can push our futures to the consumer thread
+        //
+        // FIXME: Once we get another thread consuming this, this thread should
+        // be bounded to 2x the number of logical CPUs.
+        let (queue_putter, queue_getter): (Sender<String>, Receiver<String>) = channel();
+
         let output = BufWriter::new(output);
         return LineCollector {
             old_text: String::from(""),
             new_text: String::from(""),
             plain_text: String::from(""),
             output,
+            queue_putter,
+            queue_getter,
         };
     }
 
@@ -79,9 +102,14 @@ impl<'a> LineCollector<'a> {
             return;
         }
 
+        // FIXME: This should be enqueued as a future containing the refiner::format() call
+        let mut output = String::new();
         for line in refiner::format(&self.old_text, &self.new_text) {
-            println(&mut self.output, &line);
+            output.push_str(&line);
+            output.push('\n');
         }
+        self.queue_putter.send(output).unwrap();
+
         self.old_text.clear();
         self.new_text.clear();
     }
@@ -91,7 +119,12 @@ impl<'a> LineCollector<'a> {
             return;
         }
 
-        print(&mut self.output, &self.plain_text);
+        // FIXME: Create an already-resolved future returning this text, then
+        // store that future in our queue.
+        self.queue_putter
+            .send(String::from(&self.plain_text))
+            .unwrap();
+
         self.plain_text.clear();
     }
 
