@@ -59,7 +59,7 @@ const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 
 const GIT_VERSION: &str = git_version!();
 
-fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
+fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
     let mut line_collector = LineCollector::new(output);
 
     let input = BufReader::new(input);
@@ -96,7 +96,8 @@ fn try_pager(input: &mut dyn io::Read, pager_name: &str) -> bool {
 
     match command.spawn() {
         Ok(mut pager) => {
-            let pager_stdin = pager.stdin.as_mut().unwrap();
+            let pager_stdin = pager.stdin.unwrap();
+            pager.stdin = None;
             highlight_diff(input, pager_stdin);
 
             // FIXME: Report pager exit status if non-zero, together with
@@ -168,7 +169,7 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
 fn highlight_stream(input: &mut dyn io::Read) {
     if !stdout_isatty() {
         // We're being piped, just do stdin -> stdout
-        highlight_diff(input, &mut io::stdout());
+        highlight_diff(input, io::stdout());
         return;
     }
 
@@ -190,7 +191,7 @@ fn highlight_stream(input: &mut dyn io::Read) {
     }
 
     // No pager found, wth?
-    highlight_diff(input, &mut io::stdout());
+    highlight_diff(input, io::stdout());
 }
 
 pub fn type_string(path: &path::Path) -> &str {

@@ -2,6 +2,7 @@ use crate::io::ErrorKind;
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
 use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread::{self, JoinHandle};
 
 use crate::{constants::*, refiner};
 use regex::Regex;
@@ -31,7 +32,7 @@ fn get_fixed_highlight(line: &str) -> &str {
     return "";
 }
 
-fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
+fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
     if let Err(error) = stream.write_all(text.as_bytes()) {
         if error.kind() == ErrorKind::BrokenPipe {
             // This is fine, somebody probably just quit their pager before it
@@ -43,57 +44,66 @@ fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
     }
 }
 
-pub struct LineCollector<'a> {
+pub struct LineCollector {
     old_text: String,
     new_text: String,
     plain_text: String,
-    output: BufWriter<&'a mut dyn Write>,
+    consumer_thread: Option<JoinHandle<()>>,
     queue_putter: Sender<String>,
-    queue_getter: Receiver<String>,
 }
 
-impl<'a> Drop for LineCollector<'a> {
+impl Drop for LineCollector {
     fn drop(&mut self) {
         // Flush any outstanding lines. This can be done in any order, at most
         // one of them is going to do anything anyway.
         self.drain_oldnew();
         self.drain_plain();
 
-        // FIXME: As an intermediate step until we have a queue draining thread,
-        // just drain the queue here and print everything in it
-        while let Ok(print_me) = self.queue_getter.try_recv() {
-            print(&mut self.output, &print_me);
-        }
+        // Tell the consumer thread to drain and quit. Sending an empty string
+        // like this is the secret handshake for requesting a shutdown.
+        self.queue_putter.send("".to_string()).unwrap();
 
-        // FIXME: Tell the consumer thread to drain and quit
-
-        // FIXME: Wait for the consumer thread to finish
+        // Wait for the consumer thread to finish
+        // https://stackoverflow.com/q/57670145/473672
+        self.consumer_thread.take().map(JoinHandle::join);
 
         // FIXME: Do we need to shut down our executor as well?
     }
 }
 
-impl<'a> LineCollector<'a> {
-    pub fn new(output: &mut dyn io::Write) -> LineCollector {
+impl LineCollector {
+    pub fn new<W: io::Write + Send + 'static>(output: W) -> LineCollector {
         // FIXME: Start an executor here with one thread per logical CPU core
-
-        // FIXME: Start a consumer thread here which takes futures and prints
-        // their results
 
         // Allocate a queue where we can push our futures to the consumer thread
         //
-        // FIXME: Once we get another thread consuming this, this thread should
-        // be bounded to 2x the number of logical CPUs.
+        // FIXME: Once we get another thread consuming this, this queue should
+        // be bounded to 2x the number of logical CPUs. 1x for the entries that
+        // need CPU time for diffing, and another 1x that just contain text to
+        // print and won't need any processing time.
         let (queue_putter, queue_getter): (Sender<String>, Receiver<String>) = channel();
 
-        let output = BufWriter::new(output);
+        // This thread takes futures and prints their results
+        let consumer = thread::spawn(move || {
+            let mut output = BufWriter::new(output);
+
+            loop {
+                if let Ok(print_me) = queue_getter.recv() {
+                    if print_me.is_empty() {
+                        // Secret handshake received, done!
+                        break;
+                    }
+                    print(&mut output, &print_me);
+                }
+            }
+        });
+
         return LineCollector {
             old_text: String::from(""),
             new_text: String::from(""),
             plain_text: String::from(""),
-            output,
+            consumer_thread: Some(consumer),
             queue_putter,
-            queue_getter,
         };
     }
 
