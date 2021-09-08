@@ -20,6 +20,7 @@ bytecount = "0.6.2"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
+tempfile = "3"
 
 # See: https://doc.rust-lang.org/cargo/reference/profiles.html
 [profile.release]

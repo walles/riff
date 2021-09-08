@@ -366,15 +366,13 @@ mod tests {
             )
         );
 
-        let mut actual: Vec<u8> = Vec::new();
-        highlight_diff(&mut input, &mut actual);
+        let file = tempfile::NamedTempFile::new().unwrap();
+        highlight_diff(&mut input, file.reopen().unwrap());
+        let actual = fs::read_to_string(file.path()).unwrap();
         // collect()ing into line vectors inside of this assert() statement
         // splits test failure output into lines, making it easier to digest.
         assert_eq!(
-            std::str::from_utf8(&actual)
-                .unwrap()
-                .lines()
-                .collect::<Vec<_>>(),
+            actual.lines().collect::<Vec<_>>(),
             expected.lines().collect::<Vec<_>>()
         );
     }
@@ -393,15 +391,13 @@ mod tests {
             )
         );
 
-        let mut output: Vec<u8> = Vec::new();
-        highlight_diff(&mut input, &mut output);
+        let file = tempfile::NamedTempFile::new().unwrap();
+        highlight_diff(&mut input, file.reopen().unwrap());
+        let actual = fs::read_to_string(file.path()).unwrap();
         // collect()ing into line vectors inside of this assert() statement
         // splits test failure output into lines, making it easier to digest.
         assert_eq!(
-            std::str::from_utf8(&output)
-                .unwrap()
-                .lines()
-                .collect::<Vec<_>>(),
+            actual.lines().collect::<Vec<_>>(),
             expected.lines().collect::<Vec<_>>()
         );
     }
@@ -442,9 +438,9 @@ mod tests {
             println!("Evaluating example file <{}>...", diff.to_str().unwrap());
 
             // Run highlighting on the file into a memory buffer
-            let mut actual_result: Vec<u8> = Vec::new();
-            highlight_diff(&mut fs::File::open(diff).unwrap(), &mut actual_result);
-            let actual_result = str::from_utf8(&actual_result).unwrap();
+            let file = tempfile::NamedTempFile::new().unwrap();
+            highlight_diff(&mut fs::File::open(diff).unwrap(), file.reopen().unwrap());
+            let actual_result = fs::read_to_string(file.path()).unwrap();
 
             // Load the corresponding .riff-output file into a string
             let basename = diff.file_stem().unwrap().to_str().unwrap();
