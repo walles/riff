@@ -1,7 +1,7 @@
 use crate::io::ErrorKind;
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 use std::thread::{self, JoinHandle};
 
 use crate::{constants::*, refiner};
@@ -49,7 +49,7 @@ pub struct LineCollector {
     new_text: String,
     plain_text: String,
     consumer_thread: Option<JoinHandle<()>>,
-    queue_putter: Sender<String>,
+    queue_putter: SyncSender<String>,
 }
 
 impl Drop for LineCollector {
@@ -66,22 +66,17 @@ impl Drop for LineCollector {
         // Wait for the consumer thread to finish
         // https://stackoverflow.com/q/57670145/473672
         self.consumer_thread.take().map(JoinHandle::join);
-
-        // FIXME: Do we need to shut down our executor as well?
     }
 }
 
 impl LineCollector {
     pub fn new<W: io::Write + Send + 'static>(output: W) -> LineCollector {
-        // FIXME: Start an executor here with one thread per logical CPU core
-
         // Allocate a queue where we can push our futures to the consumer thread
         //
-        // FIXME: Once we get another thread consuming this, this queue should
-        // be bounded to 2x the number of logical CPUs. 1x for the entries that
-        // need CPU time for diffing, and another 1x that just contain text to
-        // print and won't need any processing time.
-        let (queue_putter, queue_getter): (Sender<String>, Receiver<String>) = channel();
+        // FIXME: The queue should be bounded to 2x the number of logical CPUs.
+        // 1x for the entries that need CPU time for diffing, and another 1x
+        // that just contain text to print and won't need any processing time.
+        let (queue_putter, queue_getter): (SyncSender<String>, Receiver<String>) = sync_channel(16);
 
         // This thread takes futures and prints their results
         let consumer = thread::spawn(move || {
