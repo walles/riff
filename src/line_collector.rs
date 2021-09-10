@@ -44,12 +44,34 @@ fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
     }
 }
 
+// FIXME: Don't call this "Stringinator"!!
+struct Stringinator {
+    // FIXME: This should be an Option<String>, which only contains the result
+    // if the computation is done
+    result: String,
+}
+
+impl Stringinator {
+    pub fn from_string(result: String) -> Stringinator {
+        return Stringinator { result };
+    }
+
+    pub fn is_empty(&self) -> bool {
+        return self.result.is_empty();
+    }
+}
+
 pub struct LineCollector {
     old_text: String,
     new_text: String,
     plain_text: String,
     consumer_thread: Option<JoinHandle<()>>,
-    queue_putter: SyncSender<String>,
+
+    // FIXME: I'd rather have had a SyncSender of some trait here. That would
+    // enable us to have two separate result implementations, one which just
+    // returns a string and another that does a background computation first.
+    // But I failed to figure out how when I tried, more Googling needed!
+    queue_putter: SyncSender<Stringinator>,
 }
 
 impl Drop for LineCollector {
@@ -61,7 +83,9 @@ impl Drop for LineCollector {
 
         // Tell the consumer thread to drain and quit. Sending an empty string
         // like this is the secret handshake for requesting a shutdown.
-        self.queue_putter.send("".to_string()).unwrap();
+        self.queue_putter
+            .send(Stringinator::from_string("".to_string()))
+            .unwrap();
 
         // Wait for the consumer thread to finish
         // https://stackoverflow.com/q/57670145/473672
@@ -76,7 +100,8 @@ impl LineCollector {
         // FIXME: The queue should be bounded to 2x the number of logical CPUs.
         // 1x for the entries that need CPU time for diffing, and another 1x
         // that just contain text to print and won't need any processing time.
-        let (queue_putter, queue_getter): (SyncSender<String>, Receiver<String>) = sync_channel(16);
+        let (queue_putter, queue_getter): (SyncSender<Stringinator>, Receiver<Stringinator>) =
+            sync_channel(16);
 
         // This thread takes futures and prints their results
         let consumer = thread::spawn(move || {
@@ -88,7 +113,7 @@ impl LineCollector {
                         // Secret handshake received, done!
                         break;
                     }
-                    print(&mut output, &print_me);
+                    print(&mut output, &print_me.result);
                 }
             }
         });
@@ -113,7 +138,9 @@ impl LineCollector {
             output.push_str(&line);
             output.push('\n');
         }
-        self.queue_putter.send(output).unwrap();
+        self.queue_putter
+            .send(Stringinator::from_string(output))
+            .unwrap();
 
         self.old_text.clear();
         self.new_text.clear();
@@ -127,7 +154,7 @@ impl LineCollector {
         // FIXME: Create an already-resolved future returning this text, then
         // store that future in our queue.
         self.queue_putter
-            .send(String::from(&self.plain_text))
+            .send(Stringinator::from_string(String::from(&self.plain_text)))
             .unwrap();
 
         self.plain_text.clear();
