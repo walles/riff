@@ -56,6 +56,17 @@ impl Stringinator {
         return Stringinator { result };
     }
 
+    pub fn from_oldnew(old_text: &str, new_text: &str) -> Stringinator {
+        // FIXME: Do this whole thing in a background thread
+        let mut result = String::new();
+        for line in refiner::format(old_text, new_text) {
+            result.push_str(&line);
+            result.push('\n');
+        }
+
+        return Stringinator { result };
+    }
+
     pub fn is_empty(&self) -> bool {
         return self.result.is_empty();
     }
@@ -136,14 +147,8 @@ impl LineCollector {
             return;
         }
 
-        // FIXME: This should be enqueued as a future containing the refiner::format() call
-        let mut output = String::new();
-        for line in refiner::format(&self.old_text, &self.new_text) {
-            output.push_str(&line);
-            output.push('\n');
-        }
         self.queue_putter
-            .send(Stringinator::from_string(output))
+            .send(Stringinator::from_oldnew(&self.old_text, &self.new_text))
             .unwrap();
 
         self.old_text.clear();
