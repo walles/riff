@@ -59,6 +59,10 @@ impl Stringinator {
     pub fn is_empty(&self) -> bool {
         return self.result.is_empty();
     }
+
+    pub fn get(&self) -> &str {
+        return &self.result;
+    }
 }
 
 pub struct LineCollector {
@@ -113,7 +117,7 @@ impl LineCollector {
                         // Secret handshake received, done!
                         break;
                     }
-                    print(&mut output, &print_me.result);
+                    print(&mut output, print_me.get());
                 }
             }
         });
