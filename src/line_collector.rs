@@ -6,6 +6,7 @@ use std::thread::{self, JoinHandle};
 
 use crate::{constants::*, refiner};
 use regex::Regex;
+use threadpool::ThreadPool;
 
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
@@ -70,12 +71,16 @@ impl StringFuture {
     }
 
     /// Call get() to get the result of this diff
-    pub fn from_oldnew(old_text: String, new_text: String) -> StringFuture {
+    pub fn from_oldnew(
+        old_text: String,
+        new_text: String,
+        thread_pool: &ThreadPool,
+    ) -> StringFuture {
         // Create a String channel
         let (sender, receiver): (SyncSender<String>, Receiver<String>) = sync_channel(1);
 
         // Start diffing in a thread
-        thread::spawn(move || {
+        thread_pool.execute(move || {
             let mut result = String::new();
             for line in refiner::format(&old_text, &new_text) {
                 result.push_str(&line);
@@ -125,6 +130,8 @@ pub struct LineCollector {
     new_text: String,
     plain_text: String,
     consumer_thread: Option<JoinHandle<()>>,
+
+    diffing_threads: ThreadPool,
 
     // FIXME: I'd rather have had a SyncSender of some trait here. That would
     // enable us to have two separate result implementations, one which just
@@ -186,6 +193,7 @@ impl LineCollector {
             new_text: String::from(""),
             plain_text: String::from(""),
             consumer_thread: Some(consumer),
+            diffing_threads: ThreadPool::new(num_cpus::get()),
             queue_putter,
         };
     }
@@ -199,6 +207,7 @@ impl LineCollector {
             .send(StringFuture::from_oldnew(
                 self.old_text.clone(),
                 self.new_text.clone(),
+                &self.diffing_threads,
             ))
             .unwrap();
 

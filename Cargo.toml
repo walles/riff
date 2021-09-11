@@ -18,6 +18,7 @@ git-version = "0.3.4"
 backtrace = "0.3"
 bytecount = "0.6.2"
 num_cpus = "1.13.0"
+threadpool = "1.8.1"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
