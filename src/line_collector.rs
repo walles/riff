@@ -44,6 +44,12 @@ fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
     }
 }
 
+/**
+A StringFuture can perform diffing in a background thread.
+
+Doing get() on a future that isn't done yet will block until the result is
+available.
+*/
 struct StringFuture {
     // This field is only valid if we're done with the result_receiver (next
     // field)
@@ -55,6 +61,7 @@ struct StringFuture {
 }
 
 impl StringFuture {
+    /// Create an already-finished future
     pub fn from_string(result: String) -> StringFuture {
         return StringFuture {
             result,
@@ -62,6 +69,7 @@ impl StringFuture {
         };
     }
 
+    /// Call get() to get the result of this diff
     pub fn from_oldnew(old_text: String, new_text: String) -> StringFuture {
         // Create a String channel
         let (sender, receiver): (SyncSender<String>, Receiver<String>) = sync_channel(1);
@@ -100,6 +108,18 @@ impl StringFuture {
     }
 }
 
+/**
+The way this thing works from the outside is that you initialize it with an
+output stream, you pass it one line of input at a time, and it writes
+formatted lines to the output stream.
+
+From the inside, it will collect blocks of either diff lines or not-diff-lines.
+
+The not-diff-lines blocks will be enqueued for printing by the printing thread.
+
+The diff lines blocks will also be enqueued for printing, but the actual diffing
+will happen in background threads.
+*/
 pub struct LineCollector {
     old_text: String,
     new_text: String,
@@ -191,8 +211,7 @@ impl LineCollector {
             return;
         }
 
-        // Create an already-resolved future returning this text, then store
-        // that future in our queue.
+        // Enqueue an already-resolved future
         self.queue_putter
             .send(StringFuture::from_string(String::from(&self.plain_text)))
             .unwrap();
