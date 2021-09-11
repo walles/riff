@@ -49,29 +49,52 @@ struct Stringinator {
     // FIXME: This should be an Option<String>, which only contains the result
     // if the computation is done
     result: String,
+
+    result_receiver: Option<Receiver<String>>,
 }
 
 impl Stringinator {
     pub fn from_string(result: String) -> Stringinator {
-        return Stringinator { result };
+        return Stringinator {
+            result,
+            result_receiver: None,
+        };
     }
 
-    pub fn from_oldnew(old_text: &str, new_text: &str) -> Stringinator {
-        // FIXME: Do this whole thing in a background thread
-        let mut result = String::new();
-        for line in refiner::format(old_text, new_text) {
-            result.push_str(&line);
-            result.push('\n');
+    pub fn from_oldnew(old_text: String, new_text: String) -> Stringinator {
+        // Create a String channel
+        let (sender, receiver): (SyncSender<String>, Receiver<String>) = sync_channel(1);
+
+        // Start diffing in a thread
+        thread::spawn(move || {
+            let mut result = String::new();
+            for line in refiner::format(&old_text, &new_text) {
+                result.push_str(&line);
+                result.push('\n');
+            }
+
+            // Done, channel the result!
+            sender.send(result).unwrap();
+        });
+
+        return Stringinator {
+            result: "".to_string(),
+            result_receiver: Some(receiver),
+        };
+    }
+
+    pub fn is_empty(&mut self) -> bool {
+        return self.get().is_empty();
+    }
+
+    pub fn get(&mut self) -> &str {
+        // If the result is still pending...
+        if let Some(receiver) = &self.result_receiver {
+            // ... wait for it
+            self.result = receiver.recv().unwrap();
+            self.result_receiver = None;
         }
 
-        return Stringinator { result };
-    }
-
-    pub fn is_empty(&self) -> bool {
-        return self.result.is_empty();
-    }
-
-    pub fn get(&self) -> &str {
         return &self.result;
     }
 }
@@ -123,7 +146,7 @@ impl LineCollector {
             let mut output = BufWriter::new(output);
 
             loop {
-                if let Ok(print_me) = queue_getter.recv() {
+                if let Ok(mut print_me) = queue_getter.recv() {
                     if print_me.is_empty() {
                         // Secret handshake received, done!
                         break;
@@ -148,7 +171,10 @@ impl LineCollector {
         }
 
         self.queue_putter
-            .send(Stringinator::from_oldnew(&self.old_text, &self.new_text))
+            .send(Stringinator::from_oldnew(
+                self.old_text.clone(),
+                self.new_text.clone(),
+            ))
             .unwrap();
 
         self.old_text.clear();
@@ -160,8 +186,8 @@ impl LineCollector {
             return;
         }
 
-        // FIXME: Create an already-resolved future returning this text, then
-        // store that future in our queue.
+        // Create an already-resolved future returning this text, then store
+        // that future in our queue.
         self.queue_putter
             .send(Stringinator::from_string(String::from(&self.plain_text)))
             .unwrap();
