@@ -17,6 +17,7 @@ isatty = "0.1.9"
 git-version = "0.3.4"
 backtrace = "0.3"
 bytecount = "0.6.2"
+num_cpus = "1.13.0"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"

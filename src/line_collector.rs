@@ -44,24 +44,25 @@ fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
     }
 }
 
-// FIXME: Don't call this "Stringinator"!!
-struct Stringinator {
-    // FIXME: This should be an Option<String>, which only contains the result
-    // if the computation is done
+struct StringFuture {
+    // This field is only valid if we're done with the result_receiver (next
+    // field)
     result: String,
 
+    // If available, get() will await a result on this receiver, then populate
+    // the result field and return it
     result_receiver: Option<Receiver<String>>,
 }
 
-impl Stringinator {
-    pub fn from_string(result: String) -> Stringinator {
-        return Stringinator {
+impl StringFuture {
+    pub fn from_string(result: String) -> StringFuture {
+        return StringFuture {
             result,
             result_receiver: None,
         };
     }
 
-    pub fn from_oldnew(old_text: String, new_text: String) -> Stringinator {
+    pub fn from_oldnew(old_text: String, new_text: String) -> StringFuture {
         // Create a String channel
         let (sender, receiver): (SyncSender<String>, Receiver<String>) = sync_channel(1);
 
@@ -77,7 +78,7 @@ impl Stringinator {
             sender.send(result).unwrap();
         });
 
-        return Stringinator {
+        return StringFuture {
             result: "".to_string(),
             result_receiver: Some(receiver),
         };
@@ -109,7 +110,7 @@ pub struct LineCollector {
     // enable us to have two separate result implementations, one which just
     // returns a string and another that does a background computation first.
     // But I failed to figure out how when I tried, more Googling needed!
-    queue_putter: SyncSender<Stringinator>,
+    queue_putter: SyncSender<StringFuture>,
 }
 
 impl Drop for LineCollector {
@@ -122,7 +123,7 @@ impl Drop for LineCollector {
         // Tell the consumer thread to drain and quit. Sending an empty string
         // like this is the secret handshake for requesting a shutdown.
         self.queue_putter
-            .send(Stringinator::from_string("".to_string()))
+            .send(StringFuture::from_string("".to_string()))
             .unwrap();
 
         // Wait for the consumer thread to finish
@@ -133,13 +134,17 @@ impl Drop for LineCollector {
 
 impl LineCollector {
     pub fn new<W: io::Write + Send + 'static>(output: W) -> LineCollector {
-        // Allocate a queue where we can push our futures to the consumer thread
+        // The queue will be bounded to 2x the number of logical CPUs.
         //
-        // FIXME: The queue should be bounded to 2x the number of logical CPUs.
-        // 1x for the entries that need CPU time for diffing, and another 1x
-        // that just contain text to print and won't need any processing time.
-        let (queue_putter, queue_getter): (SyncSender<Stringinator>, Receiver<Stringinator>) =
-            sync_channel(16);
+        // 1x is for the entries that need CPU time for diffing.
+        //
+        // The other 1x is for the entries that just contain text to print and
+        // won't need any background processing time.
+        let queue_size = num_cpus::get() * 2;
+
+        // Allocate a queue where we can push our futures to the consumer thread
+        let (queue_putter, queue_getter): (SyncSender<StringFuture>, Receiver<StringFuture>) =
+            sync_channel(queue_size);
 
         // This thread takes futures and prints their results
         let consumer = thread::spawn(move || {
@@ -171,7 +176,7 @@ impl LineCollector {
         }
 
         self.queue_putter
-            .send(Stringinator::from_oldnew(
+            .send(StringFuture::from_oldnew(
                 self.old_text.clone(),
                 self.new_text.clone(),
             ))
@@ -189,7 +194,7 @@ impl LineCollector {
         // Create an already-resolved future returning this text, then store
         // that future in our queue.
         self.queue_putter
-            .send(Stringinator::from_string(String::from(&self.plain_text)))
+            .send(StringFuture::from_string(String::from(&self.plain_text)))
             .unwrap();
 
         self.plain_text.clear();
