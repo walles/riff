@@ -59,7 +59,7 @@ const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 
 const GIT_VERSION: &str = git_version!();
 
-fn highlight_diff(input: &mut dyn io::Read, output: &mut dyn io::Write) {
+fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
     let mut line_collector = LineCollector::new(output);
 
     let input = BufReader::new(input);
@@ -96,7 +96,8 @@ fn try_pager(input: &mut dyn io::Read, pager_name: &str) -> bool {
 
     match command.spawn() {
         Ok(mut pager) => {
-            let pager_stdin = pager.stdin.as_mut().unwrap();
+            let pager_stdin = pager.stdin.unwrap();
+            pager.stdin = None;
             highlight_diff(input, pager_stdin);
 
             // FIXME: Report pager exit status if non-zero, together with
@@ -168,7 +169,7 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
 fn highlight_stream(input: &mut dyn io::Read) {
     if !stdout_isatty() {
         // We're being piped, just do stdin -> stdout
-        highlight_diff(input, &mut io::stdout());
+        highlight_diff(input, io::stdout());
         return;
     }
 
@@ -190,7 +191,7 @@ fn highlight_stream(input: &mut dyn io::Read) {
     }
 
     // No pager found, wth?
-    highlight_diff(input, &mut io::stdout());
+    highlight_diff(input, io::stdout());
 }
 
 pub fn type_string(path: &path::Path) -> &str {
@@ -365,15 +366,13 @@ mod tests {
             )
         );
 
-        let mut actual: Vec<u8> = Vec::new();
-        highlight_diff(&mut input, &mut actual);
+        let file = tempfile::NamedTempFile::new().unwrap();
+        highlight_diff(&mut input, file.reopen().unwrap());
+        let actual = fs::read_to_string(file.path()).unwrap();
         // collect()ing into line vectors inside of this assert() statement
         // splits test failure output into lines, making it easier to digest.
         assert_eq!(
-            std::str::from_utf8(&actual)
-                .unwrap()
-                .lines()
-                .collect::<Vec<_>>(),
+            actual.lines().collect::<Vec<_>>(),
             expected.lines().collect::<Vec<_>>()
         );
     }
@@ -392,15 +391,13 @@ mod tests {
             )
         );
 
-        let mut output: Vec<u8> = Vec::new();
-        highlight_diff(&mut input, &mut output);
+        let file = tempfile::NamedTempFile::new().unwrap();
+        highlight_diff(&mut input, file.reopen().unwrap());
+        let actual = fs::read_to_string(file.path()).unwrap();
         // collect()ing into line vectors inside of this assert() statement
         // splits test failure output into lines, making it easier to digest.
         assert_eq!(
-            std::str::from_utf8(&output)
-                .unwrap()
-                .lines()
-                .collect::<Vec<_>>(),
+            actual.lines().collect::<Vec<_>>(),
             expected.lines().collect::<Vec<_>>()
         );
     }
@@ -441,9 +438,9 @@ mod tests {
             println!("Evaluating example file <{}>...", diff.to_str().unwrap());
 
             // Run highlighting on the file into a memory buffer
-            let mut actual_result: Vec<u8> = Vec::new();
-            highlight_diff(&mut fs::File::open(diff).unwrap(), &mut actual_result);
-            let actual_result = str::from_utf8(&actual_result).unwrap();
+            let file = tempfile::NamedTempFile::new().unwrap();
+            highlight_diff(&mut fs::File::open(diff).unwrap(), file.reopen().unwrap());
+            let actual_result = fs::read_to_string(file.path()).unwrap();
 
             // Load the corresponding .riff-output file into a string
             let basename = diff.file_stem().unwrap().to_str().unwrap();

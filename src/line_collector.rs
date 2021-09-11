@@ -1,6 +1,8 @@
 use crate::io::ErrorKind;
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
+use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
+use std::thread::{self, JoinHandle};
 
 use crate::{constants::*, refiner};
 use regex::Regex;
@@ -30,7 +32,7 @@ fn get_fixed_highlight(line: &str) -> &str {
     return "";
 }
 
-fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
+fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
     if let Err(error) = stream.write_all(text.as_bytes()) {
         if error.kind() == ErrorKind::BrokenPipe {
             // This is fine, somebody probably just quit their pager before it
@@ -42,35 +44,149 @@ fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
     }
 }
 
-fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
-    print(stream, text);
-    print(stream, "\n");
+/**
+A StringFuture can perform diffing in a background thread.
+
+Doing get() on a future that isn't done yet will block until the result is
+available.
+*/
+struct StringFuture {
+    // This field is only valid if we're done with the result_receiver (next
+    // field)
+    result: String,
+
+    // If available, get() will await a result on this receiver, then populate
+    // the result field and return it
+    result_receiver: Option<Receiver<String>>,
 }
 
-pub struct LineCollector<'a> {
+impl StringFuture {
+    /// Create an already-finished future
+    pub fn from_string(result: String) -> StringFuture {
+        return StringFuture {
+            result,
+            result_receiver: None,
+        };
+    }
+
+    /// Call get() to get the result of this diff
+    pub fn from_oldnew(old_text: String, new_text: String) -> StringFuture {
+        // Create a String channel
+        let (sender, receiver): (SyncSender<String>, Receiver<String>) = sync_channel(1);
+
+        // Start diffing in a thread
+        thread::spawn(move || {
+            let mut result = String::new();
+            for line in refiner::format(&old_text, &new_text) {
+                result.push_str(&line);
+                result.push('\n');
+            }
+
+            // Done, channel the result!
+            sender.send(result).unwrap();
+        });
+
+        return StringFuture {
+            result: "".to_string(),
+            result_receiver: Some(receiver),
+        };
+    }
+
+    pub fn is_empty(&mut self) -> bool {
+        return self.get().is_empty();
+    }
+
+    pub fn get(&mut self) -> &str {
+        // If the result is still pending...
+        if let Some(receiver) = &self.result_receiver {
+            // ... wait for it
+            self.result = receiver.recv().unwrap();
+            self.result_receiver = None;
+        }
+
+        return &self.result;
+    }
+}
+
+/**
+The way this thing works from the outside is that you initialize it with an
+output stream, you pass it one line of input at a time, and it writes
+formatted lines to the output stream.
+
+From the inside, it will collect blocks of either diff lines or not-diff-lines.
+
+The not-diff-lines blocks will be enqueued for printing by the printing thread.
+
+The diff lines blocks will also be enqueued for printing, but the actual diffing
+will happen in background threads.
+*/
+pub struct LineCollector {
     old_text: String,
     new_text: String,
     plain_text: String,
-    output: BufWriter<&'a mut dyn Write>,
+    consumer_thread: Option<JoinHandle<()>>,
+
+    // FIXME: I'd rather have had a SyncSender of some trait here. That would
+    // enable us to have two separate result implementations, one which just
+    // returns a string and another that does a background computation first.
+    // But I failed to figure out how when I tried, more Googling needed!
+    queue_putter: SyncSender<StringFuture>,
 }
 
-impl<'a> Drop for LineCollector<'a> {
+impl Drop for LineCollector {
     fn drop(&mut self) {
         // Flush any outstanding lines. This can be done in any order, at most
         // one of them is going to do anything anyway.
         self.drain_oldnew();
         self.drain_plain();
+
+        // Tell the consumer thread to drain and quit. Sending an empty string
+        // like this is the secret handshake for requesting a shutdown.
+        self.queue_putter
+            .send(StringFuture::from_string("".to_string()))
+            .unwrap();
+
+        // Wait for the consumer thread to finish
+        // https://stackoverflow.com/q/57670145/473672
+        self.consumer_thread.take().map(JoinHandle::join);
     }
 }
 
-impl<'a> LineCollector<'a> {
-    pub fn new(output: &mut dyn io::Write) -> LineCollector {
-        let output = BufWriter::new(output);
+impl LineCollector {
+    pub fn new<W: io::Write + Send + 'static>(output: W) -> LineCollector {
+        // The queue will be bounded to 2x the number of logical CPUs.
+        //
+        // 1x is for the entries that need CPU time for diffing.
+        //
+        // The other 1x is for the entries that just contain text to print and
+        // won't need any background processing time.
+        let queue_size = num_cpus::get() * 2;
+
+        // Allocate a queue where we can push our futures to the consumer thread
+        let (queue_putter, queue_getter): (SyncSender<StringFuture>, Receiver<StringFuture>) =
+            sync_channel(queue_size);
+
+        // This thread takes futures and prints their results
+        let consumer = thread::spawn(move || {
+            let mut output = BufWriter::new(output);
+
+            loop {
+                if let Ok(mut print_me) = queue_getter.recv() {
+                    if print_me.is_empty() {
+                        // Secret handshake received, done!
+                        break;
+                    }
+                    print(&mut output, print_me.get());
+                }
+            }
+        });
+
         return LineCollector {
             old_text: String::from(""),
             new_text: String::from(""),
             plain_text: String::from(""),
-            output,
+            consumer_thread: Some(consumer),
+            queue_putter,
         };
     }
 
@@ -79,9 +195,13 @@ impl<'a> LineCollector<'a> {
             return;
         }
 
-        for line in refiner::format(&self.old_text, &self.new_text) {
-            println(&mut self.output, &line);
-        }
+        self.queue_putter
+            .send(StringFuture::from_oldnew(
+                self.old_text.clone(),
+                self.new_text.clone(),
+            ))
+            .unwrap();
+
         self.old_text.clear();
         self.new_text.clear();
     }
@@ -91,7 +211,11 @@ impl<'a> LineCollector<'a> {
             return;
         }
 
-        print(&mut self.output, &self.plain_text);
+        // Enqueue an already-resolved future
+        self.queue_putter
+            .send(StringFuture::from_string(String::from(&self.plain_text)))
+            .unwrap();
+
         self.plain_text.clear();
     }
 
