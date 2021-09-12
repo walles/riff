@@ -174,19 +174,22 @@ impl LineCollector {
             sync_channel(queue_size);
 
         // This thread takes futures and prints their results
-        let consumer = thread::spawn(move || {
-            let mut output = BufWriter::new(output);
+        let thread_builder = thread::Builder::new().name("Output Printer Thread".to_string());
+        let consumer = thread_builder
+            .spawn(move || {
+                let mut output = BufWriter::new(output);
 
-            loop {
-                if let Ok(mut print_me) = queue_getter.recv() {
-                    if print_me.is_empty() {
-                        // Secret handshake received, done!
-                        break;
+                loop {
+                    if let Ok(mut print_me) = queue_getter.recv() {
+                        if print_me.is_empty() {
+                            // Secret handshake received, done!
+                            break;
+                        }
+                        print(&mut output, print_me.get());
                     }
-                    print(&mut output, print_me.get());
                 }
-            }
-        });
+            })
+            .unwrap();
 
         return LineCollector {
             old_text: String::from(""),
