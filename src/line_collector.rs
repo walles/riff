@@ -161,13 +161,17 @@ impl Drop for LineCollector {
 
 impl LineCollector {
     pub fn new<W: io::Write + Send + 'static>(output: W) -> LineCollector {
-        // The queue will be bounded to 2x the number of logical CPUs.
+        // This is how many entries we can look ahead. An "entry" in this case
+        // being either a plain text section or an oldnew section.
         //
-        // 1x is for the entries that need CPU time for diffing.
+        // Benchmark timings with different multipliers on an 8 logical cores
+        // machine with a 6.6M lines / 208MB diff:
         //
-        // The other 1x is for the entries that just contain text to print and
-        // won't need any background processing time.
-        let queue_size = num_cpus::get() * 2;
+        // 500x => 5.68s  <-- Not much better than 100x
+        // 100x => 5.71s  <-- Somewhat better than 50x
+        //  50x => 5.98s
+        //  10x >= 7.41s  <-- Much worse than 50x
+        let queue_size = num_cpus::get() * 100;
 
         // Allocate a queue where we can push our futures to the consumer thread
         let (queue_putter, queue_getter): (SyncSender<StringFuture>, Receiver<StringFuture>) =
