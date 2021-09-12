@@ -234,6 +234,12 @@ impl LineCollector {
         self.plain_text.push('\n');
     }
 
+    /// Like consume_plain_line(), but without outputting any trailing linefeed.
+    fn consume_plain_linepart(&mut self, linepart: &str) {
+        self.drain_oldnew();
+        self.plain_text.push_str(linepart);
+    }
+
     fn consume_old_line(&mut self, line: &str) {
         self.drain_plain();
         self.old_text.push_str(&line[1..]);
@@ -276,7 +282,9 @@ impl LineCollector {
 
         let fixed_highlight = get_fixed_highlight(&line);
         if !fixed_highlight.is_empty() {
-            self.consume_plain_line(&format!("{}{}{}", fixed_highlight, line, NORMAL));
+            self.consume_plain_linepart(fixed_highlight);
+            self.consume_plain_linepart(&line);
+            self.consume_plain_line(NORMAL); // consume_plain_line() will add a linefeed to the output
             return;
         }
 
