@@ -10,7 +10,7 @@ repository = "https://github.com/walles/riff/"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-diffus = "0.9.1"
+diffus = "0.10.0"
 regex = "1"
 lazy_static = "1.4.0"
 isatty = "0.1.9"

@@ -97,9 +97,9 @@ checksum = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 
 [[package]]
 name = "diffus"
-version = "0.9.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d3b0f382a0651ab91518390f16df755c6e2ca11f52a8e06b301fd3f7dfb576c"
+checksum = "3c0ff24a73b51d9009c40897faf87d31b77345c90ffbf4dc3a1d2957032c5653"
 dependencies = [
  "itertools",
 ]
@@ -172,9 +172,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.8.2"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
+checksum = "69ddb889f9d0d08a67338271fa9b62996bc788c7796a5c18cf057420aaed5eaf"
 dependencies = [
  "either",
 ]

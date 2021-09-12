@@ -7,7 +7,7 @@
  after_rebase() {
      # Verify that upstream's test suite passes
 [31m-    bazelisk test -- //src/test/java/build/buildfarm:all[0m
-[32m+    bazelisk test[7m --test_output=errors[27m -- //src/test/java/build/buildfarm:all[0m
+[32m+    bazelisk test --[7mtest_output=errors --[27m //src/test/java/build/buildfarm:all[0m
 
      # Push rebased changes back to Spotify's fork of upstream
      git push -u origin HEAD
