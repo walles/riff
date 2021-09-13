@@ -180,7 +180,9 @@ def time_binaries():
     with tempfile.NamedTemporaryFile(
         prefix="riff-benchmark", suffix=".gitlog"
     ) as testdata:
-        subprocess.check_call(["git", "log", "-p", "master"], stdout=testdata)
+        subprocess.check_call(
+            ["git", "log", "--color=always", "-p", "master"], stdout=testdata
+        )
 
         binaries = sorted(glob.glob(os.path.join(BINDIR, "*")), key=natural_keys)
 
