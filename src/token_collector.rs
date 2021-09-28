@@ -197,16 +197,6 @@ impl TokenCollector {
         self.rendered = true;
         return rendered;
     }
-
-    pub fn chars_count(&self) -> usize {
-        assert!(self.rendered); // It's the rendering that does the counting
-        return self.bytes_count;
-    }
-
-    pub fn highlighted_chars_count(&self) -> usize {
-        assert!(self.rendered); // It's the rendering that does the counting
-        return self.highlighted_bytes_count;
-    }
 }
 
 fn highlight_trailing_whitespace(row: &mut [StyledToken]) {
