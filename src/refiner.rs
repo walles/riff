@@ -245,39 +245,4 @@ mod tests {
         let result = format(&"".to_string(), &"x\n".to_string());
         assert_eq!(result, [format!("{}+x{}", NEW, NORMAL),]);
     }
-
-    #[test]
-    fn test_is_large_byte_count_change() {
-        assert_eq!(is_large_byte_count_change("", ""), false);
-
-        assert_eq!(
-            is_large_byte_count_change("", &"x".repeat(SMALL_COUNT_CHANGE)),
-            false
-        );
-        assert_eq!(
-            is_large_byte_count_change("", &"x".repeat(SMALL_COUNT_CHANGE + 1)),
-            true
-        );
-
-        // Verify that doubling the length counts as large
-        let base_len = SMALL_COUNT_CHANGE * 2;
-        let double_len = base_len * 2;
-        let almost_double_len = double_len - 1;
-        assert_eq!(
-            is_large_byte_count_change(&"x".repeat(base_len), &"y".repeat(almost_double_len)),
-            false
-        );
-        assert_eq!(
-            is_large_byte_count_change(&"x".repeat(base_len), &"y".repeat(double_len)),
-            true
-        );
-    }
-
-    #[test]
-    fn test_extract_trailing_lines() {
-        assert_eq!(
-            extract_trailing_lines(2, "apa\nbepa\ncepa\n"),
-            "bepa\ncepa\n"
-        )
-    }
 }
