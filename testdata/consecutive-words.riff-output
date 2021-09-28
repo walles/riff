@@ -15,10 +15,10 @@ Date:   Thu Dec 31 15:22:09 2020 +0100
  /// it.
  const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 
-[31m-const LARGE_BYTE_COUNT_CHANGE_PERCENT: usize = 100;[0m
-[31m-const SMALL_BYTE_COUNT_CHANGE: usize = 10;[0m
-[32m+const LARGE_COUNT_CHANGE_PERCENT: usize = 100;[0m
-[32m+const SMALL_COUNT_CHANGE: usize = 10;[0m
+[31m-const [7mLARGE_BYTE_COUNT_CHANGE_PERCENT[27m: usize = 100;[0m
+[31m-const [7mSMALL_BYTE_COUNT_CHANGE[27m: usize = 10;[0m
+[32m+const [7mLARGE_COUNT_CHANGE_PERCENT[27m: usize = 100;[0m
+[32m+const [7mSMALL_COUNT_CHANGE[27m: usize = 10;[0m
 
  /// Format old and new lines in OLD and NEW colors.
  ///
