@@ -17,11 +17,11 @@ index 0cec7f2..7091f6a 100644
 -   mReader.lock.Lock()
 -   mReader.name = name
 -   mReader.lock.Unlock()
-+⏎
-+   if len(name) > 0 {⏎
++
++   if len(name) > 0 {
 +       mReader.lock.Lock()
 +       mReader.name = &name
-+       mReader.lock.Unlock()⏎
++       mReader.lock.Unlock()
 +   }
 
     return mReader
