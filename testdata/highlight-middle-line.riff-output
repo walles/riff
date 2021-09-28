@@ -1,0 +1,13 @@
+[36m@@ -442,9 +438,9 @@ mod tests {[0m
+             println!("Evaluating example file <{}>...", diff.to_str().unwrap());
+
+             // Run highlighting on the file into a memory buffer
+[31m-            let mut actual_result: Vec<u8> = Vec::new();[0m
+[31m-            highlight_diff(&mut fs::File::open(diff).unwrap(), [7m&mut actual_result[27m);[0m
+[31m-            let actual_result = str::from_utf8(&actual_result).unwrap();[0m
+[32m+            let file = tempfile::NamedTempFile::new().unwrap();[0m
+[32m+            highlight_diff(&mut fs::File::open(diff).unwrap(), [7mfile.reopen().unwrap()[27m);[0m
+[32m+            let actual_result = fs::read_to_string(file.path()).unwrap();[0m
+
+             // Load the corresponding .riff-output file into a string
+             let basename = diff.file_stem().unwrap().to_str().unwrap();
