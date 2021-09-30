@@ -114,20 +114,10 @@ fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<Stri
                             new_collector.push(StyledToken::new(token.to_string(), Style::New));
                         }
                         collection::Edit::Insert(token) => {
-                            if *token == "\n" {
-                                // Make sure the highlighted linefeed is visible
-                                new_collector
-                                    .push(StyledToken::new("⏎".to_string(), Style::NewInverse));
-                            }
                             new_collector
                                 .push(StyledToken::new(token.to_string(), Style::NewInverse));
                         }
                         collection::Edit::Remove(token) => {
-                            if *token == "\n" {
-                                // Make sure the highlighted linefeed is visible
-                                old_collector
-                                    .push(StyledToken::new("⏎".to_string(), Style::OldInverse));
-                            }
                             old_collector
                                 .push(StyledToken::new(token.to_string(), Style::OldInverse));
                         }

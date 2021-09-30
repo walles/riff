@@ -120,10 +120,6 @@ impl TokenCollector {
     fn render_row(&self, row: &mut [StyledToken]) -> String {
         let mut rendered = String::new();
 
-        if row.is_empty() {
-            return rendered;
-        }
-
         if self.line_prefix.style == Style::New {
             highlight_trailing_whitespace(row);
             highlight_nonleading_tab(row);

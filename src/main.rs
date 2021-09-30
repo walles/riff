@@ -358,7 +358,7 @@ mod tests {
 
         let expected = format!(
             "{}\n{}\n{}\n",
-            old(&format!("-hejhopp{}⏎", INVERSE_VIDEO)),
+            old(&format!("-hejhopp{}", INVERSE_VIDEO)),
             new("+hejhopp"),
             format!(
                 "{}\\ No newline at end of file{}",
