@@ -17,12 +17,12 @@
 [31m-   mReader.lock.Lock()[0m
 [31m-   mReader.name = name[0m
 [31m-   mReader.lock.Unlock()[0m
-[32m+[7m⏎[0m
-[32m+[7m   if len(name) > 0 {⏎[0m
+[32m+[0m
+[32m+   if len(name) > 0 {[0m
 [32m+[7m    [27m   mReader.lock.Lock()[0m
 [32m+[7m    [27m   mReader.name = [7m&[27mname[0m
-[32m+[7m    [27m   mReader.lock.Unlock()[7m⏎[0m
-[32m+[7m   }[0m
+[32m+[7m    [27m   mReader.lock.Unlock()[0m
+[32m+   }[0m
 
     return mReader
  }

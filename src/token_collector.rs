@@ -78,6 +78,16 @@ impl Style {
         };
     }
 
+    pub fn uninverted(&self) -> Style {
+        return match self {
+            Style::Old => Style::Old,
+            Style::New => Style::New,
+            Style::OldInverse => Style::Old,
+            Style::NewInverse => Style::New,
+            Style::Error => Style::Error,
+        };
+    }
+
     #[must_use]
     pub fn color<'a>(&self) -> &'a str {
         match self {
@@ -120,6 +130,10 @@ impl TokenCollector {
     fn render_row(&self, row: &mut [StyledToken]) -> String {
         let mut rendered = String::new();
 
+        if is_all_inverse(row) {
+            uninvert(row);
+        }
+
         if self.line_prefix.style == Style::New {
             highlight_trailing_whitespace(row);
             highlight_nonleading_tab(row);
@@ -161,6 +175,7 @@ impl TokenCollector {
         return rendered;
     }
 
+    /// Render all the tokens into a (most of the time multiline) string
     #[must_use]
     pub fn render(&mut self) -> String {
         assert!(!self.rendered);
@@ -192,6 +207,23 @@ impl TokenCollector {
 
         self.rendered = true;
         return rendered;
+    }
+}
+
+#[must_use]
+fn is_all_inverse(row: &[StyledToken]) -> bool {
+    for token in row.iter() {
+        if !token.style.is_inverse() {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+fn uninvert(row: &mut [StyledToken]) {
+    for token in row.iter_mut().rev() {
+        token.style = token.style.uninverted();
     }
 }
 
