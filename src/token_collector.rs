@@ -51,7 +51,6 @@ pub struct TokenCollector {
     line_prefix: StyledToken,
     tokens: Vec<StyledToken>,
     bytes_count: usize,
-    highlighted_bytes_count: usize,
     rendered: bool,
 }
 
@@ -107,7 +106,6 @@ impl TokenCollector {
             line_prefix,
             tokens: Vec::new(),
             bytes_count: 0,
-            highlighted_bytes_count: 0,
             rendered: false,
         };
     }
@@ -172,9 +170,6 @@ impl TokenCollector {
 
         for token in tokens {
             self.bytes_count += token.token.len();
-            if token.style.is_inverse() {
-                self.highlighted_bytes_count += token.token.len();
-            }
 
             if token.token == "\n" {
                 let rendered_row = &self.render_row(&mut current_row);
