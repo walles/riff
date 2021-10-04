@@ -78,16 +78,6 @@ impl Style {
         };
     }
 
-    pub fn uninverted(&self) -> Style {
-        return match self {
-            Style::Old => Style::Old,
-            Style::New => Style::New,
-            Style::OldInverse => Style::Old,
-            Style::NewInverse => Style::New,
-            Style::Error => Style::Error,
-        };
-    }
-
     #[must_use]
     pub fn color<'a>(&self) -> &'a str {
         match self {
@@ -178,11 +168,7 @@ impl TokenCollector {
         let mut current_row: Vec<StyledToken> = Vec::new();
         let mut rendered = String::new();
 
-        let mut tokens = std::mem::take(&mut self.tokens);
-
-        // FIXME: Maybe do highlight_space_between_words() before this one? And
-        // not do that for each line?
-        cancel_multiline_highlights(&mut tokens);
+        let tokens = std::mem::take(&mut self.tokens);
 
         for token in tokens {
             self.bytes_count += token.token.len();
@@ -208,63 +194,6 @@ impl TokenCollector {
 
         self.rendered = true;
         return rendered;
-    }
-}
-
-fn cancel_multiline_highlights(row: &mut [StyledToken]) {
-    let mut highlighted_newline_found = false;
-    let mut first_highlighted_index: usize = 0;
-
-    // NOTE: Must be reset each time the loop switches to the next iteration
-    let mut last_was_highlighted = false;
-
-    // Iterate over all tokens
-    for index in 0..(row.len() - 1) {
-        let token = &row[index];
-
-        // Keep track of the first highlighted token's index
-        let is_highlighted = token.style.is_inverse();
-
-        if is_highlighted && !last_was_highlighted {
-            // Start of highlighted section found
-            first_highlighted_index = index;
-            highlighted_newline_found = false;
-        }
-
-        if is_highlighted && token.token == "\n" {
-            highlighted_newline_found = true;
-        }
-
-        if is_highlighted {
-            last_was_highlighted = is_highlighted;
-            continue;
-        }
-
-        // We only get here if the current token is *not* highlighted
-        assert!(!is_highlighted);
-
-        if !last_was_highlighted {
-            // We're in a not-highlighted stretch, keep looking
-            last_was_highlighted = is_highlighted;
-            continue;
-        }
-
-        // Highlight just ended at the previous index
-        assert!(last_was_highlighted);
-
-        if !highlighted_newline_found {
-            last_was_highlighted = is_highlighted;
-            continue;
-        }
-
-        // Unhighlight the whole section, including the newlines
-        let last_highlighted_index = index - 1;
-        #[allow(clippy::needless_range_loop)]
-        for i in first_highlighted_index..(last_highlighted_index + 1) {
-            row[i].style = row[i].style.uninverted();
-        }
-
-        last_was_highlighted = is_highlighted;
     }
 }
 

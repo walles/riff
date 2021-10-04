@@ -8,8 +8,8 @@
  -   url: /(.*)
 [31m-    static_files: ui/[7mdist[27m/\1[0m
 [31m-    upload: ui/[7mdist[27m/(.*)[0m
-[31m-error_handlers:[0m
-[31m--   file: ui/dist/default_error.html[0m
+[31m-[7merror_handlers:[0m
+[31m-[7m-   file: ui/dist/default_error.html[0m
 [32m+    static_files: ui/[7mbuild[27m/\1[0m
 [32m+    upload: ui/[7mbuild[27m/(.*)[0m
  env_variables:

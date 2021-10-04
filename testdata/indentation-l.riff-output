@@ -19,8 +19,8 @@ Date:   Wed May 6 21:52:51 2015 +0200
 [31m-  require 'riff'[0m
 [31m-end[0m
 [31m-require 'pager'[0m
-[32m+  [7m# Inspired by http://timelessrepo.com/making-ruby-gems⏎[0m
-[32m+[7m  begin⏎[0m
+[32m+  [7m# Inspired by http://timelessrepo.com/making-ruby-gems[0m
+[32m+[7m  begin[0m
 [32m+[7m    [27mrequire 'riff'[0m
 [32m+[7m  [27mrescue LoadError[0m
 [32m+[7m  [27m  $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')[0m
@@ -34,11 +34,11 @@ Date:   Wed May 6 21:52:51 2015 +0200
 [31m-refined = Riff.new().do_stream(STDIN)[0m
 [31m-page(refined)[0m
 [32m+[7m  [27mrefined = Riff.new().do_stream(STDIN)[0m
-[32m+[7m  [27mpage(refined)[0m
-[32m+rescue => e[0m
-[32m+  STDERR.puts[0m
-[32m+  STDERR.puts e.to_s[0m
-[32m+  STDERR.puts e.backtrace.join("\n\t")[0m
-[32m+  STDERR.puts[0m
-[32m+  STDERR.puts 'Please report this to https://github.com/walles/riff/issues'[0m
-[32m+end[0m
+[32m+[7m  [27mpage(refined[7m)[0m
+[32m+[7mrescue => e[0m
+[32m+[7m  STDERR.puts[0m
+[32m+[7m  STDERR.puts e.to_s[0m
+[32m+[7m  STDERR.puts e.backtrace.join("\n\t"[27m)[0m
+[32m+[7m  STDERR.puts[0m
+[32m+[7m  STDERR.puts 'Please report this to https://github.com/walles/riff/issues'[0m
+[32m+[7mend[0m
