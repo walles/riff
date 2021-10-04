@@ -164,7 +164,8 @@ impl TokenCollector {
         let mut current_row: Vec<StyledToken> = Vec::new();
         let mut rendered = String::new();
 
-        let tokens = std::mem::take(&mut self.tokens);
+        let mut tokens = std::mem::take(&mut self.tokens);
+        censor_multi_line_highlights(&mut tokens);
 
         for token in tokens {
             if token.token == "\n" {
@@ -186,6 +187,10 @@ impl TokenCollector {
         self.rendered = true;
         return rendered;
     }
+}
+
+fn censor_multi_line_highlights(_: &mut [StyledToken]) {
+    // FIXME: Code missing here
 }
 
 fn highlight_trailing_whitespace(row: &mut [StyledToken]) {
@@ -431,5 +436,64 @@ mod tests {
                 StyledToken::new("Dance".to_string(), Style::NewInverse),
             ]
         );
+    }
+
+    /// "_" is an unhighlighted token, "." is a highlighted token, "n" is an
+    /// unhighlighted newline and "N" is a highlighted newline.
+    fn test_censor_multiline_highlighting(input: &str, expected_output: &str) {
+        let mut row = Vec::new();
+        for c in input.chars() {
+            let mut token = "x".to_string();
+            if c == 'n' || c == 'N' {
+                token = '\n'.to_string();
+            }
+
+            let mut style = Style::New;
+            if c == '.' || c == 'N' {
+                style = Style::NewInverse;
+            }
+
+            row.push(StyledToken { token, style });
+        }
+
+        censor_multi_line_highlights(&mut row);
+
+        let mut actual_output = String::new();
+        for token in row {
+            if token.token != "\n" && !token.style.is_inverse() {
+                actual_output.push('_');
+            } else if token.token != "\n" && token.style.is_inverse() {
+                actual_output.push('.');
+            } else if token.token == "\n" && !token.style.is_inverse() {
+                actual_output.push('n');
+            } else if token.token == "\n" && token.style.is_inverse() {
+                actual_output.push('N');
+            } else {
+                panic!("How did we get here?");
+            }
+        }
+
+        assert_eq!(actual_output, expected_output);
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_start_at_beginning() {
+        test_censor_multiline_highlighting("...n___", "___n___");
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_at_end() {
+        test_censor_multiline_highlighting("___n...", "___n___");
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_midline() {
+        test_censor_multiline_highlighting("___n...n___", "___n___n___");
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_partial_lines() {
+        // Highlighted line parts should not be censored
+        test_censor_multiline_highlighting("_.._", "_.._");
     }
 }
