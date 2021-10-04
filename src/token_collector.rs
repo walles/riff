@@ -120,10 +120,6 @@ impl TokenCollector {
     fn render_row(&self, row: &mut [StyledToken]) -> String {
         let mut rendered = String::new();
 
-        if row.is_empty() {
-            return rendered;
-        }
-
         if self.line_prefix.style == Style::New {
             highlight_trailing_whitespace(row);
             highlight_nonleading_tab(row);
@@ -165,6 +161,7 @@ impl TokenCollector {
         return rendered;
     }
 
+    /// Render all the tokens into a (most of the time multiline) string
     #[must_use]
     pub fn render(&mut self) -> String {
         assert!(!self.rendered);
@@ -172,6 +169,7 @@ impl TokenCollector {
         let mut rendered = String::new();
 
         let tokens = std::mem::take(&mut self.tokens);
+
         for token in tokens {
             self.bytes_count += token.token.len();
             if token.style.is_inverse() {
@@ -196,16 +194,6 @@ impl TokenCollector {
 
         self.rendered = true;
         return rendered;
-    }
-
-    pub fn chars_count(&self) -> usize {
-        assert!(self.rendered); // It's the rendering that does the counting
-        return self.bytes_count;
-    }
-
-    pub fn highlighted_chars_count(&self) -> usize {
-        assert!(self.rendered); // It's the rendering that does the counting
-        return self.highlighted_bytes_count;
     }
 }
 

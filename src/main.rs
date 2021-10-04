@@ -340,41 +340,8 @@ mod tests {
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
-    fn old(text: &str) -> String {
-        return format!("{}{}{}", OLD, text, NORMAL);
-    }
-
     fn new(text: &str) -> String {
         return format!("{}{}{}", NEW, text, NORMAL);
-    }
-
-    #[test]
-    fn test_remove_trailing_newline() {
-        let mut input = "-hejhopp\n\
-            +hejhopp\n\
-            \\ No newline at end of file\n\
-            "
-        .as_bytes();
-
-        let expected = format!(
-            "{}\n{}\n{}\n",
-            old(&format!("-hejhopp{}⏎", INVERSE_VIDEO)),
-            new("+hejhopp"),
-            format!(
-                "{}\\ No newline at end of file{}",
-                NO_EOF_NEWLINE_COLOR, NORMAL
-            )
-        );
-
-        let file = tempfile::NamedTempFile::new().unwrap();
-        highlight_diff(&mut input, file.reopen().unwrap());
-        let actual = fs::read_to_string(file.path()).unwrap();
-        // collect()ing into line vectors inside of this assert() statement
-        // splits test failure output into lines, making it easier to digest.
-        assert_eq!(
-            actual.lines().collect::<Vec<_>>(),
-            expected.lines().collect::<Vec<_>>()
-        );
     }
 
     #[test]
