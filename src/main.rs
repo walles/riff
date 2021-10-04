@@ -390,6 +390,9 @@ mod tests {
         assert!(testdata_path.is_dir());
 
         // Iterate all files in there
+        let mut failing_example: Option<String> = None;
+        let mut failing_example_expected = vec![];
+        let mut failing_example_actual = vec![];
         for diff in fs::read_dir(testdata_path).unwrap() {
             let diff = diff.unwrap();
             let diff = diff.path();
@@ -419,9 +422,25 @@ mod tests {
             let expected_result = fs::read_to_string(expected_path).unwrap();
 
             // Assert that the highlighting output matches the contents of .riff-output
-            let actual_lines: Vec<&str> = actual_result.split('\n').collect();
-            let expected_lines: Vec<&str> = expected_result.split('\n').collect();
-            assert_eq!(actual_lines, expected_lines);
+            let actual_lines: Vec<String> = actual_result.split('\n').map(str::to_string).collect();
+            let expected_lines: Vec<String> =
+                expected_result.split('\n').map(str::to_string).collect();
+
+            if actual_lines != expected_lines {
+                if failing_example.is_none() {
+                    failing_example = Some(diff.to_str().unwrap().to_string());
+                    failing_example_actual = actual_lines;
+                    failing_example_expected = expected_lines;
+                }
+
+                println!("  FAILED: Output mismatches!");
+            }
+        }
+
+        if failing_example.is_some() {
+            println!();
+            println!("Example: {}", failing_example.unwrap());
+            assert_eq!(failing_example_actual, failing_example_expected);
         }
     }
 }
