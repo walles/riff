@@ -165,6 +165,8 @@ impl TokenCollector {
         let mut rendered = String::new();
 
         let mut tokens = std::mem::take(&mut self.tokens);
+
+        // FIXME: Do highlight_space_between_words() first?
         censor_multi_line_highlights(&mut tokens);
 
         for token in tokens {
@@ -492,8 +494,13 @@ mod tests {
     }
 
     #[test]
-    fn test_censor_multiline_highlights_partial_lines() {
+    fn test_censor_multiline_highlights_edgecases() {
+        test_censor_multiline_highlighting("n.n", "n_n");
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_dont_highlight() {
         // Highlighted line parts should not be censored
-        test_censor_multiline_highlighting("_.._", "_.._");
+        test_censor_multiline_highlighting("_.._n.__.", "_.._n.__.");
     }
 }
