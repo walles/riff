@@ -50,7 +50,6 @@ impl StyledToken {
 pub struct TokenCollector {
     line_prefix: StyledToken,
     tokens: Vec<StyledToken>,
-    bytes_count: usize,
     rendered: bool,
 }
 
@@ -105,7 +104,6 @@ impl TokenCollector {
         return TokenCollector {
             line_prefix,
             tokens: Vec::new(),
-            bytes_count: 0,
             rendered: false,
         };
     }
@@ -169,8 +167,6 @@ impl TokenCollector {
         let tokens = std::mem::take(&mut self.tokens);
 
         for token in tokens {
-            self.bytes_count += token.token.len();
-
             if token.token == "\n" {
                 let rendered_row = &self.render_row(&mut current_row);
                 rendered.push_str(rendered_row);
