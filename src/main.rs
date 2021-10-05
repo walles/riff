@@ -37,6 +37,7 @@ Colors diff output, highlighting the changed parts of every line.
 Git integration:
     git config --global pager.diff riff
     git config --global pager.show riff
+    git config --global pager.log riff
     git config --global interactive.diffFilter riff
 
 Options:

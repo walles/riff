@@ -21,10 +21,12 @@ Or if you do...
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
+git config --global pager.log riff
 git config --global interactive.diffFilter riff
 ```
 
-... then all future `git diff`s and `git show`s will be refined.
+... then all future `git diff`, `git show` and `git log --patch` output will be
+refined.
 
 Or you can use `riff` as an alias for `diff`:
 
@@ -55,6 +57,7 @@ brew install walles/johan/riffdiff
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
+git config --global pager.log riff
 git config --global interactive.diffFilter riff
 ```
 
@@ -66,6 +69,8 @@ Invoke `ci.sh` to run the same thing as CI.
 
 Invoke `benchmark.py` to get numbers for how fast your current source code is
 versus earlier releases.
+
+Invoke `git log -p | cargo run --` to demo highlighting.
 
 ## Making a new release
 
