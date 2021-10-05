@@ -209,12 +209,13 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
     }
 
     let mut last_was_highlighted = false;
+    let mut last_was_newline = false;
     let mut first_highlighted_index: usize = 0;
     let mut internal_newline_seen = false;
 
     for index in 0..rows.len() {
         if index > 0 {
-            let last_was_newline = rows[index - 1].token == "\n";
+            last_was_newline = rows[index - 1].token == "\n";
 
             // Newlines always count as highlighted
             last_was_highlighted = rows[index - 1].style.is_inverse() || last_was_newline;
@@ -230,8 +231,10 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
                 // Start of new section
                 first_highlighted_index = index;
                 internal_newline_seen = false;
+                last_was_newline = false;
             }
-            if is_newline {
+            if last_was_newline && !is_newline {
+                // Switch from newline to not-newline, means we found an internal newline
                 internal_newline_seen = true;
             }
             continue;
