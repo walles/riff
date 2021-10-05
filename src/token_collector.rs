@@ -230,6 +230,7 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
             if !last_was_highlighted {
                 // Start of new section
                 first_highlighted_index = index;
+                newline_seen = false;
             }
             if is_newline {
                 newline_seen = true;
@@ -584,7 +585,7 @@ mod tests {
     }
 
     #[test]
-    fn test_censor_multiline_highlights_dont_highlight() {
+    fn test_censor_multiline_highlights_dont_censor() {
         // Highlighted line parts should not be censored
         test_censor_multiline_highlighting("_.._", "_.._");
         test_censor_multiline_highlighting(".__.", ".__.");
