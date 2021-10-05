@@ -208,10 +208,10 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
         return;
     }
 
-    let mut last_was_highlighted = false;
+    let mut last_was_highlighted = true;
 
     let mut first_highlighted_index: usize = 0;
-    let mut newline_seen = false;
+    let mut newline_seen = true;
 
     for index in 0..rows.len() {
         if index > 0 {
@@ -263,7 +263,7 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
     // Newlines always count as highlighted
     last_was_highlighted = rows[lastindex].style.is_inverse() || last_was_newline;
 
-    if last_was_highlighted {
+    if last_was_highlighted && newline_seen {
         // Ended on a highlight, need to finish up
         #[allow(clippy::needless_range_loop)]
         for unhighlight_index in first_highlighted_index..rows.len() {
