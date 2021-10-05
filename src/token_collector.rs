@@ -204,6 +204,10 @@ impl TokenCollector {
 /// Unhighlight highlights that span multiple lines, or that span one whole
 /// line.
 fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
+    if rows.is_empty() {
+        return;
+    }
+
     let mut last_was_highlighted = false;
 
     let mut first_highlighted_index: usize = 0;
@@ -252,6 +256,12 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
             rows[unhighlight_index].style = rows[unhighlight_index].style.not_inverted();
         }
     }
+
+    let lastindex = rows.len() - 1;
+    let last_was_newline = rows[lastindex].token == "\n";
+
+    // Newlines always count as highlighted
+    last_was_highlighted = rows[lastindex].style.is_inverse() || last_was_newline;
 
     if last_was_highlighted {
         // Ended on a highlight, need to finish up
@@ -576,6 +586,10 @@ mod tests {
     #[test]
     fn test_censor_multiline_highlights_dont_highlight() {
         // Highlighted line parts should not be censored
-        test_censor_multiline_highlighting("_.._n.__.", "_.._n.__.");
+        test_censor_multiline_highlighting("_.._", "_.._");
+        test_censor_multiline_highlighting(".__.", ".__.");
+        test_censor_multiline_highlighting(".__.n", ".__.n");
+        test_censor_multiline_highlighting("n.__.", "n.__.");
+        test_censor_multiline_highlighting("n.__.n", "n.__.n");
     }
 }
