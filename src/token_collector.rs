@@ -208,10 +208,9 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
         return;
     }
 
-    let mut last_was_highlighted = true;
-
+    let mut last_was_highlighted = false;
     let mut first_highlighted_index: usize = 0;
-    let mut newline_seen = true;
+    let mut internal_newline_seen = false;
 
     for index in 0..rows.len() {
         if index > 0 {
@@ -230,10 +229,10 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
             if !last_was_highlighted {
                 // Start of new section
                 first_highlighted_index = index;
-                newline_seen = false;
+                internal_newline_seen = false;
             }
             if is_newline {
-                newline_seen = true;
+                internal_newline_seen = true;
             }
             continue;
         }
@@ -246,12 +245,20 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
 
         // Found the end
         assert!(last_was_highlighted && !is_highlighted);
-        if !newline_seen {
-            // No newline in this highlighted section, no further action needed
+
+        let starts_at_start_of_line = first_highlighted_index == 0
+            || rows[first_highlighted_index].token == "\n"
+            || rows[first_highlighted_index - 1].token == "\n";
+        let ends_at_end_of_line = rows[index].token == "\n" || rows[index - 1].token == "\n";
+        let is_complete_line = starts_at_start_of_line && ends_at_end_of_line;
+
+        if !internal_newline_seen && !is_complete_line {
+            // No further action needed
             continue;
         }
 
-        // Found end of highlighted section containing newlines, unhighlight!
+        // Found end of highlighted section containing newlines or spanning a
+        // whole row, unhighlight!
         #[allow(clippy::needless_range_loop)]
         for unhighlight_index in first_highlighted_index..index {
             rows[unhighlight_index].style = rows[unhighlight_index].style.not_inverted();
@@ -263,8 +270,18 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
 
     // Newlines always count as highlighted
     last_was_highlighted = rows[lastindex].style.is_inverse() || last_was_newline;
+    if !last_was_highlighted {
+        // No ending highlight, nothing more to do
+        return;
+    }
 
-    if last_was_highlighted && newline_seen {
+    let starts_at_start_of_line = first_highlighted_index == 0
+        || rows[first_highlighted_index].token == "\n"
+        || rows[first_highlighted_index - 1].token == "\n";
+    let ends_at_end_of_line = true; // Otherwise we'd still be in the loop
+    let is_complete_line = starts_at_start_of_line && ends_at_end_of_line;
+
+    if last_was_highlighted && (internal_newline_seen || is_complete_line) {
         // Ended on a highlight, need to finish up
         #[allow(clippy::needless_range_loop)]
         for unhighlight_index in first_highlighted_index..rows.len() {
