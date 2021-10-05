@@ -494,8 +494,14 @@ mod tests {
     }
 
     #[test]
+    fn test_censor_multiline_highlights_spans_multiline() {
+        test_censor_multiline_highlighting("__.n...n.__", "___n___n___");
+    }
+
+    #[test]
     fn test_censor_multiline_highlights_edgecases() {
         test_censor_multiline_highlighting("n.n", "n_n");
+        test_censor_multiline_highlighting("...", "___");
     }
 
     #[test]
