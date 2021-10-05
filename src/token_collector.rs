@@ -76,6 +76,16 @@ impl Style {
         };
     }
 
+    pub fn not_inverted(&self) -> Style {
+        return match self {
+            Style::Old => Style::Old,
+            Style::New => Style::New,
+            Style::OldInverse => Style::Old,
+            Style::NewInverse => Style::New,
+            Style::Error => Style::Error,
+        };
+    }
+
     #[must_use]
     pub fn color<'a>(&self) -> &'a str {
         match self {
@@ -191,8 +201,55 @@ impl TokenCollector {
     }
 }
 
-fn censor_multi_line_highlights(_: &mut [StyledToken]) {
-    // FIXME: Code missing here
+fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
+    let mut last_was_highlighted = false;
+
+    let mut first_highlighted_index: usize = 0;
+    let mut newline_seen = false;
+
+    for index in 0..rows.len() {
+        if index > 0 {
+            let last_was_newline = rows[index - 1].token == "\n";
+
+            // Newlines always count as highlighted
+            last_was_highlighted = rows[index - 1].style.is_inverse() || last_was_newline;
+        }
+        let token = &rows[index];
+        let is_newline = token.token == "\n";
+
+        // Newlines always count as highlighted
+        let is_highlighted = is_newline || token.style.is_inverse();
+
+        if is_highlighted {
+            if !last_was_highlighted {
+                // Start of new section
+                first_highlighted_index = index;
+            }
+            if is_newline {
+                newline_seen = true;
+            }
+            continue;
+        }
+
+        assert!(!is_highlighted);
+        if !last_was_highlighted {
+            // We're in a run of non-highlighted tokens, do nothing
+            continue;
+        }
+
+        // Found the end
+        assert!(last_was_highlighted && !is_highlighted);
+        if !newline_seen {
+            // No newline in this highlighted section, no further action needed
+            continue;
+        }
+
+        // Found end of highlighted section containing newlines, unhighlight!
+        #[allow(clippy::needless_range_loop)]
+        for unhighlight_index in first_highlighted_index..index {
+            rows[unhighlight_index].style = rows[unhighlight_index].style.not_inverted();
+        }
+    }
 }
 
 fn highlight_trailing_whitespace(row: &mut [StyledToken]) {
@@ -502,6 +559,8 @@ mod tests {
     fn test_censor_multiline_highlights_edgecases() {
         test_censor_multiline_highlighting("n.n", "n_n");
         test_censor_multiline_highlighting("...", "___");
+        test_censor_multiline_highlighting(".n.", "_n_");
+        test_censor_multiline_highlighting("_.n.n._", "__n_n__");
     }
 
     #[test]
