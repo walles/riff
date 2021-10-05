@@ -201,6 +201,8 @@ impl TokenCollector {
     }
 }
 
+/// Unhighlight highlights that span multiple lines, or that span one whole
+/// line.
 fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
     let mut last_was_highlighted = false;
 
@@ -247,6 +249,14 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
         // Found end of highlighted section containing newlines, unhighlight!
         #[allow(clippy::needless_range_loop)]
         for unhighlight_index in first_highlighted_index..index {
+            rows[unhighlight_index].style = rows[unhighlight_index].style.not_inverted();
+        }
+    }
+
+    if last_was_highlighted {
+        // Ended on a highlight, need to finish up
+        #[allow(clippy::needless_range_loop)]
+        for unhighlight_index in first_highlighted_index..rows.len() {
             rows[unhighlight_index].style = rows[unhighlight_index].style.not_inverted();
         }
     }
