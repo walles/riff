@@ -209,9 +209,11 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
     }
 
     let mut last_was_highlighted = false;
-    let mut last_was_newline = false;
+    let mut last_was_newline = true;
+
     let mut first_highlighted_index: usize = 0;
-    let mut internal_newline_seen = false;
+    let mut seen_switch_from_newline = false;
+    let mut seen_switch_to_newline = false;
 
     for index in 0..rows.len() {
         if index > 0 {
@@ -230,12 +232,14 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
             if !last_was_highlighted {
                 // Start of new section
                 first_highlighted_index = index;
-                internal_newline_seen = false;
-                last_was_newline = false;
+                seen_switch_from_newline = false;
+                seen_switch_to_newline = false;
             }
             if last_was_newline && !is_newline {
-                // Switch from newline to not-newline, means we found an internal newline
-                internal_newline_seen = true;
+                seen_switch_from_newline = true;
+            }
+            if is_newline && !last_was_newline {
+                seen_switch_to_newline = true;
             }
             continue;
         }
@@ -249,13 +253,7 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
         // Found the end
         assert!(last_was_highlighted && !is_highlighted);
 
-        let starts_at_start_of_line = first_highlighted_index == 0
-            || rows[first_highlighted_index].token == "\n"
-            || rows[first_highlighted_index - 1].token == "\n";
-        let ends_at_end_of_line = rows[index].token == "\n" || rows[index - 1].token == "\n";
-        let is_complete_line = starts_at_start_of_line && ends_at_end_of_line;
-
-        if !internal_newline_seen && !is_complete_line {
+        if !(seen_switch_from_newline && seen_switch_to_newline) {
             // No further action needed
             continue;
         }
@@ -278,14 +276,10 @@ fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
         return;
     }
 
-    let starts_at_start_of_line = first_highlighted_index == 0
-        || rows[first_highlighted_index].token == "\n"
-        || rows[first_highlighted_index - 1].token == "\n";
-    let ends_at_end_of_line = true; // Otherwise we'd still be in the loop
-    let is_complete_line = starts_at_start_of_line && ends_at_end_of_line;
+    // We went past the end while being highlighted
+    seen_switch_to_newline = true;
 
-    if last_was_highlighted && (internal_newline_seen || is_complete_line) {
-        // Ended on a highlight, need to finish up
+    if seen_switch_from_newline && seen_switch_to_newline {
         #[allow(clippy::needless_range_loop)]
         for unhighlight_index in first_highlighted_index..rows.len() {
             rows[unhighlight_index].style = rows[unhighlight_index].style.not_inverted();
