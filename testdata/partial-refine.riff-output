@@ -7,15 +7,15 @@
 
  fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
 [31m-    stream.write_all(text.as_bytes()).[7munwrap[27m();[0m
-[32m+    [7mif let Err(error) = [27mstream.write_all(text.as_bytes())[7m {[0m
-[32m+[7m        if error[27m.[7mkind() == ErrorKind::BrokenPipe {[0m
-[32m+[7m            // This is fine, somebody probably just quit their pager before it[0m
-[32m+[7m            // was done reading our output.[0m
-[32m+[7m            exit(0);[0m
-[32m+[7m        }[0m
+[32m+    [7mif let Err(error) = [27mstream.write_all(text.as_bytes()) {[0m
+[32m+        if error.kind() == ErrorKind::BrokenPipe {[0m
+[32m+            // This is fine, somebody probably just quit their pager before it[0m
+[32m+            // was done reading our output.[0m
+[32m+            exit(0);[0m
+[32m+        }[0m
 [32m+[0m
-[32m+[7m        panic![27m([7m"Error writing diff to pager: {:?}", error[27m);[0m
-[32m+[7m    }[0m
+[32m+        panic!([7m"Error writing diff to pager: {:?}", error[27m);[0m
+[32m+    }[0m
  }
 
  fn println(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
