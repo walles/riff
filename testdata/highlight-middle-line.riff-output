@@ -4,10 +4,10 @@
              // Run highlighting on the file into a memory buffer
 [31m-            let [7mmut actual_result: Vec<u8>[27m = [7mVec[27m::new();[0m
 [31m-            highlight_diff(&mut fs::File::open(diff).unwrap(),[7m &mut actual_result[27m);[0m
-[31m-            let actual_result = [7mstr[27m::[7mfrom_utf8[27m([7m&actual_result[27m).unwrap();[0m
+[31m-            let actual_result = [7mstr[27m::[7mfrom_utf8(&actual_result[27m).unwrap();[0m
 [32m+            let [7mfile[27m = [7mtempfile::NamedTempFile[27m::new[7m().unwrap[27m();[0m
 [32m+            highlight_diff(&mut fs::File::open(diff).unwrap(), [7mfile.reopen().unwrap()[27m);[0m
-[32m+            let actual_result = [7mfs[27m::[7mread_to_string[27m([7mfile.path()[27m).unwrap();[0m
+[32m+            let actual_result = [7mfs[27m::[7mread_to_string(file.path()[27m).unwrap();[0m
 
              // Load the corresponding .riff-output file into a string
              let basename = diff.file_stem().unwrap().to_str().unwrap();

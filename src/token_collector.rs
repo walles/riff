@@ -31,20 +31,6 @@ impl StyledToken {
 
         return first_char.is_whitespace();
     }
-
-    pub fn is_word(&self) -> bool {
-        let mut chars_iterator = self.token.chars();
-        let first_char = chars_iterator.next().unwrap();
-        let second_char = chars_iterator.next();
-        if second_char.is_some() {
-            // We consist of multiple characters, that means we are a word
-            return true;
-        }
-
-        // If we get here, it means our token consists of one character only. If
-        // that single character is alphanumeric, we are a word, otherwise not.
-        return first_char.is_alphanumeric();
-    }
 }
 
 pub struct TokenCollector {
@@ -130,7 +116,6 @@ impl TokenCollector {
             highlight_trailing_whitespace(row);
             highlight_nonleading_tab(row);
         }
-        highlight_space_between_words(row);
 
         // Set inverse from prefix
         let mut is_inverse = self.line_prefix.style.is_inverse();
@@ -176,7 +161,9 @@ impl TokenCollector {
 
         let mut tokens = std::mem::take(&mut self.tokens);
 
-        // FIXME: Do highlight_space_between_words() first?
+        bridge_consecutive_highlighted_tokens(&mut tokens);
+
+        // Otherwise one changed line plus twelve added will stand out too much
         censor_multi_line_highlights(&mut tokens);
 
         for token in tokens {
@@ -327,8 +314,8 @@ fn highlight_nonleading_tab(row: &mut [StyledToken]) {
     }
 }
 
-/// Highlight single space between two highlighted words
-fn highlight_space_between_words(row: &mut [StyledToken]) {
+/// Highlight single space between two highlighted tokens
+fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
     enum FoundState {
         Nothing,
         HighlightedWord,
@@ -340,17 +327,17 @@ fn highlight_space_between_words(row: &mut [StyledToken]) {
     for token in row.iter_mut() {
         match found_state {
             FoundState::Nothing => {
-                if token.style.is_inverse() && token.is_word() {
+                if token.style.is_inverse() {
                     // Found "Monkey"
                     found_state = FoundState::HighlightedWord;
                 }
             }
 
             FoundState::HighlightedWord => {
-                if token.is_whitespace() {
+                if token.token.len() == 1 {
                     // Found "Monkey " (note trailing space)
                     found_state = FoundState::WordSpace;
-                } else if token.style.is_inverse() && token.is_word() {
+                } else if token.style.is_inverse() {
                     found_state = FoundState::HighlightedWord;
                 } else {
                     found_state = FoundState::Nothing;
@@ -358,7 +345,7 @@ fn highlight_space_between_words(row: &mut [StyledToken]) {
             }
 
             FoundState::WordSpace => {
-                if token.style.is_inverse() && token.is_word() {
+                if token.style.is_inverse() {
                     // Found "Monkey Dance"
                     if let Some(_previous_token) = previous_token {
                         _previous_token.style = _previous_token.style.inverted();
@@ -520,7 +507,7 @@ mod tests {
             StyledToken::new("Dance".to_string(), Style::NewInverse),
         ];
 
-        highlight_space_between_words(&mut row);
+        bridge_consecutive_highlighted_tokens(&mut row);
 
         assert_eq!(
             row,
@@ -528,6 +515,26 @@ mod tests {
                 StyledToken::new("Monkey".to_string(), Style::NewInverse),
                 StyledToken::new(" ".to_string(), Style::NewInverse),
                 StyledToken::new("Dance".to_string(), Style::NewInverse),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_highlight_space_between_random_chars() {
+        let mut row = [
+            StyledToken::new(">".to_string(), Style::NewInverse),
+            StyledToken::new(" ".to_string(), Style::New),
+            StyledToken::new("5".to_string(), Style::NewInverse),
+        ];
+
+        bridge_consecutive_highlighted_tokens(&mut row);
+
+        assert_eq!(
+            row,
+            [
+                StyledToken::new(">".to_string(), Style::NewInverse),
+                StyledToken::new(" ".to_string(), Style::NewInverse),
+                StyledToken::new("5".to_string(), Style::NewInverse),
             ]
         );
     }
