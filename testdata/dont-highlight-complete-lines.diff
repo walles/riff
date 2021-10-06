@@ -1,0 +1,7 @@
+-        let tokens = std::mem::take(&mut self.tokens);
++        let mut tokens = std::mem::take(&mut self.tokens);
++
++        // FIXME: Maybe do highlight_space_between_words() before this one? And
++        // not do that for each line?
++        cancel_multiline_highlights(&mut tokens);
++

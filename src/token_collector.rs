@@ -31,20 +31,6 @@ impl StyledToken {
 
         return first_char.is_whitespace();
     }
-
-    pub fn is_word(&self) -> bool {
-        let mut chars_iterator = self.token.chars();
-        let first_char = chars_iterator.next().unwrap();
-        let second_char = chars_iterator.next();
-        if second_char.is_some() {
-            // We consist of multiple characters, that means we are a word
-            return true;
-        }
-
-        // If we get here, it means our token consists of one character only. If
-        // that single character is alphanumeric, we are a word, otherwise not.
-        return first_char.is_alphanumeric();
-    }
 }
 
 pub struct TokenCollector {
@@ -72,6 +58,16 @@ impl Style {
             Style::New => Style::NewInverse,
             Style::OldInverse => Style::OldInverse,
             Style::NewInverse => Style::NewInverse,
+            Style::Error => Style::Error,
+        };
+    }
+
+    pub fn not_inverted(&self) -> Style {
+        return match self {
+            Style::Old => Style::Old,
+            Style::New => Style::New,
+            Style::OldInverse => Style::Old,
+            Style::NewInverse => Style::New,
             Style::Error => Style::Error,
         };
     }
@@ -120,7 +116,6 @@ impl TokenCollector {
             highlight_trailing_whitespace(row);
             highlight_nonleading_tab(row);
         }
-        highlight_space_between_words(row);
 
         // Set inverse from prefix
         let mut is_inverse = self.line_prefix.style.is_inverse();
@@ -164,7 +159,12 @@ impl TokenCollector {
         let mut current_row: Vec<StyledToken> = Vec::new();
         let mut rendered = String::new();
 
-        let tokens = std::mem::take(&mut self.tokens);
+        let mut tokens = std::mem::take(&mut self.tokens);
+
+        bridge_consecutive_highlighted_tokens(&mut tokens);
+
+        // Otherwise one changed line plus twelve added will stand out too much
+        censor_multi_line_highlights(&mut tokens);
 
         for token in tokens {
             if token.token == "\n" {
@@ -185,6 +185,92 @@ impl TokenCollector {
 
         self.rendered = true;
         return rendered;
+    }
+}
+
+/// Unhighlight highlights that span multiple lines, or that span one whole
+/// line.
+fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
+    if rows.is_empty() {
+        return;
+    }
+
+    let mut last_was_highlighted = false;
+    let mut last_was_newline = true;
+
+    let mut first_highlighted_index: usize = 0;
+    let mut seen_switch_from_newline = false;
+    let mut seen_switch_to_newline = false;
+
+    for index in 0..rows.len() {
+        if index > 0 {
+            last_was_newline = rows[index - 1].token == "\n";
+
+            // Newlines always count as highlighted
+            last_was_highlighted = rows[index - 1].style.is_inverse() || last_was_newline;
+        }
+        let token = &rows[index];
+        let is_newline = token.token == "\n";
+
+        // Newlines always count as highlighted
+        let is_highlighted = is_newline || token.style.is_inverse();
+
+        if is_highlighted {
+            if !last_was_highlighted {
+                // Start of new section
+                first_highlighted_index = index;
+                seen_switch_from_newline = false;
+                seen_switch_to_newline = false;
+            }
+            if last_was_newline && !is_newline {
+                seen_switch_from_newline = true;
+            }
+            if is_newline && !last_was_newline {
+                seen_switch_to_newline = true;
+            }
+            continue;
+        }
+
+        assert!(!is_highlighted);
+        if !last_was_highlighted {
+            // We're in a run of non-highlighted tokens, do nothing
+            continue;
+        }
+
+        // Found the end
+        assert!(last_was_highlighted && !is_highlighted);
+
+        if !(seen_switch_from_newline && seen_switch_to_newline) {
+            // No further action needed
+            continue;
+        }
+
+        // Found end of highlighted section containing newlines or spanning a
+        // whole row, unhighlight!
+        #[allow(clippy::needless_range_loop)]
+        for unhighlight_index in first_highlighted_index..index {
+            rows[unhighlight_index].style = rows[unhighlight_index].style.not_inverted();
+        }
+    }
+
+    let lastindex = rows.len() - 1;
+    let last_was_newline = rows[lastindex].token == "\n";
+
+    // Newlines always count as highlighted
+    last_was_highlighted = rows[lastindex].style.is_inverse() || last_was_newline;
+    if !last_was_highlighted {
+        // No ending highlight, nothing more to do
+        return;
+    }
+
+    // We went past the end while being highlighted
+    seen_switch_to_newline = true;
+
+    if seen_switch_from_newline && seen_switch_to_newline {
+        #[allow(clippy::needless_range_loop)]
+        for unhighlight_index in first_highlighted_index..rows.len() {
+            rows[unhighlight_index].style = rows[unhighlight_index].style.not_inverted();
+        }
     }
 }
 
@@ -228,8 +314,8 @@ fn highlight_nonleading_tab(row: &mut [StyledToken]) {
     }
 }
 
-/// Highlight single space between two highlighted words
-fn highlight_space_between_words(row: &mut [StyledToken]) {
+/// Highlight single space between two highlighted tokens
+fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
     enum FoundState {
         Nothing,
         HighlightedWord,
@@ -241,17 +327,17 @@ fn highlight_space_between_words(row: &mut [StyledToken]) {
     for token in row.iter_mut() {
         match found_state {
             FoundState::Nothing => {
-                if token.style.is_inverse() && token.is_word() {
+                if token.style.is_inverse() {
                     // Found "Monkey"
                     found_state = FoundState::HighlightedWord;
                 }
             }
 
             FoundState::HighlightedWord => {
-                if token.is_whitespace() {
+                if token.token.len() == 1 {
                     // Found "Monkey " (note trailing space)
                     found_state = FoundState::WordSpace;
-                } else if token.style.is_inverse() && token.is_word() {
+                } else if token.style.is_inverse() {
                     found_state = FoundState::HighlightedWord;
                 } else {
                     found_state = FoundState::Nothing;
@@ -259,7 +345,7 @@ fn highlight_space_between_words(row: &mut [StyledToken]) {
             }
 
             FoundState::WordSpace => {
-                if token.style.is_inverse() && token.is_word() {
+                if token.style.is_inverse() {
                     // Found "Monkey Dance"
                     if let Some(_previous_token) = previous_token {
                         _previous_token.style = _previous_token.style.inverted();
@@ -421,7 +507,7 @@ mod tests {
             StyledToken::new("Dance".to_string(), Style::NewInverse),
         ];
 
-        highlight_space_between_words(&mut row);
+        bridge_consecutive_highlighted_tokens(&mut row);
 
         assert_eq!(
             row,
@@ -431,5 +517,106 @@ mod tests {
                 StyledToken::new("Dance".to_string(), Style::NewInverse),
             ]
         );
+    }
+
+    #[test]
+    fn test_highlight_space_between_random_chars() {
+        let mut row = [
+            StyledToken::new(">".to_string(), Style::NewInverse),
+            StyledToken::new(" ".to_string(), Style::New),
+            StyledToken::new("5".to_string(), Style::NewInverse),
+        ];
+
+        bridge_consecutive_highlighted_tokens(&mut row);
+
+        assert_eq!(
+            row,
+            [
+                StyledToken::new(">".to_string(), Style::NewInverse),
+                StyledToken::new(" ".to_string(), Style::NewInverse),
+                StyledToken::new("5".to_string(), Style::NewInverse),
+            ]
+        );
+    }
+
+    /// "_" is an unhighlighted token, "." is a highlighted token, "n" is an
+    /// unhighlighted newline and "N" is a highlighted newline.
+    fn test_censor_multiline_highlighting(input: &str, expected_output: &str) {
+        let mut row = Vec::new();
+        for c in input.chars() {
+            let mut token = "x".to_string();
+            if c == 'n' || c == 'N' {
+                token = '\n'.to_string();
+            }
+
+            let mut style = Style::New;
+            if c == '.' || c == 'N' {
+                style = Style::NewInverse;
+            }
+
+            row.push(StyledToken { token, style });
+        }
+
+        censor_multi_line_highlights(&mut row);
+
+        let mut actual_output = String::new();
+        for token in row {
+            if token.token != "\n" && !token.style.is_inverse() {
+                actual_output.push('_');
+            } else if token.token != "\n" && token.style.is_inverse() {
+                actual_output.push('.');
+            } else if token.token == "\n" && !token.style.is_inverse() {
+                actual_output.push('n');
+            } else if token.token == "\n" && token.style.is_inverse() {
+                actual_output.push('N');
+            } else {
+                panic!("How did we get here?");
+            }
+        }
+
+        assert_eq!(actual_output, expected_output);
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_start_at_beginning() {
+        test_censor_multiline_highlighting("...n___", "___n___");
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_at_end() {
+        test_censor_multiline_highlighting("___n...", "___n___");
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_midline() {
+        test_censor_multiline_highlighting("___n...n___", "___n___n___");
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_spans_multiline() {
+        test_censor_multiline_highlighting("__.n...n.__", "___n___n___");
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_trailing_newlines() {
+        test_censor_multiline_highlighting("_.nnn", "_.nnn");
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_edgecases() {
+        test_censor_multiline_highlighting("n.n", "n_n");
+        test_censor_multiline_highlighting("...", "___");
+        test_censor_multiline_highlighting(".n.", "_n_");
+        test_censor_multiline_highlighting("_.n.n._", "__n_n__");
+    }
+
+    #[test]
+    fn test_censor_multiline_highlights_dont_censor() {
+        // Highlighted line parts should not be censored
+        test_censor_multiline_highlighting("_.._", "_.._");
+        test_censor_multiline_highlighting(".__.", ".__.");
+        test_censor_multiline_highlighting(".__.n", ".__.n");
+        test_censor_multiline_highlighting("n.__.", "n.__.");
+        test_censor_multiline_highlighting("n.__.n", "n.__.n");
     }
 }
