@@ -12,7 +12,7 @@ use backtrace::Backtrace;
 use git_version::git_version;
 use isatty::{stdin_isatty, stdout_isatty};
 use line_collector::LineCollector;
-use std::io::{self, BufRead, BufReader};
+use std::io::{self};
 use std::panic;
 use std::path;
 use std::process::exit;
@@ -63,10 +63,40 @@ const GIT_VERSION: &str = git_version!();
 fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
     let mut line_collector = LineCollector::new(output);
 
-    let input = BufReader::new(input);
-    for line in input.lines() {
-        let line = line.unwrap();
-        line_collector.consume_line(line);
+    // Read input line by line, using from_utf8_lossy() to convert lines into
+    // strings while handling invalid UTF-8 without crashing
+    let mut line_bytes: Vec<u8> = Vec::new();
+    let mut buf: [u8; 1] = [0];
+    loop {
+        let result = input.read(&mut buf);
+        if result.is_err() {
+            panic!("Error reading input stream: {:?}", result.err().unwrap());
+        }
+
+        if result.unwrap() == 0 {
+            // End of stream
+            if !line_bytes.is_empty() {
+                // Stuff found on the last line without a trailing newline
+                line_collector.consume_line(String::from_utf8_lossy(&line_bytes).to_string());
+            }
+            break;
+        }
+
+        let single_byte = buf[0];
+        if single_byte as char == '\r' {
+            // MS-DOS file, LF coming up, just ignore this
+            continue;
+        }
+        if single_byte as char != '\n' {
+            // Line contents, store and continue
+            line_bytes.push(single_byte);
+            continue;
+        }
+
+        // Line finished, consume it!
+        line_collector.consume_line(String::from_utf8_lossy(&line_bytes).to_string());
+        line_bytes.clear();
+        continue;
     }
 }
 
