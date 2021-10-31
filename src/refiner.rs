@@ -79,7 +79,7 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
 /// Returns two vectors of ANSI highlighted lines, the old lines and the new
 /// lines.
 ///
-/// A return value of None means you should try partial_format() instead.
+/// A return value of None means you should try simple_format() instead.
 #[must_use]
 fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<String>)> {
     if old_text.is_empty() || new_text.is_empty() {
@@ -99,11 +99,8 @@ fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<Stri
 
     let diff = tokenized_old.diff(&tokenized_new);
     match diff {
-        edit::Edit::Copy(unchanged) => {
-            for token in unchanged {
-                old_collector.push(StyledToken::new(token.to_string(), Style::Old));
-                new_collector.push(StyledToken::new(token.to_string(), Style::New));
-            }
+        edit::Edit::Copy(_) => {
+            unimplemented!("Copy not implemented, help!");
         }
         edit::Edit::Change(diff) => {
             diff.into_iter()
@@ -121,7 +118,9 @@ fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<Stri
                             old_collector
                                 .push(StyledToken::new(token.to_string(), Style::OldInverse));
                         }
-                        collection::Edit::Change(_) => unimplemented!("Not implemented, help!"),
+                        collection::Edit::Change(_) => {
+                            unimplemented!("Edit/Change/Change not implemented, help!")
+                        }
                     };
                 })
                 .for_each(drop);
