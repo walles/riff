@@ -159,12 +159,8 @@ cat <<EOM
 EOM
 
 $LIVE && cat <<EOM
-Now, go to the Releases page on GitHub:
-<https://github.com/walles/riff/releases>
-
-Click your new release.
-
-Click the "Edit tag" button.
+Now, create a new release on GitHub:
+<https://github.com/walles/riff/releases/new?tag=$NEW_VERSION_NUMBER>
 
 Attach your "riff" binaries that was just built to the release:
 
