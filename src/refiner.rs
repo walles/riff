@@ -76,6 +76,46 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 }
 
+/// Append queue contents to the collectors.
+///
+/// If either of the queues touch at least two linefeeds, then uninvert queue
+/// contents before adding it.
+fn drain_inverse_queues(
+    newline_before: bool,
+    old_queue: &mut TokenCollector,
+    new_queue: &mut TokenCollector,
+    newline_after: bool,
+    old_collector: &mut TokenCollector,
+    new_collector: &mut TokenCollector,
+) {
+    let mut should_uninvert = false;
+
+    let mut newline_count: usize = old_queue.count_newlines();
+    if newline_before {
+        newline_count += 1;
+    }
+    if newline_after {
+        newline_count += 1;
+    }
+    if newline_count >= 2 {
+        should_uninvert = true;
+    }
+
+    newline_count = old_queue.count_newlines();
+    if newline_before {
+        newline_count += 1;
+    }
+    if newline_after {
+        newline_count += 1;
+    }
+    if newline_count >= 2 {
+        should_uninvert = true;
+    }
+
+    old_queue.drain_to(old_collector, should_uninvert);
+    new_queue.drain_to(new_collector, should_uninvert);
+}
+
 /// Returns two vectors of ANSI highlighted lines, the old lines and the new
 /// lines.
 ///
@@ -97,7 +137,15 @@ fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<Stri
     let tokenized_old = tokenizer::tokenize(old_text);
     let tokenized_new = tokenizer::tokenize(new_text);
 
+    // Keep track of our most recent chunks. The point is that if either old or
+    // new is too long, we should unhighlight both.
+    let mut old_inverse_queue =
+        TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
+    let mut new_inverse_queue =
+        TokenCollector::create(StyledToken::new("+".to_string(), Style::New));
+
     let diff = tokenized_old.diff(&tokenized_new);
+    let mut newline_before = true; // Count start of text as a newline
     match diff {
         edit::Edit::Copy(_) => {
             unimplemented!("Copy not implemented, help!");
@@ -107,15 +155,29 @@ fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<Stri
                 .map(|edit| {
                     match edit {
                         collection::Edit::Copy(token) => {
+                            // Found an unchanged section. Drain both
+                            // old-inverse-queue and new-inverse-queue since
+                            // both of those sections just ended.
+                            drain_inverse_queues(
+                                newline_before,
+                                &mut old_inverse_queue,
+                                &mut new_inverse_queue,
+                                token.starts_with('\n'), // Token past add-remove starts with a newline
+                                &mut old_collector,
+                                &mut new_collector,
+                            );
+
                             old_collector.push(StyledToken::new(token.to_string(), Style::Old));
                             new_collector.push(StyledToken::new(token.to_string(), Style::New));
+
+                            newline_before = token.ends_with('\n');
                         }
                         collection::Edit::Insert(token) => {
-                            new_collector
+                            new_inverse_queue
                                 .push(StyledToken::new(token.to_string(), Style::NewInverse));
                         }
                         collection::Edit::Remove(token) => {
-                            old_collector
+                            old_inverse_queue
                                 .push(StyledToken::new(token.to_string(), Style::OldInverse));
                         }
                         collection::Edit::Change(_) => {
@@ -126,6 +188,16 @@ fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<Stri
                 .for_each(drop);
         }
     }
+
+    // Drain old-inverse-queue and new-inverse-queue in case we have any left
+    drain_inverse_queues(
+        newline_before,
+        &mut old_inverse_queue,
+        &mut new_inverse_queue,
+        true, // Count end of text as a newline
+        &mut old_collector,
+        &mut new_collector,
+    );
 
     let highlighted_old_text = old_collector.render();
     let highlighted_new_text = new_collector.render();
