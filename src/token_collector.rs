@@ -104,6 +104,10 @@ impl TokenCollector {
         };
     }
 
+    pub fn is_empty(&self) -> bool {
+        return self.tokens.is_empty();
+    }
+
     pub fn push(&mut self, token: StyledToken) {
         self.tokens.push(token);
     }

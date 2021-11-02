@@ -88,6 +88,10 @@ fn drain_inverse_queues(
     old_collector: &mut TokenCollector,
     new_collector: &mut TokenCollector,
 ) {
+    if old_queue.is_empty() && new_queue.is_empty() {
+        return;
+    }
+
     let mut should_uninvert = false;
 
     let mut newline_count: usize = old_queue.count_newlines();
