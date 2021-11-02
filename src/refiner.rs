@@ -105,7 +105,7 @@ fn drain_inverse_queues(
         should_uninvert = true;
     }
 
-    newline_count = old_queue.count_newlines();
+    newline_count = new_queue.count_newlines();
     if newline_before {
         newline_count += 1;
     }
