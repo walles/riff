@@ -206,7 +206,7 @@ fn unhighlight_noisy_rows(row: &mut [StyledToken]) {
     }
 
     // Line too noisy, unhighlight!
-    for token in row.iter_mut().rev() {
+    for token in row.iter_mut() {
         token.style = token.style.not_inverted();
     }
 }
