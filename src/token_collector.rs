@@ -112,6 +112,8 @@ impl TokenCollector {
     fn render_row(&self, row: &mut [StyledToken]) -> String {
         let mut rendered = String::new();
 
+        unhighlight_noisy_rows(row);
+
         if self.line_prefix.style == Style::New {
             highlight_trailing_whitespace(row);
             highlight_nonleading_tab(row);
@@ -163,9 +165,6 @@ impl TokenCollector {
 
         bridge_consecutive_highlighted_tokens(&mut tokens);
 
-        // Otherwise one changed line plus twelve added will stand out too much
-        censor_multi_line_highlights(&mut tokens);
-
         for token in tokens {
             if token.token == "\n" {
                 let rendered_row = &self.render_row(&mut current_row);
@@ -188,89 +187,27 @@ impl TokenCollector {
     }
 }
 
-/// Unhighlight highlights that span multiple lines, or that span one whole
-/// line.
-fn censor_multi_line_highlights(rows: &mut [StyledToken]) {
-    if rows.is_empty() {
-        return;
-    }
+/// Unhighlight everything if too much of the line is highlighted
+fn unhighlight_noisy_rows(row: &mut [StyledToken]) {
+    let mut highlighted_tokens_count = 0;
 
-    let mut last_was_highlighted = false;
-    let mut last_was_newline = true;
-
-    let mut first_highlighted_index: usize = 0;
-    let mut seen_switch_from_newline = false;
-    let mut seen_switch_to_newline = false;
-
-    for index in 0..rows.len() {
-        if index > 0 {
-            last_was_newline = rows[index - 1].token == "\n";
-
-            // Newlines always count as highlighted
-            last_was_highlighted = rows[index - 1].style.is_inverse() || last_was_newline;
-        }
-        let token = &rows[index];
-        let is_newline = token.token == "\n";
-
-        // Newlines always count as highlighted
-        let is_highlighted = is_newline || token.style.is_inverse();
-
-        if is_highlighted {
-            if !last_was_highlighted {
-                // Start of new section
-                first_highlighted_index = index;
-                seen_switch_from_newline = false;
-                seen_switch_to_newline = false;
-            }
-            if last_was_newline && !is_newline {
-                seen_switch_from_newline = true;
-            }
-            if is_newline && !last_was_newline {
-                seen_switch_to_newline = true;
-            }
-            continue;
-        }
-
-        assert!(!is_highlighted);
-        if !last_was_highlighted {
-            // We're in a run of non-highlighted tokens, do nothing
-            continue;
-        }
-
-        // Found the end
-        assert!(last_was_highlighted && !is_highlighted);
-
-        if !(seen_switch_from_newline && seen_switch_to_newline) {
-            // No further action needed
-            continue;
-        }
-
-        // Found end of highlighted section containing newlines or spanning a
-        // whole row, unhighlight!
-        #[allow(clippy::needless_range_loop)]
-        for unhighlight_index in first_highlighted_index..index {
-            rows[unhighlight_index].style = rows[unhighlight_index].style.not_inverted();
+    for token in row.iter_mut().rev() {
+        if token.style.is_inverse() {
+            highlighted_tokens_count += 1;
         }
     }
 
-    let lastindex = rows.len() - 1;
-    let last_was_newline = rows[lastindex].token == "\n";
-
-    // Newlines always count as highlighted
-    last_was_highlighted = rows[lastindex].style.is_inverse() || last_was_newline;
-    if !last_was_highlighted {
-        // No ending highlight, nothing more to do
-        return;
+    if !row.is_empty() {
+        let highlighted_percentage = (100 * highlighted_tokens_count) / row.len();
+        if highlighted_percentage <= 50 {
+            // Less than half of the line highlighted, let it be
+            return;
+        }
     }
 
-    // We went past the end while being highlighted
-    seen_switch_to_newline = true;
-
-    if seen_switch_from_newline && seen_switch_to_newline {
-        #[allow(clippy::needless_range_loop)]
-        for unhighlight_index in first_highlighted_index..rows.len() {
-            rows[unhighlight_index].style = rows[unhighlight_index].style.not_inverted();
-        }
+    // Line too noisy, unhighlight!
+    for token in row.iter_mut() {
+        token.style = token.style.not_inverted();
     }
 }
 
@@ -537,86 +474,5 @@ mod tests {
                 StyledToken::new("5".to_string(), Style::NewInverse),
             ]
         );
-    }
-
-    /// "_" is an unhighlighted token, "." is a highlighted token, "n" is an
-    /// unhighlighted newline and "N" is a highlighted newline.
-    fn test_censor_multiline_highlighting(input: &str, expected_output: &str) {
-        let mut row = Vec::new();
-        for c in input.chars() {
-            let mut token = "x".to_string();
-            if c == 'n' || c == 'N' {
-                token = '\n'.to_string();
-            }
-
-            let mut style = Style::New;
-            if c == '.' || c == 'N' {
-                style = Style::NewInverse;
-            }
-
-            row.push(StyledToken { token, style });
-        }
-
-        censor_multi_line_highlights(&mut row);
-
-        let mut actual_output = String::new();
-        for token in row {
-            if token.token != "\n" && !token.style.is_inverse() {
-                actual_output.push('_');
-            } else if token.token != "\n" && token.style.is_inverse() {
-                actual_output.push('.');
-            } else if token.token == "\n" && !token.style.is_inverse() {
-                actual_output.push('n');
-            } else if token.token == "\n" && token.style.is_inverse() {
-                actual_output.push('N');
-            } else {
-                panic!("How did we get here?");
-            }
-        }
-
-        assert_eq!(actual_output, expected_output);
-    }
-
-    #[test]
-    fn test_censor_multiline_highlights_start_at_beginning() {
-        test_censor_multiline_highlighting("...n___", "___n___");
-    }
-
-    #[test]
-    fn test_censor_multiline_highlights_at_end() {
-        test_censor_multiline_highlighting("___n...", "___n___");
-    }
-
-    #[test]
-    fn test_censor_multiline_highlights_midline() {
-        test_censor_multiline_highlighting("___n...n___", "___n___n___");
-    }
-
-    #[test]
-    fn test_censor_multiline_highlights_spans_multiline() {
-        test_censor_multiline_highlighting("__.n...n.__", "___n___n___");
-    }
-
-    #[test]
-    fn test_censor_multiline_highlights_trailing_newlines() {
-        test_censor_multiline_highlighting("_.nnn", "_.nnn");
-    }
-
-    #[test]
-    fn test_censor_multiline_highlights_edgecases() {
-        test_censor_multiline_highlighting("n.n", "n_n");
-        test_censor_multiline_highlighting("...", "___");
-        test_censor_multiline_highlighting(".n.", "_n_");
-        test_censor_multiline_highlighting("_.n.n._", "__n_n__");
-    }
-
-    #[test]
-    fn test_censor_multiline_highlights_dont_censor() {
-        // Highlighted line parts should not be censored
-        test_censor_multiline_highlighting("_.._", "_.._");
-        test_censor_multiline_highlighting(".__.", ".__.");
-        test_censor_multiline_highlighting(".__.n", ".__.n");
-        test_censor_multiline_highlighting("n.__.", "n.__.");
-        test_censor_multiline_highlighting("n.__.n", "n.__.n");
     }
 }

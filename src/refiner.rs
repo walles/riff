@@ -210,16 +210,19 @@ mod tests {
 
     #[test]
     fn test_quote_change() {
-        let result = format(&"<quotes>\n".to_string(), &"[quotes]\n".to_string());
+        let result = format(
+            &"<unchanged text between quotes>\n".to_string(),
+            &"[unchanged text between quotes]\n".to_string(),
+        );
         assert_eq!(
             result,
             [
                 format!(
-                    "{}-{}<{}quotes{}>{}",
+                    "{}-{}<{}unchanged text between quotes{}>{}",
                     OLD, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NORMAL
                 ),
                 format!(
-                    "{}+{}[{}quotes{}]{}",
+                    "{}+{}[{}unchanged text between quotes{}]{}",
                     NEW, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NORMAL
                 ),
             ]
