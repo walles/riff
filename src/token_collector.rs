@@ -112,6 +112,8 @@ impl TokenCollector {
     fn render_row(&self, row: &mut [StyledToken]) -> String {
         let mut rendered = String::new();
 
+        unhighlight_noisy_rows(row);
+
         if self.line_prefix.style == Style::New {
             highlight_trailing_whitespace(row);
             highlight_nonleading_tab(row);
@@ -182,6 +184,27 @@ impl TokenCollector {
 
         self.rendered = true;
         return rendered;
+    }
+}
+
+/// Unhighlight everything if too much of the line is highlighted
+fn unhighlight_noisy_rows(row: &mut [StyledToken]) {
+    let mut highlighted_tokens_count = 0;
+
+    for token in row.iter_mut().rev() {
+        if token.style.is_inverse() {
+            highlighted_tokens_count += 1;
+        }
+    }
+
+    if highlighted_tokens_count < (row.len() / 2) {
+        // Less than half of the line highlighted, let it be
+        return;
+    }
+
+    // Too noisy line, unhighlight!
+    for token in row.iter_mut().rev() {
+        token.style = token.style.not_inverted();
     }
 }
 
