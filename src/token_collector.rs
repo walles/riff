@@ -197,12 +197,15 @@ fn unhighlight_noisy_rows(row: &mut [StyledToken]) {
         }
     }
 
-    if highlighted_tokens_count < (row.len() / 2) {
-        // Less than half of the line highlighted, let it be
-        return;
+    if !row.is_empty() {
+        let highlighted_percentage = (100 * highlighted_tokens_count) / row.len();
+        if highlighted_percentage <= 50 {
+            // Less than half of the line highlighted, let it be
+            return;
+        }
     }
 
-    // Too noisy line, unhighlight!
+    // Line too noisy, unhighlight!
     for token in row.iter_mut().rev() {
         token.style = token.style.not_inverted();
     }
