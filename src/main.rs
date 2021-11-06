@@ -26,6 +26,8 @@ mod refiner;
 mod token_collector;
 mod tokenizer;
 
+// NOTE: Setting pager.log to riff makes "git log -p" output look nicer, but
+// just "git log" without "-p" look worse. Better not go there.
 const HELP_TEXT: &str = r#"
 Usage:
   diff ... | riff
@@ -37,7 +39,6 @@ Colors diff output, highlighting the changed parts of every line.
 Git integration:
     git config --global pager.diff riff
     git config --global pager.show riff
-    git config --global pager.log riff
     git config --global interactive.diffFilter riff
 
 Options:

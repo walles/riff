@@ -21,7 +21,6 @@ Or if you do...
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
-git config --global pager.log riff
 git config --global interactive.diffFilter riff
 ```
 
@@ -57,7 +56,6 @@ brew install walles/johan/riffdiff
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
-git config --global pager.log riff
 git config --global interactive.diffFilter riff
 ```
 
