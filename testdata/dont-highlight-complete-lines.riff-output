@@ -1,5 +1,5 @@
 [31m-        let tokens = std::mem::take(&mut self.tokens);[0m
-[32m+        let [7mmut [27mtokens = std::mem::take(&mut self.tokens);[0m
+[32m+        let [7mmut [27mtokens = std::mem::take(&mut self.[7mtokens);[0m
 [32m+[0m
 [32m+        // FIXME: Maybe do highlight_space_between_words() before this one? And[0m
 [32m+        // not do that for each line?[0m
