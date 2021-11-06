@@ -25,7 +25,7 @@ Date:   Wed May 6 21:52:51 2015 +0200
 [32m+[7m  [27mrescue LoadError[0m
 [32m+[7m  [27m  $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')[0m
 [32m+[7m  [27m  require 'riff'[0m
-[32m+  end[0m
+[32m+[7m  [27mend[0m
 [32m+[7m  [27mrequire 'pager'[0m
 
 [31m-include Pager[0m

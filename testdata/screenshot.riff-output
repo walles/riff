@@ -1,0 +1,27 @@
+commit 9c91399309aa626b572c79b62270d0b87c44de8c
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Tue Nov 17 08:44:29 2020 +0100
+
+    Advertise px / ptop and riff
+
+[1mdiff --git README.md README.md[0m
+[1mindex 88c1590..cfdaf0b 100644[0m
+[1m--- README.md[0m
+[1m+++ README.md[0m
+[36m@@ -21,17 +21,19 @@ Doing the right thing includes:[0m
+ * [Regexp](http://en.wikipedia.org/wiki/Regular_expression#Basic_concepts)
+   search if your search string is a valid regexp
+ * Supports displaying ANSI color coded texts (like the output from
+[31m-  `git diff` for example)[0m
+[32m+  `git diff` [7m[| `riff`](https://github.com/walles/riff) [27mfor example)[0m
+ * Supports UTF-8 input and output
+ * The position in the file is always shown
+
+[31m-For compatibility reasons, `moar`[7m [27muses the formats declared in these[0m
+[31m-environment variables when viewing man pages:[0m
+[32m+[7m[[27mFor compatibility reasons[7m](https://github.com/walles/moar/issues/14)[27m, `moar`[0m
+[32m+uses the formats declared in these[7m [27menvironment variables when viewing man pages:[0m
+
+ * `LESS_TERMCAP_md`: Bold
+ * `LESS_TERMCAP_us`: Underline
+

@@ -199,8 +199,8 @@ fn unhighlight_noisy_rows(row: &mut [StyledToken]) {
 
     if !row.is_empty() {
         let highlighted_percentage = (100 * highlighted_tokens_count) / row.len();
-        if highlighted_percentage <= 50 {
-            // Less than half of the line highlighted, let it be
+        if highlighted_percentage <= 70 {
+            // Little enough of the line highlighted, let it be
             return;
         }
     }
