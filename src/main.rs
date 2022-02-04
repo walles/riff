@@ -31,8 +31,8 @@ mod tokenizer;
 const HELP_TEXT: &str = r#"
 Usage:
   diff ... | riff
-  riff [-b] <file1> <file2>
-  riff [-b] <directory1> <directory2>
+  riff [-b] [--no-pager] <file1> <file2>
+  riff [-b] [--no-pager] <directory1> <directory2>
 
 Colors diff output, highlighting the changed parts of every line.
 
@@ -42,9 +42,11 @@ Git integration:
     git config --global interactive.diffFilter riff
 
 Options:
-    -b:        Ignore changes in amount of whitespace
-    --help:    Print this text
-    --version: Print version number
+    -b:         Ignore changes in amount of whitespace
+    --no-pager: Don't page the result
+
+    --help:     Print this text
+    --version:  Print version number
 "#;
 
 const HELP_TEXT_FOOTER: &str = r#"
@@ -198,9 +200,14 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
     eprintln!("{}", CRASH_FOOTER);
 }
 
-fn highlight_stream(input: &mut dyn io::Read) {
+fn highlight_stream(input: &mut dyn io::Read, no_pager: bool) {
     if !stdout_isatty() {
         // We're being piped, just do stdin -> stdout
+        highlight_diff(input, io::stdout());
+        return;
+    }
+
+    if no_pager {
         highlight_diff(input, io::stdout());
         return;
     }
@@ -253,7 +260,7 @@ fn ensure_listable(path: &path::Path) {
     }
 }
 
-fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool) {
+fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool, no_pager: bool) {
     let path1 = path::Path::new(path1);
     let path2 = path::Path::new(path2);
     let both_paths_are_files = path1.is_file() && path2.is_file();
@@ -290,7 +297,7 @@ fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool) {
     let pretty_command = format!("{:#?}", command);
     let mut diff_subprocess = command.spawn().expect(&pretty_command);
     let diff_stdout = diff_subprocess.stdout.as_mut().unwrap();
-    highlight_stream(diff_stdout);
+    highlight_stream(diff_stdout, no_pager);
 
     let diff_result = diff_subprocess.wait().unwrap();
     let diff_exit_code = diff_result.code().unwrap_or(2);
@@ -326,12 +333,15 @@ fn main() {
         panic!("Panicking on purpose");
     }
 
+    let no_pager = consume("--no-pager", &mut args);
+
     if args.len() == 3 {
         // "riff file1 file2"
         exec_diff_highlight(
             args.get(1).unwrap(),
             args.get(2).unwrap(),
             ignore_space_change,
+            no_pager,
         );
         return;
     }
@@ -359,7 +369,7 @@ fn main() {
         exit(1);
     }
 
-    highlight_stream(&mut io::stdin().lock());
+    highlight_stream(&mut io::stdin().lock(), no_pager);
 }
 
 #[cfg(test)]
