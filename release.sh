@@ -12,7 +12,7 @@
 
 set -eu -o pipefail
 
-CROSSBUILD_MACOS_SDK="macosx12.0"
+CROSSBUILD_MACOS_SDK="macosx12.1"
 
 # If this fails, try "xcodebuild -showsdks" to find one that exists
 if ! xcrun -sdk $CROSSBUILD_MACOS_SDK --show-sdk-path >/dev/null; then
