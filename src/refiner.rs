@@ -99,8 +99,15 @@ fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<Stri
 
     let diff = tokenized_old.diff(&tokenized_new);
     match diff {
-        edit::Edit::Copy(_) => {
-            unimplemented!("Copy not implemented, help!");
+        edit::Edit::Copy(tokens) => {
+            for &token in tokens {
+                // FIXME: "Copy" means that old and new are the same, why was
+                // format_split() called on this non-difference?
+                //
+                // Get here using "git show 686f3d7ae | cargo run" with git 2.35.1
+                old_collector.push(StyledToken::new(token.to_string(), Style::Old));
+                new_collector.push(StyledToken::new(token.to_string(), Style::New));
+            }
         }
         edit::Edit::Change(diff) => {
             diff.into_iter()
