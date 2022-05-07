@@ -97,6 +97,7 @@ impl StringFuture {
         };
     }
 
+    #[allow(clippy::wrong_self_convention)]
     pub fn is_empty(&mut self) -> bool {
         return self.get().is_empty();
     }
