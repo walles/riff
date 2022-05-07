@@ -391,13 +391,11 @@ mod tests {
         let mut input = "+bepa\n apa\n\\ No newline at end of file\n".as_bytes();
 
         let expected = format!(
-            "{}\n{}\n{}\n",
+            "{}\n{}\n{}\\ No newline at end of file{}\n",
             new("+bepa"),
             " apa",
-            format!(
-                "{}\\ No newline at end of file{}",
-                NO_EOF_NEWLINE_COLOR, NORMAL
-            )
+            NO_EOF_NEWLINE_COLOR,
+            NORMAL
         );
 
         let file = tempfile::NamedTempFile::new().unwrap();
@@ -441,7 +439,7 @@ mod tests {
         let mut failing_example: Option<String> = None;
         let mut failing_example_expected = vec![];
         let mut failing_example_actual = vec![];
-        for diff in fs::read_dir(testdata_path.to_owned()).unwrap() {
+        for diff in fs::read_dir(&testdata_path).unwrap() {
             let diff = diff.unwrap();
             let diff = diff.path();
             let diff = diff.as_path();

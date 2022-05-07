@@ -183,18 +183,15 @@ mod tests {
     #[test]
     fn test_simple_format_adds_and_removes() {
         let empty: Vec<String> = Vec::new();
-        assert_eq!(
-            simple_format_merged(&"".to_string(), &"".to_string()),
-            empty
-        );
+        assert_eq!(simple_format_merged("", ""), empty);
 
         // Test adds-only
         assert_eq!(
-            simple_format_merged(&"".to_string(), &"a\n".to_string()),
+            simple_format_merged("", "a\n"),
             ["".to_string() + NEW + "+a" + NORMAL]
         );
         assert_eq!(
-            simple_format_merged(&"".to_string(), &"a\nb\n".to_string()),
+            simple_format_merged("", "a\nb\n"),
             [
                 "".to_string() + NEW + "+a" + NORMAL,
                 "".to_string() + NEW + "+b" + NORMAL,
@@ -203,11 +200,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            simple_format_merged(&"a\n".to_string(), &"".to_string()),
+            simple_format_merged("a\n", ""),
             ["".to_string() + OLD + "-a" + NORMAL]
         );
         assert_eq!(
-            simple_format_merged(&"a\nb\n".to_string(), &"".to_string()),
+            simple_format_merged("a\nb\n", ""),
             [
                 "".to_string() + OLD + "-a" + NORMAL,
                 "".to_string() + OLD + "-b" + NORMAL,
@@ -218,8 +215,8 @@ mod tests {
     #[test]
     fn test_quote_change() {
         let result = format(
-            &"<unchanged text between quotes>\n".to_string(),
-            &"[unchanged text between quotes]\n".to_string(),
+            "<unchanged text between quotes>\n",
+            "[unchanged text between quotes]\n",
         );
         assert_eq!(
             result,
@@ -238,10 +235,10 @@ mod tests {
 
     #[test]
     fn test_almost_empty_changes() {
-        let result = format(&"x\n".to_string(), &"".to_string());
+        let result = format("x\n", "");
         assert_eq!(result, [format!("{}-x{}", OLD, NORMAL),]);
 
-        let result = format(&"".to_string(), &"x\n".to_string());
+        let result = format("", "x\n");
         assert_eq!(result, [format!("{}+x{}", NEW, NORMAL),]);
     }
 }
