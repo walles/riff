@@ -417,7 +417,7 @@ mod tests {
         let exe_path = std::env::current_exe().unwrap();
 
         // Example value: `/Users/johan/src/riff`
-        let project_path = exe_path
+        let mut project_path = exe_path
             .parent()
             .unwrap()
             .parent()
@@ -428,14 +428,20 @@ mod tests {
             .unwrap();
 
         // Example value: `/Users/johan/src/riff/testdata`
-        let testdata_path = &project_path.join("testdata");
+        let mut testdata_path = project_path.join("testdata");
+        if !testdata_path.is_dir() {
+            // Might have been built with a target triple, try one more step up:
+            // https://github.com/walles/riff/issues/25
+            project_path = project_path.parent().unwrap();
+            testdata_path = project_path.join("testdata");
+        }
         assert!(testdata_path.is_dir());
 
         // Iterate all files in there
         let mut failing_example: Option<String> = None;
         let mut failing_example_expected = vec![];
         let mut failing_example_actual = vec![];
-        for diff in fs::read_dir(testdata_path).unwrap() {
+        for diff in fs::read_dir(testdata_path.to_owned()).unwrap() {
             let diff = diff.unwrap();
             let diff = diff.path();
             let diff = diff.as_path();
