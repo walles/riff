@@ -112,10 +112,11 @@ read -r -p "Press ENTER when ready: "
 # Bump version number before we tag the new release
 if $LIVE; then
   cargo set-version "$NEW_VERSION_NUMBER"
+  cargo check # Required for bumping the Cargo.lock version number
 
   # This commit will be pushed after the build has been validated, look for
   # "git push" further down in this script.
-  git commit -m "Bump version number to $NEW_VERSION_NUMBER" Cargo.toml
+  git commit -m "Bump version number to $NEW_VERSION_NUMBER" Cargo.*
 else
   echo
   echo "DRY RUN: Not bumping Cargo.toml version number."
@@ -167,7 +168,7 @@ cargo build --release --target=x86_64-unknown-linux-musl
 $LIVE && cp "target/x86_64-unknown-linux-musl/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-linux"
 
 # Mark new release on Github
-$LIVE && git push --tags
+$LIVE && git push && git push --tags
 
 cat <<EOM
 
