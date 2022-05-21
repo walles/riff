@@ -61,7 +61,11 @@ Please copy the above crash report and report it at one of:
 
 const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 
-const GIT_VERSION: &str = git_version!();
+// The empty cargo_prefix makes us use the Cargo.toml version number if we
+// cannot get it from git.
+//
+// Ref: https://github.com/walles/riff/issues/26#issuecomment-1120294897
+const GIT_VERSION: &str = git_version!(cargo_prefix = "");
 
 fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
     let mut line_collector = LineCollector::new(output);

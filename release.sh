@@ -21,6 +21,11 @@ if ! xcrun -sdk $CROSSBUILD_MACOS_SDK --show-sdk-path >/dev/null; then
   exit 1
 fi
 
+if ! cargo set-version --help >&/dev/null; then
+  echo >&2 "ERROR: Must install cargo-edit before releasing: https://github.com/killercup/cargo-edit#installation"
+  exit 1
+fi
+
 LIVE=true
 if [ $# -eq 1 ] && [ "$1" = "--dry" ]; then
   echo "DRY RUN: No changes will be made"
@@ -76,16 +81,11 @@ git log --color --format="format:%Cgreen%s%Creset (%ad)%n%b" --first-parent "$(g
 echo
 echo "=="
 echo "Last version number was $(git describe --abbrev=0), enter new version number."
+echo "The version number must be on 1.2.3 format."
 if ! $LIVE; then
   echo "DRY RUN: Yes, a version number is needed anyway."
 fi
 read -r -p "New version number: " NEW_VERSION_NUMBER
-
-# Validate new version number
-if [ -z "$NEW_VERSION_NUMBER" ]; then
-  echo "Empty version number, never mind"
-  exit 0
-fi
 
 echo Please enter "$NEW_VERSION_NUMBER" again:
 read -r -p "  Validate version: " VALIDATE_VERSION_NUMBER
@@ -94,6 +94,9 @@ if [ "$NEW_VERSION_NUMBER" != "$VALIDATE_VERSION_NUMBER" ]; then
   echo "Version numbers mismatch, never mind"
   exit 1
 fi
+
+# Validate new version number
+cargo set-version --dry-run "$NEW_VERSION_NUMBER"
 
 # Get release message from user
 cat <<EOM
@@ -105,6 +108,19 @@ subject line for the release.
 
 EOM
 read -r -p "Press ENTER when ready: "
+
+# Bump version number before we tag the new release
+if $LIVE; then
+  cargo set-version "$NEW_VERSION_NUMBER"
+
+  # This commit will be pushed after the build has been validated, look for
+  # "git push" further down in this script.
+  git commit -m "Bump version number to $NEW_VERSION_NUMBER" Cargo.toml
+else
+  echo
+  echo "DRY RUN: Not bumping Cargo.toml version number."
+  echo
+fi
 
 if $LIVE; then
   git tag --annotate "$NEW_VERSION_NUMBER"
@@ -121,7 +137,7 @@ EXPECTED_VERSION_NUMBER=$(git describe --dirty=-modified)
 # Build macOS binaries
 targets="aarch64-apple-darwin x86_64-apple-darwin"
 for target in $targets; do
-  rustup target add $target
+  rustup target add "$target"
 
   # From: https://stackoverflow.com/a/66875783/473672
   SDKROOT=$(xcrun -sdk $CROSSBUILD_MACOS_SDK --show-sdk-path) \
