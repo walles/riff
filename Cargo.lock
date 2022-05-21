@@ -358,7 +358,7 @@ dependencies = [
 
 [[package]]
 name = "riff"
-version = "0.1.0"
+version = "2.16.2"
 dependencies = [
  "backtrace",
  "bytecount",
