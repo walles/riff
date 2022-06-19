@@ -267,17 +267,17 @@ fn ensure_listable(path: &path::Path) {
 fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool, no_pager: bool) {
     let path1 = path::Path::new(path1);
     let path2 = path::Path::new(path2);
-    let both_paths_are_files = path1.is_file() && path2.is_file();
+    let both_paths_are_non_dirs = !path1.is_dir() && !path2.is_dir();
     let both_paths_are_dirs = path1.is_dir() && path2.is_dir();
 
-    if !(both_paths_are_files || both_paths_are_dirs) {
-        eprintln!("Can only compare file to file or directory to directory, not like this:",);
+    if !(both_paths_are_non_dirs || both_paths_are_dirs) {
+        eprintln!("Can only compare directory to directory or not-directory to not-directory, not like this:",);
         eprintln!("  {:<9}: {}", type_string(path1), path1.to_string_lossy());
         eprintln!("  {:<9}: {}", type_string(path2), path2.to_string_lossy());
         exit(1);
     }
 
-    if both_paths_are_files {
+    if both_paths_are_non_dirs {
         ensure_readable(path1);
         ensure_readable(path2);
     } else {

@@ -28,20 +28,29 @@ STDERR=$(mktemp -t riff-panic-test.XXX)
 echo
 echo Writing test crash report here: "$STDERR"...
 # The && exit 1 means: If the panic run passes, fail this test run
-cargo run --quiet --release -- --please-panic 2> "$STDERR" && exit 1
+cargo run --quiet --release -- --please-panic 2>"$STDERR" && exit 1
 
 # Require name and line number for the crash location
-grep -E 'src/main\.rs:[0-9]+' "$STDERR" || ( cat "$STDERR" ; exit 1 )
+grep -E 'src/main\.rs:[0-9]+' "$STDERR" || (
+    cat "$STDERR"
+    exit 1
+)
 
 # Require command line arguments
-grep -B2 -E -- '--please-panic' "$STDERR" || ( cat "$STDERR" ; exit 1 )
+grep -B2 -E -- '--please-panic' "$STDERR" || (
+    cat "$STDERR"
+    exit 1
+)
 
 echo
 echo Crash reporting tests passed
 rm "$STDERR"
 
 # Test diffing two files (myself vs myself)
-cargo run --quiet -- "$0" "$0" | wc -l | xargs echo | grep -E "^0$" > /dev/null
+cargo run --quiet -- "$0" "$0" | wc -l | xargs echo | grep -E "^0$" >/dev/null
+
+# Test case for https://github.com/walles/riff/issues/29
+bash -c 'cargo run -- <(echo hej) <(echo nej)' >/dev/null
 
 echo
 echo "All tests passed!"
