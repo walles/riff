@@ -294,6 +294,8 @@ fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool, no_p
 
     let command = command
         .arg("-ur") // "-u = unified diff, -r = recurse subdirectories"
+        .arg("--show-c-function")
+        .arg("--new-file")
         .arg(path1)
         .arg(path2)
         .stdout(Stdio::piped());
