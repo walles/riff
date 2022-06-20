@@ -12,7 +12,7 @@ const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
 lazy_static! {
     static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> =
-        vec![("diff ", FAINT), ("index ", FAINT), ("@@ ", HUNK_HEADER),];
+        vec![("diff ", FAINT), ("index ", FAINT),];
     static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
 }
 
@@ -296,6 +296,22 @@ impl LineCollector {
         self.consume_plain_line(NORMAL);
     }
 
+    fn consume_hunk_header(&mut self, line: &str) {
+        self.consume_plain_linepart(HUNK_HEADER);
+
+        if let Some(second_atat_index) = line.find(" @@ ") {
+            // Highlight the function name
+            self.consume_plain_linepart(FAINT);
+            self.consume_plain_linepart(&line[..(second_atat_index + 4)]);
+            self.consume_plain_linepart(BOLD);
+            self.consume_plain_linepart(&line[(second_atat_index + 4)..]);
+        } else {
+            self.consume_plain_linepart(line);
+        }
+
+        self.consume_plain_line(NORMAL);
+    }
+
     pub fn consume_line(&mut self, line: String) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
@@ -310,6 +326,11 @@ impl LineCollector {
 
         if line.starts_with("---") || line.starts_with("+++") {
             self.consume_plusminus_header(&line);
+            return;
+        }
+
+        if line.starts_with("@@ ") {
+            self.consume_hunk_header(&line);
             return;
         }
 
