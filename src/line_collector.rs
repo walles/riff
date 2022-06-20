@@ -11,13 +11,8 @@ use threadpool::ThreadPool;
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
 lazy_static! {
-    static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> = vec![
-        ("diff ", FAINT),
-        ("index ", BOLD),
-        ("--- ", BOLD),
-        ("+++ ", BOLD),
-        ("@@ ", HUNK_HEADER),
-    ];
+    static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> =
+        vec![("diff ", FAINT), ("index ", BOLD), ("@@ ", HUNK_HEADER),];
     static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
 }
 
@@ -283,6 +278,24 @@ impl LineCollector {
         ))
     }
 
+    pub fn consume_plusminus_header(&mut self, line: &str) {
+        self.consume_plain_linepart(BOLD);
+
+        if let Some(last_tab_index) = line.rfind('\t') {
+            self.consume_plain_linepart(&line[..last_tab_index]);
+
+            // When I ran plain "diff" (no git involved), this trailing part
+            // contained very precise file timestamps. I don't think those
+            // provide much value, so let's faint them out.
+            self.consume_plain_linepart(FAINT);
+            self.consume_plain_linepart(&line[last_tab_index..]);
+        } else {
+            self.consume_plain_linepart(line);
+        }
+
+        self.consume_plain_line(NORMAL);
+    }
+
     pub fn consume_line(&mut self, line: String) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
@@ -292,6 +305,11 @@ impl LineCollector {
             self.consume_plain_linepart(fixed_highlight);
             self.consume_plain_linepart(&line);
             self.consume_plain_line(NORMAL); // consume_plain_line() will add a linefeed to the output
+            return;
+        }
+
+        if line.starts_with("---") || line.starts_with("+++") {
+            self.consume_plusminus_header(&line);
             return;
         }
 
