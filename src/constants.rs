@@ -9,5 +9,6 @@ pub const NO_EOF_NEWLINE_COLOR: &str = "\x1b[2m"; // Faint
 pub const NO_EOF_NEWLINE_MARKER: &str = "\\ No newline at end of file";
 
 pub const BOLD: &str = "\x1b[1m";
+pub const FAINT: &str = "\x1b[2m";
 
 pub const NORMAL: &str = "\x1b[0m";
