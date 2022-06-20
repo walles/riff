@@ -22,15 +22,15 @@ lazy_static! {
 }
 
 #[must_use]
-fn get_fixed_highlight(line: &str) -> &str {
+fn get_fixed_highlight(line: &str) -> Option<&str> {
     for static_header_prefix in STATIC_HEADER_PREFIXES.iter() {
         let prefix = static_header_prefix.0;
         if line.starts_with(prefix) {
-            return static_header_prefix.1;
+            return Some(static_header_prefix.1);
         }
     }
 
-    return "";
+    return None;
 }
 
 fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
@@ -288,8 +288,7 @@ impl LineCollector {
         // already-colored input.
         let line = ANSI_COLOR_REGEX.replace_all(&line, "");
 
-        let fixed_highlight = get_fixed_highlight(&line);
-        if !fixed_highlight.is_empty() {
+        if let Some(fixed_highlight) = get_fixed_highlight(&line) {
             self.consume_plain_linepart(fixed_highlight);
             self.consume_plain_linepart(&line);
             self.consume_plain_line(NORMAL); // consume_plain_line() will add a linefeed to the output
