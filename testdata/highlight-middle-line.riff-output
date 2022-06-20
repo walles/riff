@@ -1,4 +1,4 @@
-[36m@@ -442,9 +438,9 @@ mod tests {[0m
+[36m[2m@@ -442,9 +438,9 @@ [1mmod tests {[0m
              println!("Evaluating example file <{}>...", diff.to_str().unwrap());
 
              // Run highlighting on the file into a memory buffer

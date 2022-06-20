@@ -1,8 +1,8 @@
-[1mdiff --git a/m/reader.go b/m/reader.go[0m
-[1mindex 0cec7f2..7091f6a 100644[0m
+[2mdiff --git a/m/reader.go b/m/reader.go[0m
+[2mindex 0cec7f2..7091f6a 100644[0m
 [1m--- a/m/reader.go[0m
 [1m+++ b/m/reader.go[0m
-[36m@@ -146,11 +146,19 @@ func readStream(stream io.Reader, reader *Reader, fromFilter *exec.Cmd) {[0m
+[36m[2m@@ -146,11 +146,19 @@ [1mfunc readStream(stream io.Reader, reader *Reader, fromFilter *exec.Cmd) {[0m
  }
 
  // NewReaderFromStream creates a new stream reader
@@ -26,7 +26,7 @@
 
     return mReader
  }
-[36m@@ -342,7 +350,7 @@ func NewReaderFromFilename(filename string) (*Reader, error) {[0m
+[36m[2m@@ -342,7 +350,7 @@ [1mfunc NewReaderFromFilename(filename string) (*Reader, error) {[0m
         return nil, err
     }
 
