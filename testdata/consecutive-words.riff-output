@@ -7,11 +7,11 @@ Date:   Thu Dec 31 15:22:09 2020 +0100
     If old text and new text have very different line counts, just do the
     simplistic highlighting.
 
-[1mdiff --git a/src/refiner.rs b/src/refiner.rs[0m
-[1mindex d1ebdc1..40ae0df 100644[0m
+[2mdiff --git a/src/refiner.rs b/src/refiner.rs[0m
+[2mindex d1ebdc1..40ae0df 100644[0m
 [1m--- a/src/refiner.rs[0m
 [1m+++ b/src/refiner.rs[0m
-[36m@@ -15,8 +15,8 @@ use diffus::{[0m
+[36m[2m@@ -15,8 +15,8 @@ [1muse diffus::{[0m
  /// it.
  const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 
@@ -22,7 +22,7 @@ Date:   Thu Dec 31 15:22:09 2020 +0100
 
  /// Format old and new lines in OLD and NEW colors.
  ///
-[36m@@ -55,11 +55,14 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {[0m
+[36m[2m@@ -55,11 +55,14 @@ [1mpub fn format(old_text: &str, new_text: &str) -> Vec<String> {[0m
          return simple_format(old_text, new_text);
      }
 

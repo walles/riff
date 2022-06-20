@@ -1,8 +1,8 @@
-[1mdiff --git a/app.yaml b/app.yaml[0m
-[1mindex 2da370d..f7f39fc 100644[0m
+[2mdiff --git a/app.yaml b/app.yaml[0m
+[2mindex 2da370d..f7f39fc 100644[0m
 [1m--- a/app.yaml[0m
 [1m+++ b/app.yaml[0m
-[36m@@ -11,10 +11,8 @@ handlers:[0m
+[36m[2m@@ -11,10 +11,8 @@ [1mhandlers:[0m
  -   url: /api/.*
      script: auto
  -   url: /(.*)

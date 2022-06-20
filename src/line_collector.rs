@@ -11,26 +11,21 @@ use threadpool::ThreadPool;
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
 lazy_static! {
-    static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> = vec![
-        ("diff ", BOLD),
-        ("index ", BOLD),
-        ("--- ", BOLD),
-        ("+++ ", BOLD),
-        ("@@ ", HUNK_HEADER),
-    ];
+    static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> =
+        vec![("diff ", FAINT), ("index ", FAINT),];
     static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
 }
 
 #[must_use]
-fn get_fixed_highlight(line: &str) -> &str {
+fn get_fixed_highlight(line: &str) -> Option<&str> {
     for static_header_prefix in STATIC_HEADER_PREFIXES.iter() {
         let prefix = static_header_prefix.0;
         if line.starts_with(prefix) {
-            return static_header_prefix.1;
+            return Some(static_header_prefix.1);
         }
     }
 
-    return "";
+    return None;
 }
 
 fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
@@ -283,16 +278,59 @@ impl LineCollector {
         ))
     }
 
+    pub fn consume_plusminus_header(&mut self, line: &str) {
+        self.consume_plain_linepart(BOLD);
+
+        if let Some(last_tab_index) = line.rfind('\t') {
+            self.consume_plain_linepart(&line[..last_tab_index]);
+
+            // When I ran plain "diff" (no git involved), this trailing part
+            // contained very precise file timestamps. I don't think those
+            // provide much value, so let's faint them out.
+            self.consume_plain_linepart(FAINT);
+            self.consume_plain_linepart(&line[last_tab_index..]);
+        } else {
+            self.consume_plain_linepart(line);
+        }
+
+        self.consume_plain_line(NORMAL);
+    }
+
+    fn consume_hunk_header(&mut self, line: &str) {
+        self.consume_plain_linepart(HUNK_HEADER);
+
+        if let Some(second_atat_index) = line.find(" @@ ") {
+            // Highlight the function name
+            self.consume_plain_linepart(FAINT);
+            self.consume_plain_linepart(&line[..(second_atat_index + 4)]);
+            self.consume_plain_linepart(BOLD);
+            self.consume_plain_linepart(&line[(second_atat_index + 4)..]);
+        } else {
+            self.consume_plain_linepart(line);
+        }
+
+        self.consume_plain_line(NORMAL);
+    }
+
     pub fn consume_line(&mut self, line: String) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
         let line = ANSI_COLOR_REGEX.replace_all(&line, "");
 
-        let fixed_highlight = get_fixed_highlight(&line);
-        if !fixed_highlight.is_empty() {
+        if let Some(fixed_highlight) = get_fixed_highlight(&line) {
             self.consume_plain_linepart(fixed_highlight);
             self.consume_plain_linepart(&line);
             self.consume_plain_line(NORMAL); // consume_plain_line() will add a linefeed to the output
+            return;
+        }
+
+        if line.starts_with("---") || line.starts_with("+++") {
+            self.consume_plusminus_header(&line);
+            return;
+        }
+
+        if line.starts_with("@@ ") {
+            self.consume_hunk_header(&line);
             return;
         }
 
