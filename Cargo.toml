@@ -6,6 +6,13 @@ version = "2.18.0"
 authors = ["Johan Walles <johan.walles@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/walles/riff/"
+homepage = "https://github.com/walles/riff/#readme"
+documentation = "https://github.com/walles/riff/#readme"
+readme = "README.md"
+license = "MIT"
+description = "A diff filter highlighting changed line parts"
+keywords = ["diff", "git"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
