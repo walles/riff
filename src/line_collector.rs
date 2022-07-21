@@ -12,7 +12,7 @@ const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
 lazy_static! {
     static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> =
-        vec![("diff ", FAINT), ("index ", FAINT),];
+        vec![("diff ", FAINT), ("index ", FAINT), ("Binary files ", BOLD)];
     static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
 }
 
