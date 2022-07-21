@@ -356,7 +356,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "riff"
+name = "riffdiff"
 version = "2.18.0"
 dependencies = [
  "backtrace",

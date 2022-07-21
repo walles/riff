@@ -1,7 +1,7 @@
 # See also .cargo/config
 
 [package]
-name = "riff"
+name = "riffdiff"  # Actually "riff", but that was already taken on crates.io
 version = "2.18.0"
 authors = ["Johan Walles <johan.walles@gmail.com>"]
 edition = "2018"
