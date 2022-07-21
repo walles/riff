@@ -175,6 +175,9 @@ cat <<EOM
 ==
 EOM
 
+# Publish to https://crates.io/crates/riffdiff
+$LIVE && cargo publish
+
 $LIVE && cat <<EOM
 Now, create a new release on GitHub:
 <https://github.com/walles/riff/releases/new?tag=$NEW_VERSION_NUMBER>

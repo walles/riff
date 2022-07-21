@@ -41,6 +41,12 @@ riff file1.txt file2.txt
 brew install walles/johan/riffdiff
 ```
 
+## From [the Rust Crate](https://crates.io/crates/riffdiff)
+
+```
+cargo install riffdiff
+```
+
 ## Manual Install
 
 1. Go [here](https://github.com/walles/riff/releases/latest) and download the
