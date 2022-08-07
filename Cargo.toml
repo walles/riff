@@ -16,6 +16,15 @@ categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# Set binary name to "riff", even though the package is called "riffdiff" (see
+# above).
+#
+# Ref:
+# https://egghead.io/lessons/rust-rename-the-default-cargo-binary-to-be-different-than-the-package-name
+[[bin]]
+name = "riff"
+path = "src/main.rs"
+
 [dependencies]
 diffus = "0.10.0"
 regex = "1"
