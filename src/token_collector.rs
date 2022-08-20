@@ -1,6 +1,6 @@
 use crate::constants::*;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Style {
     Old,
     OldInverse,
@@ -9,7 +9,7 @@ pub enum Style {
     Error,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StyledToken {
     token: String,
     style: Style,
