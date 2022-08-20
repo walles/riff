@@ -11,8 +11,17 @@ use threadpool::ThreadPool;
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
 lazy_static! {
-    static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> =
-        vec![("diff ", FAINT), ("index ", FAINT), ("Binary files ", BOLD)];
+    static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> = vec![
+        ("diff ", FAINT),
+        ("index ", FAINT),
+        ("Binary files ", BOLD),
+        ("copy from ", FAINT),
+        ("copy to ", BOLD),
+        ("rename from ", FAINT),
+        ("rename to ", BOLD),
+        ("similarity index ", FAINT),
+        ("new file mode ", FAINT),
+    ];
     static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
 }
 
