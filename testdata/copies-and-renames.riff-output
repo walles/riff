@@ -1,0 +1,38 @@
+[2mdiff --git benchmark.py performance.py[0m
+[2msimilarity index 100%[0m
+[2mcopy from benchmark.py[0m
+[1mcopy to performance.py[0m
+[2mdiff --git testdata/copies-and-renames.diff testdata/copies-and-renames.diff[0m
+[2mnew file mode 100644[0m
+[2mindex 0000000..bf9ccc7[0m
+[2mdiff --git LICENSE LICENSE.txt[0m
+[2msimilarity index 92%[0m
+[2mrename from LICENSE[0m
+[1mrename to LICENSE.txt[0m
+[2mindex 7548f52..63df2dc 100644[0m
+[1m--- LICENSE[0m
+[1m+++ LICENSE.txt[0m
+[36m[2m@@ -9,7 +9,7 @@ [1mto use, copy, modify, merge, publish, distribute, sublicense, and/or sell[0m
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+
+[31m-The above [7mcopyright [27mnotice and this permission notice shall be included in all[0m
+[32m+The above notice and this permission notice shall be included in all[0m
+ copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+[2mdiff --git Cargo.toml copy-of-Cargo.toml[0m
+[2msimilarity index 99%[0m
+[2mcopy from Cargo.toml[0m
+[1mcopy to copy-of-Cargo.toml[0m
+[2mindex 9b7ff8f..4e9afde 100644[0m
+[1m--- Cargo.toml[0m
+[1m+++ copy-of-Cargo.toml[0m
+[36m@@ -1,6 +1,6 @@[0m
+ # See also .cargo/config
+
+[31m-[[7mpackage[27m][0m
+[32m+[[7mpluckage[27m][0m
+ name = "riffdiff"  # Actually "riff", but that was already taken on crates.io
+ version = "2.18.1"
+ authors = ["Johan Walles <johan.walles@gmail.com>"]
