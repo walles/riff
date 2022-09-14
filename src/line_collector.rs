@@ -21,7 +21,9 @@ lazy_static! {
         ("rename to ", BOLD),
         ("similarity index ", FAINT),
         ("new file mode ", FAINT),
+        ("deleted file mode ", FAINT),
         ("--- /dev/null", FAINT),
+        ("+++ /dev/null", FAINT),
     ];
     static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
 }

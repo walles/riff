@@ -1,0 +1,15 @@
+commit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Wed Sep 14 18:57:42 2022 +0200
+
+    Remove file
+
+diff --git file.txt file.txt
+deleted file mode 100644
+index e2d1900..0000000
+--- file.txt
++++ /dev/null
+@@ -1,3 +0,0 @@
+-the
+-monkeys
+-are coming
