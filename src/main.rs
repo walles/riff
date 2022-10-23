@@ -20,7 +20,7 @@ use std::process::{Command, Stdio};
 use std::str;
 use std::{env, fs::File};
 
-mod commit_lines;
+mod commit_line;
 mod constants;
 mod line_collector;
 mod refiner;

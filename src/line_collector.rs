@@ -1,4 +1,4 @@
-use crate::commit_lines::format_commit_line;
+use crate::commit_line::format_commit_line;
 use crate::io::ErrorKind;
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
