@@ -43,10 +43,10 @@ fn format_commit_part(part: &str, current_branch: &Option<String>) -> String {
         return format!("{}{}{}{}", BOLD, YELLOW, part, NORMAL);
     }
 
-    // FIXME: Is there a better way to express this condition than using
-    // part.to_string()? Won't that allocate memory and stuff? I want something
-    // that just compares the strings for equality.
-    if &Some(part.to_string()) == current_branch {
+    // FIXME: Can we do this without to_owned()? to_owned() cretes a new string,
+    // but all we want to do is compare them. How to compare without allocating
+    // a new string?
+    if &Some(part.to_owned()) == current_branch {
         return format!("{}{}{}{}", BOLD, GREEN, part, NORMAL);
     }
 
@@ -55,11 +55,8 @@ fn format_commit_part(part: &str, current_branch: &Option<String>) -> String {
         return format!("{}{}HEAD -> {}{}{}", BOLD, CYAN, GREEN, head_branch, NORMAL);
     }
 
-    // FIXME: Handle current branch
-
-    // FIXME: Handle any non-current branches
-
-    return part.to_string();
+    // Assume this is a branch, but not the current one
+    return format!("{}{}{}{}", BOLD, RED, part, NORMAL);
 }
 
 fn compute_current_branch(candidates: &Vec<&str>) -> Option<String> {
