@@ -24,7 +24,6 @@ pub fn format_commit_line(line: &str) -> String {
         .collect_vec();
     let current_branch = compute_current_branch(&parenthesis_parts);
 
-    // FIXME: Placeholder logic until we have all tests
     let comma = format!("{}, {}", YELLOW, NORMAL);
     return format!(
         "{}{} ({}){}",
@@ -60,38 +59,24 @@ fn format_commit_part(part: &str, current_branch: &Option<String>) -> String {
 }
 
 fn compute_current_branch(candidates: &Vec<&str>) -> Option<String> {
-    // Filter out realistic candidates
-    let mut possible_candidates: Vec<String> = vec![];
-    for part in candidates {
-        if part.starts_with("tag: ") {
+    // If we find multiple options, pick the one with the lowest number of
+    // slashes
+    let mut fewest_slashes: Vec<&str> = vec![];
+    let mut lowest_slash_count = usize::MAX;
+    for candidate in candidates {
+        if candidate.starts_with("tag: ") {
             // This is not a branch name
             continue;
         }
 
-        if let Some(headless) = part.strip_prefix("HEAD -> ") {
+        if let Some(headless) = candidate.strip_prefix("HEAD -> ") {
             // Found it, this is conclusive!
             return Some(headless.to_owned());
         }
 
-        possible_candidates.push(part.to_string());
-    }
-
-    // Pick obvious choices
-    if possible_candidates.is_empty() {
-        return None;
-    }
-    if possible_candidates.len() == 1 {
-        return Some(possible_candidates[0].to_owned());
-    }
-
-    // We have multiple options, pick the one with the lowest number of slashes
-    // FIXME: Can we just start with this loop?
-    let mut fewest_slashes: Vec<String> = vec![];
-    let mut lowest_slash_count = usize::MAX;
-    for candidate in possible_candidates {
         let candidate_slash_count = candidate.matches('/').count();
         if candidate_slash_count > lowest_slash_count {
-            // This one is worse, never mind
+            // This one is worse than what we already have, never mind
             continue;
         }
 
@@ -104,7 +89,10 @@ fn compute_current_branch(candidates: &Vec<&str>) -> Option<String> {
         fewest_slashes.push(candidate);
     }
 
-    assert!(!fewest_slashes.is_empty());
+    if fewest_slashes.is_empty() {
+        return None;
+    }
+
     if fewest_slashes.len() == 1 {
         return Some(fewest_slashes[0].to_owned());
     }
