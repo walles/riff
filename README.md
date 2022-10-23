@@ -21,6 +21,7 @@ Or if you do...
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
+git config --global pager.log riff
 git config --global interactive.diffFilter riff
 ```
 
@@ -57,11 +58,12 @@ cargo install riffdiff
 
 1. `chmod a+x riff-*`
 1. `mv riff-* /usr/local/bin/riff`
-1. Optionally followed by this to have riff highlight git output by default:
+1. Optionally followed by this to have riff highlight `git` output by default:
 
 ```
 git config --global pager.diff riff
 git config --global pager.show riff
+git config --global pager.log riff
 git config --global interactive.diffFilter riff
 ```
 
@@ -108,7 +110,7 @@ If you want to test the release script without actually releasing anything, do:
 - Think about how to visualize an added line break together with some
   indentation on the following line.
 - Make sure we highlight the output of `git show --stat` properly
-- Make sure we can handle a git conflict
+- Make sure we can handle a `git` conflict
   resolution diff. File format is described at
   http://git-scm.com/docs/git-diff#_combined_diff_format.
 - Given three files on the command line, we should pass them and any

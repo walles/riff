@@ -1,3 +1,4 @@
+use crate::commit_line::format_commit_line;
 use crate::io::ErrorKind;
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
@@ -333,6 +334,11 @@ impl LineCollector {
             self.consume_plain_linepart(fixed_highlight);
             self.consume_plain_linepart(&line);
             self.consume_plain_line(NORMAL); // consume_plain_line() will add a linefeed to the output
+            return;
+        }
+
+        if line.starts_with("commit") {
+            self.consume_plain_line(&format_commit_line(&line));
             return;
         }
 

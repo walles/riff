@@ -364,6 +364,7 @@ dependencies = [
  "diffus",
  "git-version",
  "isatty",
+ "itertools",
  "lazy_static",
  "num_cpus",
  "pretty_assertions",
