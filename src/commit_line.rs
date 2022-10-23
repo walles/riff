@@ -42,11 +42,11 @@ fn format_commit_part(part: &str, current_branch: &Option<String>) -> String {
         return format!("{}{}{}{}", BOLD, YELLOW, part, NORMAL);
     }
 
-    // FIXME: Can we do this without to_owned()? to_owned() cretes a new string,
-    // but all we want to do is compare them. How to compare without allocating
-    // a new string?
-    if &Some(part.to_owned()) == current_branch {
-        return format!("{}{}{}{}", BOLD, GREEN, part, NORMAL);
+    // FIXME: Can we do this with one readable if-statement instead?
+    if let Some(current_branch_4_realz) = current_branch {
+        if current_branch_4_realz == part {
+            return format!("{}{}{}{}", BOLD, GREEN, part, NORMAL);
+        }
     }
 
     // Handle "HEAD -> current_branch"
