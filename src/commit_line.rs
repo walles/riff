@@ -1,6 +1,8 @@
 use crate::constants::*;
 use itertools::Itertools;
 
+// Highlight lines starting with "commit: "
+
 pub fn format_commit_line(line: &str) -> String {
     let parts = line.split('(').collect::<Vec<_>>();
     if parts.len() == 1 {
@@ -48,7 +50,14 @@ fn format_commit_part(part: &str, current_branch: &Option<String>) -> String {
         return format!("{}{}{}{}", BOLD, GREEN, part, NORMAL);
     }
 
-    // FIXME: Handle "HEAD -> current_branch"
+    // Handle "HEAD -> current_branch"
+    if let Some(head_branch) = part.strip_prefix("HEAD -> ") {
+        return format!("{}{}HEAD -> {}{}{}", BOLD, CYAN, GREEN, head_branch, NORMAL);
+    }
+
+    // FIXME: Handle current branch
+
+    // FIXME: Handle any non-current branches
 
     return part.to_string();
 }
