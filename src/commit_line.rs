@@ -26,13 +26,14 @@ pub fn format_commit_line(line: &str) -> String {
 
     let comma = format!("{}, {}", YELLOW, NORMAL);
     return format!(
-        "{}{} ({}){}",
+        "{}{} ({}{}){}",
         YELLOW,
         commit_part,
         parenthesis_parts
             .iter()
             .map(|part| format_commit_part(part, &current_branch))
             .join(&comma),
+        YELLOW,
         NORMAL
     );
 }
