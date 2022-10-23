@@ -12,5 +12,6 @@ pub const BOLD: &str = "\x1b[1m";
 pub const FAINT: &str = "\x1b[2m";
 
 pub const YELLOW: &str = "\x1b[33m";
+pub const GREEN: &str = "\x1b[32m";
 
 pub const NORMAL: &str = "\x1b[0m";
