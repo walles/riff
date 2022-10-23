@@ -53,3 +53,39 @@ fn compute_current_branch(_candidates: &std::str::Split<&str>) -> Option<String>
     // FIXME: Implement this properly!
     return None;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(test)]
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_compute_current_branch() {
+        assert_eq!(
+            Some(String::from("master")),
+            compute_current_branch(
+                &"HEAD -> master, tag: 2.20.0, origin/master, origin/HEAD".split(", ")
+            )
+        );
+
+        assert_eq!(
+            Some(String::from("master")),
+            compute_current_branch(&"tag: 2.20.0, origin/master, origin/HEAD, master".split(", "))
+        );
+
+        assert_eq!(
+            Some(String::from("walles/threaded")),
+            compute_current_branch(&"origin/walles/threaded, walles/threaded".split(", "))
+        );
+
+        // git show 686f3d7aefe9597395020ff0219eebc90e363d47
+        assert_eq!(None, compute_current_branch(&"tag: 2.15".split(", ")));
+
+        assert_eq!(
+            Some(String::from("xeago-master")),
+            compute_current_branch(&"xeago/master, xeago-master".split(", "))
+        );
+    }
+}
