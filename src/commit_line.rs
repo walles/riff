@@ -149,4 +149,6 @@ mod tests {
             compute_current_branch(&"xeago/master, xeago-master".split(", ").collect_vec())
         );
     }
+
+    FIXME: Add a test for adding blue background to a commit line with some tags and branches
 }
