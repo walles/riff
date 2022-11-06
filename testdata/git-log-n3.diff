@@ -1,0 +1,19 @@
+commit 62da46c7b300321119d399bdc69bfb2d56d5da57 (HEAD -> johan/git-log-p-headings, tag: 2.21.0, origin/master, origin/HEAD, master)
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Mon Oct 24 00:32:27 2022 +0200
+
+    Bump version number to 2.21.0
+
+commit 700b5b5d609c34b2cd8f99a3dd81f9784ae17cac
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Mon Oct 24 00:30:53 2022 +0200
+
+    Update the screenshot
+    
+    "commit" line is now highlighted in yellow.
+
+commit 8923ac0d11a3569d28786bd6da725869953f5fcb
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Mon Oct 24 00:26:59 2022 +0200
+
+    Fix trailing parenthesis coloring
