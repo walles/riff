@@ -1,4 +1,4 @@
-[33mcommit 62da46c7b300321119d399bdc69bfb2d56d5da57 ([1m[36mHEAD -> [32mjohan/git-log-p-headings[0m[33m, [0m[1m[33mtag: 2.21.0[0m[33m, [0m[1m[31morigin/master[0m[33m, [0m[1m[31morigin/HEAD[0m[33m, [0m[1m[31mmaster[0m[33m)[0m
+[33m[48;5;17m[0Kcommit 62da46c7b300321119d399bdc69bfb2d56d5da57 ([1m[36mHEAD -> [32mjohan/git-log-p-headings[22m[33m, [1mtag: 2.21.0[22m[33m, [1m[31morigin/master[22m[33m, [1m[31morigin/HEAD[22m[33m, [1m[31mmaster[22m[33m)[0m
 Author: Johan Walles <johan.walles@gmail.com>
 Date:   Mon Oct 24 00:32:27 2022 +0200
 
@@ -31,7 +31,7 @@ Date:   Mon Oct 24 00:32:27 2022 +0200
  edition = "2018"
  repository = "https://github.com/walles/riff/"
 
-[33m[48;5;17mcommit 700b5b5d609c34b2cd8f99a3dd81f9784ae17cac[0K[0m
+[33m[48;5;17m[0Kcommit 700b5b5d609c34b2cd8f99a3dd81f9784ae17cac[0m
 Author: Johan Walles <johan.walles@gmail.com>
 Date:   Mon Oct 24 00:30:53 2022 +0200
 
@@ -43,7 +43,7 @@ Date:   Mon Oct 24 00:30:53 2022 +0200
 [2mindex 25ab17b..c7385d0 100644[0m
 [1mBinary files screenshot.png and screenshot.png differ[0m
 
-[33m[48;5;17mcommit 8923ac0d11a3569d28786bd6da725869953f5fcb[0K[0m
+[33m[48;5;17m[0Kcommit 8923ac0d11a3569d28786bd6da725869953f5fcb[0m
 Author: Johan Walles <johan.walles@gmail.com>
 Date:   Mon Oct 24 00:26:59 2022 +0200
 
