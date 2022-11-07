@@ -9,7 +9,7 @@ Date:   Mon Oct 24 00:32:27 2022 +0200
 [1m--- Cargo.lock[0m
 [1m+++ Cargo.lock[0m
 [36m[2m@@ -357,7 +357,7 @@ [1mdependencies = [[0m
-
+ 
  [[package]]
  name = "riffdiff"
 [31m-version = "2.[7m20[27m.0"[0m
@@ -22,7 +22,7 @@ Date:   Mon Oct 24 00:32:27 2022 +0200
 [1m--- Cargo.toml[0m
 [1m+++ Cargo.toml[0m
 [36m@@ -2,7 +2,7 @@[0m
-
+ 
  [package]
  name = "riffdiff"  # Actually "riff", but that was already taken on crates.io
 [31m-version = "2.[7m20[27m.0"[0m
@@ -36,7 +36,7 @@ Author: Johan Walles <johan.walles@gmail.com>
 Date:   Mon Oct 24 00:30:53 2022 +0200
 
     Update the screenshot
-
+    
     "commit" line is now highlighted in yellow.
 
 [2mdiff --git screenshot.png screenshot.png[0m
@@ -54,7 +54,7 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
 [1m--- src/commit_line.rs[0m
 [1m+++ src/commit_line.rs[0m
 [36m[2m@@ -26,13 +26,14 @@ [1mpub fn format_commit_line(line: &str) -> String {[0m
-
+ 
      let comma = format!("{}, {}", YELLOW, NORMAL);
      return format!(
 [31m-        "{}{} ({}){}",[0m
@@ -87,4 +87,4 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
 [32m+commit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)[0m
  Author: Johan Walles <johan.walles@gmail.com>
  Date:   Wed Sep 14 18:57:42 2022 +0200
-
+ 
