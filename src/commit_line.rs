@@ -150,5 +150,35 @@ mod tests {
         );
     }
 
-    FIXME: Add a test for adding blue background to a commit line with some tags and branches
+    const NORMAL_INTENSITY: &str = "\x1b[22m";
+
+    #[test]
+    // Verify that the blue background goes all the way from the start of the
+    // string to its end
+    fn test_format_commit_line_tags_branches() {
+        assert_eq!(
+            "".to_owned() +
+            YELLOW +
+            BLUE_TO_END_OF_LINE +
+            "commit 62da46c7b300321119d399bdc69bfb2d56d5da57 (" +
+            BOLD +
+            "tag: 2.21.0"+
+            NORMAL_INTENSITY+
+            ", "+
+            BOLD + RED +
+            "origin/master" +
+            NORMAL_INTENSITY + YELLOW +
+            ", " +
+            BOLD + RED +
+            "origin/HEAD" +
+            NORMAL_INTENSITY + YELLOW +
+            ", " +
+            BOLD + GREEN +
+            "master" +
+            NORMAL_INTENSITY + YELLOW +
+            ")" +
+            NORMAL,
+        // This commit is from the master branch
+        format_commit_line("commit 62da46c7b300321119d399bdc69bfb2d56d5da57 (tag: 2.21.0, origin/master, origin/HEAD, master)"));
+    }
 }
