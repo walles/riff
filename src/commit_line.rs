@@ -1,13 +1,13 @@
 use crate::constants::*;
 use itertools::Itertools;
 
-// Highlight lines starting with "commit: "
+// Highlight lines starting with "commit "
 
 pub fn format_commit_line(line: &str) -> String {
     let parts = line.split('(').collect::<Vec<_>>();
     if parts.len() == 1 {
         // Just "commit: 123abc", color it all yellow
-        return format!("{}{}{}", YELLOW, line, NORMAL);
+        return format!("{}{}{}{}", YELLOW, BLUE_TO_END_OF_LINE, line, NORMAL);
     }
 
     let commit_part = parts[0].trim();
@@ -15,7 +15,7 @@ pub fn format_commit_line(line: &str) -> String {
     if without_trailing_parenthesis == None {
         // No final parenthesis, this is weird, fall back to showing everything
         // in yellow
-        return format!("{}{}{}", YELLOW, line, NORMAL);
+        return format!("{}{}{}{}", YELLOW, BLUE_TO_END_OF_LINE, line, NORMAL);
     }
 
     let parenthesis_parts = without_trailing_parenthesis
@@ -24,10 +24,11 @@ pub fn format_commit_line(line: &str) -> String {
         .collect_vec();
     let current_branch = compute_current_branch(&parenthesis_parts);
 
-    let comma = format!("{}, {}", YELLOW, NORMAL);
+    let comma = format!("{}, ", YELLOW);
     return format!(
-        "{}{} ({}{}){}",
+        "{}{}{} ({}{}){}",
         YELLOW,
+        BLUE_TO_END_OF_LINE,
         commit_part,
         parenthesis_parts
             .iter()
@@ -40,23 +41,28 @@ pub fn format_commit_line(line: &str) -> String {
 
 fn format_commit_part(part: &str, current_branch: &Option<String>) -> String {
     if part.starts_with("tag: ") {
-        return format!("{}{}{}{}", BOLD, YELLOW, part, NORMAL);
+        // Implicitly yellow since both the commas and the surrounding
+        // parentheses are also yellow.
+        return format!("{}{}{}", BOLD, part, NORMAL_INTENSITY);
     }
 
     // FIXME: Can we do this with one readable if-statement instead?
     if let Some(current_branch_4_realz) = current_branch {
         if current_branch_4_realz == part {
-            return format!("{}{}{}{}", BOLD, GREEN, part, NORMAL);
+            return format!("{}{}{}{}", BOLD, GREEN, part, NORMAL_INTENSITY);
         }
     }
 
     // Handle "HEAD -> current_branch"
     if let Some(head_branch) = part.strip_prefix("HEAD -> ") {
-        return format!("{}{}HEAD -> {}{}{}", BOLD, CYAN, GREEN, head_branch, NORMAL);
+        return format!(
+            "{}{}HEAD -> {}{}{}",
+            BOLD, CYAN, GREEN, head_branch, NORMAL_INTENSITY
+        );
     }
 
     // Assume this is a branch, but not the current one
-    return format!("{}{}{}{}", BOLD, RED, part, NORMAL);
+    return format!("{}{}{}{}", BOLD, RED, part, NORMAL_INTENSITY);
 }
 
 fn compute_current_branch(candidates: &Vec<&str>) -> Option<String> {
@@ -150,8 +156,6 @@ mod tests {
         );
     }
 
-    const NORMAL_INTENSITY: &str = "\x1b[22m";
-
     #[test]
     // Verify that the blue background goes all the way from the start of the
     // string to its end
@@ -163,7 +167,7 @@ mod tests {
             "commit 62da46c7b300321119d399bdc69bfb2d56d5da57 (" +
             BOLD +
             "tag: 2.21.0"+
-            NORMAL_INTENSITY+
+            NORMAL_INTENSITY + YELLOW +  // NOTE: This yellow is not strictly needed, but having it simplifies the comma code
             ", "+
             BOLD + RED +
             "origin/master" +
