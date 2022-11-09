@@ -3,19 +3,25 @@ use itertools::Itertools;
 
 // Highlight lines starting with "commit "
 
-pub fn format_commit_line(line: &str) -> String {
+pub fn format_commit_line(line: &str, set_background: bool) -> String {
+    let header: String = if set_background {
+        YELLOW.to_string() + BLUE_TO_END_OF_LINE
+    } else {
+        YELLOW.to_string()
+    };
+
     let parts = line.split('(').collect::<Vec<_>>();
     if parts.len() == 1 {
         // Just "commit: 123abc", color it all yellow
-        return format!("{}{}{}{}", YELLOW, BLUE_TO_END_OF_LINE, line, NORMAL);
+        return format!("{}{}{}", header, line, NORMAL);
     }
 
     let commit_part = parts[0].trim();
     let without_trailing_parenthesis = parts[1].strip_suffix(')');
-    if without_trailing_parenthesis == None {
+    if without_trailing_parenthesis.is_none() {
         // No final parenthesis, this is weird, fall back to showing everything
         // in yellow
-        return format!("{}{}{}{}", YELLOW, BLUE_TO_END_OF_LINE, line, NORMAL);
+        return format!("{}{}{}", header, line, NORMAL);
     }
 
     let parenthesis_parts = without_trailing_parenthesis
@@ -26,9 +32,8 @@ pub fn format_commit_line(line: &str) -> String {
 
     let comma = format!("{}, ", YELLOW);
     return format!(
-        "{}{}{} ({}{}){}",
-        YELLOW,
-        BLUE_TO_END_OF_LINE,
+        "{}{} ({}{}){}",
+        header,
         commit_part,
         parenthesis_parts
             .iter()
@@ -183,6 +188,6 @@ mod tests {
             ")" +
             NORMAL,
         // This commit is from the master branch
-        format_commit_line("commit 62da46c7b300321119d399bdc69bfb2d56d5da57 (tag: 2.21.0, origin/master, origin/HEAD, master)"));
+        format_commit_line("commit 62da46c7b300321119d399bdc69bfb2d56d5da57 (tag: 2.21.0, origin/master, origin/HEAD, master)", true));
     }
 }

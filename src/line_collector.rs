@@ -338,7 +338,7 @@ impl LineCollector {
         }
 
         if line.starts_with("commit") {
-            self.consume_plain_line(&format_commit_line(&line));
+            self.consume_plain_line(&format_commit_line(&line, true));
             return;
         }
 
