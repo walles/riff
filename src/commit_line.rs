@@ -3,8 +3,8 @@ use itertools::Itertools;
 
 // Highlight lines starting with "commit "
 
-pub fn format_commit_line(line: &str, set_background: bool) -> String {
-    let header: String = if set_background {
+pub fn format_commit_line(line: &str, highlight_background: bool) -> String {
+    let header: String = if highlight_background {
         YELLOW.to_string() + BLUE_TO_END_OF_LINE
     } else {
         YELLOW.to_string()
