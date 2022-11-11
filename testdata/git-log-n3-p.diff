@@ -1,0 +1,90 @@
+commit 62da46c7b300321119d399bdc69bfb2d56d5da57 (HEAD -> johan/git-log-p-headings, tag: 2.21.0, origin/master, origin/HEAD, master)
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Mon Oct 24 00:32:27 2022 +0200
+
+    Bump version number to 2.21.0
+
+diff --git Cargo.lock Cargo.lock
+index 860dfcd..ac98582 100644
+--- Cargo.lock
++++ Cargo.lock
+@@ -357,7 +357,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "riffdiff"
+-version = "2.20.0"
++version = "2.21.0"
+ dependencies = [
+  "backtrace",
+  "bytecount",
+diff --git Cargo.toml Cargo.toml
+index a9ed33a..6ac6ddc 100644
+--- Cargo.toml
++++ Cargo.toml
+@@ -2,7 +2,7 @@
+ 
+ [package]
+ name = "riffdiff"  # Actually "riff", but that was already taken on crates.io
+-version = "2.20.0"
++version = "2.21.0"
+ authors = ["Johan Walles <johan.walles@gmail.com>"]
+ edition = "2018"
+ repository = "https://github.com/walles/riff/"
+
+commit 700b5b5d609c34b2cd8f99a3dd81f9784ae17cac
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Mon Oct 24 00:30:53 2022 +0200
+
+    Update the screenshot
+    
+    "commit" line is now highlighted in yellow.
+
+diff --git screenshot.png screenshot.png
+index 25ab17b..c7385d0 100644
+Binary files screenshot.png and screenshot.png differ
+
+commit 8923ac0d11a3569d28786bd6da725869953f5fcb
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Mon Oct 24 00:26:59 2022 +0200
+
+    Fix trailing parenthesis coloring
+
+diff --git src/commit_line.rs src/commit_line.rs
+index 034b97e..7bcbf6b 100644
+--- src/commit_line.rs
++++ src/commit_line.rs
+@@ -26,13 +26,14 @@ pub fn format_commit_line(line: &str) -> String {
+ 
+     let comma = format!("{}, {}", YELLOW, NORMAL);
+     return format!(
+-        "{}{} ({}){}",
++        "{}{} ({}{}){}",
+         YELLOW,
+         commit_part,
+         parenthesis_parts
+             .iter()
+             .map(|part| format_commit_part(part, &current_branch))
+             .join(&comma),
++        YELLOW,
+         NORMAL
+     );
+ }
+diff --git testdata/git-commit-line.riff-output testdata/git-commit-line.riff-output
+index 0b42b6d..5edede3 100644
+--- testdata/git-commit-line.riff-output
++++ testdata/git-commit-line.riff-output
+@@ -1,3 +1,3 @@
+-[33mcommit b24b967d952a8b7cf538d57d12aae8019cedada2 ([1m[36mHEAD -> [32mmaster[0m[33m, [0m[1m[33mtag: 2.20.0[0m[33m, [0m[1m[31morigin/master[0m[33m, [0m[1m[31morigin/HEAD[0m)[0m
++[33mcommit b24b967d952a8b7cf538d57d12aae8019cedada2 ([1m[36mHEAD -> [32mmaster[0m[33m, [0m[1m[33mtag: 2.20.0[0m[33m, [0m[1m[31morigin/master[0m[33m, [0m[1m[31morigin/HEAD[0m[33m)[0m
+ Author: Johan Walles <johan.walles@gmail.com>
+ Date:   Wed Sep 14 19:07:05 2022 +0200
+diff --git testdata/remove-file.riff-output testdata/remove-file.riff-output
+index 46f5a18..5a64fa1 100644
+--- testdata/remove-file.riff-output
++++ testdata/remove-file.riff-output
+@@ -1,4 +1,4 @@
+-[33mcommit 90a1c38ad8b74134c24a4726f25958da4806738d ([1m[36mHEAD -> [32mmain[0m)[0m
++[33mcommit 90a1c38ad8b74134c24a4726f25958da4806738d ([1m[36mHEAD -> [32mmain[0m[33m)[0m
+ Author: Johan Walles <johan.walles@gmail.com>
+ Date:   Wed Sep 14 18:57:42 2022 +0200
+ 

@@ -1,0 +1,90 @@
+[33mcommit 62da46c7b300321119d399bdc69bfb2d56d5da57 ([1m[36mHEAD -> [32mjohan/git-log-p-headings[22m[33m, [1mtag: 2.21.0[22m[33m, [1m[31morigin/master[22m[33m, [1m[31morigin/HEAD[22m[33m, [1m[31mmaster[22m[33m)[0m
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Mon Oct 24 00:32:27 2022 +0200
+
+    Bump version number to 2.21.0
+
+[2mdiff --git Cargo.lock Cargo.lock[0m
+[2mindex 860dfcd..ac98582 100644[0m
+[1m--- Cargo.lock[0m
+[1m+++ Cargo.lock[0m
+[36m[2m@@ -357,7 +357,7 @@ [1mdependencies = [[0m
+ 
+ [[package]]
+ name = "riffdiff"
+[31m-version = "2.[7m20[27m.0"[0m
+[32m+version = "2.[7m21[27m.0"[0m
+ dependencies = [
+  "backtrace",
+  "bytecount",
+[2mdiff --git Cargo.toml Cargo.toml[0m
+[2mindex a9ed33a..6ac6ddc 100644[0m
+[1m--- Cargo.toml[0m
+[1m+++ Cargo.toml[0m
+[36m@@ -2,7 +2,7 @@[0m
+ 
+ [package]
+ name = "riffdiff"  # Actually "riff", but that was already taken on crates.io
+[31m-version = "2.[7m20[27m.0"[0m
+[32m+version = "2.[7m21[27m.0"[0m
+ authors = ["Johan Walles <johan.walles@gmail.com>"]
+ edition = "2018"
+ repository = "https://github.com/walles/riff/"
+
+[33m[48;5;17m[0Kcommit 700b5b5d609c34b2cd8f99a3dd81f9784ae17cac[0m
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Mon Oct 24 00:30:53 2022 +0200
+
+    Update the screenshot
+    
+    "commit" line is now highlighted in yellow.
+
+[2mdiff --git screenshot.png screenshot.png[0m
+[2mindex 25ab17b..c7385d0 100644[0m
+[1mBinary files screenshot.png and screenshot.png differ[0m
+
+[33m[48;5;17m[0Kcommit 8923ac0d11a3569d28786bd6da725869953f5fcb[0m
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Mon Oct 24 00:26:59 2022 +0200
+
+    Fix trailing parenthesis coloring
+
+[2mdiff --git src/commit_line.rs src/commit_line.rs[0m
+[2mindex 034b97e..7bcbf6b 100644[0m
+[1m--- src/commit_line.rs[0m
+[1m+++ src/commit_line.rs[0m
+[36m[2m@@ -26,13 +26,14 @@ [1mpub fn format_commit_line(line: &str) -> String {[0m
+ 
+     let comma = format!("{}, {}", YELLOW, NORMAL);
+     return format!(
+[31m-        "{}{} ({}){}",[0m
+[32m+        "{}{} ({}[7m{}[27m){}",[0m
+         YELLOW,
+         commit_part,
+         parenthesis_parts
+             .iter()
+             .map(|part| format_commit_part(part, &current_branch))
+             .join(&comma),
+[32m+        YELLOW,[0m
+         NORMAL
+     );
+ }
+[2mdiff --git testdata/git-commit-line.riff-output testdata/git-commit-line.riff-output[0m
+[2mindex 0b42b6d..5edede3 100644[0m
+[1m--- testdata/git-commit-line.riff-output[0m
+[1m+++ testdata/git-commit-line.riff-output[0m
+[36m@@ -1,3 +1,3 @@[0m
+[31m-commit b24b967d952a8b7cf538d57d12aae8019cedada2 (HEAD -> master, tag: 2.20.0, origin/master, origin/HEAD)[0m
+[32m+commit b24b967d952a8b7cf538d57d12aae8019cedada2 (HEAD -> master, tag: 2.20.0, origin/master, origin/HEAD)[0m
+ Author: Johan Walles <johan.walles@gmail.com>
+ Date:   Wed Sep 14 19:07:05 2022 +0200
+[2mdiff --git testdata/remove-file.riff-output testdata/remove-file.riff-output[0m
+[2mindex 46f5a18..5a64fa1 100644[0m
+[1m--- testdata/remove-file.riff-output[0m
+[1m+++ testdata/remove-file.riff-output[0m
+[36m@@ -1,4 +1,4 @@[0m
+[31m-commit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)[0m
+[32m+commit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)[0m
+ Author: Johan Walles <johan.walles@gmail.com>
+ Date:   Wed Sep 14 18:57:42 2022 +0200
+ 

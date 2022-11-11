@@ -138,6 +138,7 @@ pub struct LineCollector {
     old_text: String,
     new_text: String,
     plain_text: String,
+    diff_seen: bool,
     consumer_thread: Option<JoinHandle<()>>,
 
     diffing_threads: ThreadPool,
@@ -208,6 +209,8 @@ impl LineCollector {
             old_text: String::from(""),
             new_text: String::from(""),
             plain_text: String::from(""),
+            diff_seen: false,
+
             consumer_thread: Some(consumer),
             diffing_threads: ThreadPool::new(num_cpus::get()),
             queue_putter,
@@ -330,6 +333,10 @@ impl LineCollector {
         // already-colored input.
         let line = ANSI_COLOR_REGEX.replace_all(&line, "");
 
+        if line.starts_with("diff") {
+            self.diff_seen = true;
+        }
+
         if let Some(fixed_highlight) = get_fixed_highlight(&line) {
             self.consume_plain_linepart(fixed_highlight);
             self.consume_plain_linepart(&line);
@@ -338,7 +345,7 @@ impl LineCollector {
         }
 
         if line.starts_with("commit") {
-            self.consume_plain_line(&format_commit_line(&line));
+            self.consume_plain_line(&format_commit_line(&line, self.diff_seen));
             return;
         }
 
