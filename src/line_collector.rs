@@ -26,7 +26,7 @@ lazy_static! {
         ("--- /dev/null", FAINT),
         ("+++ /dev/null", FAINT),
     ];
-    static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
+    static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b\\[[0-9;]*[^0-9;]").unwrap();
 }
 
 #[must_use]
@@ -328,10 +328,14 @@ impl LineCollector {
         self.consume_plain_line(NORMAL);
     }
 
+    fn without_ansi_escape_codes(input: &'_ str) -> std::borrow::Cow<'_, str> {
+        return ANSI_COLOR_REGEX.replace_all(input, "");
+    }
+
     pub fn consume_line(&mut self, line: String) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
-        let line = ANSI_COLOR_REGEX.replace_all(&line, "");
+        let line = LineCollector::without_ansi_escape_codes(&line);
 
         if line.starts_with("diff") {
             self.diff_seen = true;
@@ -380,5 +384,37 @@ impl LineCollector {
         }
 
         self.consume_plain_line(&line);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(test)]
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_non_sgr() {
+        assert_eq!(
+            LineCollector::without_ansi_escape_codes("hel\x1b[0Klo"),
+            "hello"
+        );
+    }
+
+    #[test]
+    fn test_sgr() {
+        assert_eq!(
+            LineCollector::without_ansi_escape_codes("hel\x1b[33mlo"),
+            "hello"
+        );
+    }
+
+    #[test]
+    fn test_multi_sgr() {
+        assert_eq!(
+            LineCollector::without_ansi_escape_codes("hel\x1b[33;34mlo"),
+            "hello"
+        );
     }
 }
