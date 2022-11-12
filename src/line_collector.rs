@@ -328,10 +328,14 @@ impl LineCollector {
         self.consume_plain_line(NORMAL);
     }
 
+    fn without_ansi_escape_codes(input: &'_ str) -> std::borrow::Cow<'_, str> {
+        return ANSI_COLOR_REGEX.replace_all(input, "");
+    }
+
     pub fn consume_line(&mut self, line: String) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
-        let line = ANSI_COLOR_REGEX.replace_all(&line, "");
+        let line = LineCollector::without_ansi_escape_codes(&line);
 
         if line.starts_with("diff") {
             self.diff_seen = true;
