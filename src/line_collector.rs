@@ -386,3 +386,27 @@ impl LineCollector {
         self.consume_plain_line(&line);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(test)]
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_non_sgr() {
+        assert_eq!(
+            LineCollector::without_ansi_escape_codes("hel\x1b[0Klo"),
+            "hello"
+        );
+    }
+
+    #[test]
+    fn test_sgr() {
+        assert_eq!(
+            LineCollector::without_ansi_escape_codes("hel\x1b[33mlo"),
+            "hello"
+        );
+    }
+}
