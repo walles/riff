@@ -26,7 +26,7 @@ lazy_static! {
         ("--- /dev/null", FAINT),
         ("+++ /dev/null", FAINT),
     ];
-    static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b[^m]*m").unwrap();
+    static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b\\[[0-9;]*[^0-9;]").unwrap();
 }
 
 #[must_use]
@@ -406,6 +406,14 @@ mod tests {
     fn test_sgr() {
         assert_eq!(
             LineCollector::without_ansi_escape_codes("hel\x1b[33mlo"),
+            "hello"
+        );
+    }
+
+    #[test]
+    fn test_multi_sgr() {
+        assert_eq!(
+            LineCollector::without_ansi_escape_codes("hel\x1b[33;34mlo"),
             "hello"
         );
     }
