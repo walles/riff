@@ -76,6 +76,18 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 }
 
+/// LCS is O(m * n) complexity. If it gets too complex, refining will take too
+/// much time and memory, so we shouldn't.
+///
+/// Ref: https://github.com/walles/riff/issues/35
+fn too_large_to_refine(old_text: &str, new_text: &str) -> bool {
+    let complexity = (old_text.len() as u64) * (new_text.len() as u64);
+
+    // Around this point refining starts taking near one second on Johan's
+    // laptop. Numbers have been invented through experimentation.
+    return complexity > 13_000u64 * 13_000u64;
+}
+
 /// Returns two vectors of ANSI highlighted lines, the old lines and the new
 /// lines.
 ///
@@ -86,8 +98,9 @@ fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<Stri
         return Some(simple_format(old_text, new_text));
     }
 
-    // FIXME: LCS is O(m * n) complexity, consider returning None here if
-    // len(old_text) * len(new_text) is too large.
+    if too_large_to_refine(old_text, new_text) {
+        return Some(simple_format(old_text, new_text));
+    }
 
     // Find diffs between adds and removals
     let mut old_collector = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
