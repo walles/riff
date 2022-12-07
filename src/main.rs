@@ -10,7 +10,6 @@ extern crate lazy_static;
 
 use backtrace::Backtrace;
 use git_version::git_version;
-use isatty::{stdin_isatty, stdout_isatty};
 use line_collector::LineCollector;
 use std::io::{self};
 use std::panic;
@@ -205,7 +204,7 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
 }
 
 fn highlight_stream(input: &mut dyn io::Read, no_pager: bool) {
-    if !stdout_isatty() {
+    if !atty::is(atty::Stream::Stdout) {
         // We're being piped, just do stdin -> stdout
         highlight_diff(input, io::stdout());
         return;
@@ -368,7 +367,7 @@ fn main() {
         exit(1);
     }
 
-    if stdin_isatty() {
+    if atty::is(atty::Stream::Stdin) {
         eprintln!("ERROR: Expected input from a pipe");
         eprintln!();
         print_help(&mut io::stderr());
