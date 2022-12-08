@@ -300,7 +300,18 @@ fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool, no_p
         .stdout(Stdio::piped());
 
     let pretty_command = format!("{:#?}", command);
-    let mut diff_subprocess = command.spawn().expect(&pretty_command);
+    let mut diff_subprocess: std::process::Child;
+    match command.spawn() {
+        Ok(subprocess) => diff_subprocess = subprocess,
+        Err(err) => {
+            eprintln!(
+                "ERROR: Spawning diff failed:\n  {}\n  {}\n",
+                pretty_command, err
+            );
+            exit(1);
+        }
+    }
+
     let diff_stdout = diff_subprocess.stdout.as_mut().unwrap();
     highlight_stream(diff_stdout, no_pager);
 
