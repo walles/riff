@@ -5,11 +5,11 @@
 [31m-[7m--[27m Hello[0m
 [32m+[7m++[27m Hello[0m
  Minus to not-minus:
-[31m-[7m---------------[0m
-[32m+[7mxxxxxxxxxxxxxxx[0m
+[31m----------------[0m
+[32m+xxxxxxxxxxxxxxx[0m
  Not-plus to plus:
-[31m-[7myyyyyyyyyyyyyyy[0m
-[32m+[7m+++++++++++++++[0m
+[31m-yyyyyyyyyyyyyyy[0m
+[32m++++++++++++++++[0m
  Longer case, minus to plus:
-[31m-[7m---------------[0m
-[32m+[7m+++++++++++++++[0m
+[31m----------------[0m
+[32m++++++++++++++++[0m
