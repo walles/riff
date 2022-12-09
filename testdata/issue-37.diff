@@ -1,0 +1,15 @@
+--- /tmp/hej/before.txt	2022-12-09 21:20:31.000000000 +0100
++++ /tmp/hej/after.txt	2022-12-09 21:20:48.000000000 +0100
+@@ -1,8 +1,8 @@
+ Smallest case, minus to plus:
+--- Hello
++++ Hello
+ Minus to not-minus:
+----------------
++xxxxxxxxxxxxxxx
+ Not-plus to plus:
+-yyyyyyyyyyyyyyy
+++++++++++++++++
+ Longer case, minus to plus:
+----------------
+++++++++++++++++
