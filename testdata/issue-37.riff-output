@@ -1,9 +1,6 @@
-[1m--- /tmp/hej/before.txt[2m	2022-12-09 21:20:31.000000000 +0100[0m
-[1m+++ /tmp/hej/after.txt[2m	2022-12-09 21:20:48.000000000 +0100[0m
-[36m@@ -1,8 +1,8 @@[0m
- Smallest case, minus to plus:
-[31m-[7m--[27m Hello[0m
-[32m+[7m++[27m Hello[0m
+[1m--- /tmp/hej/before.txt[2m	2022-12-09 21:33:03.000000000 +0100[0m
+[1m+++ /tmp/hej/after.txt[2m	2022-12-09 21:33:07.000000000 +0100[0m
+[36m@@ -1,6 +1,6 @@[0m
  Minus to not-minus:
 [31m----------------[0m
 [32m+xxxxxxxxxxxxxxx[0m
