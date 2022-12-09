@@ -195,7 +195,7 @@ EOM
 if $LIVE; then
   ls -lh riff-"$NEW_VERSION_NUMBER"-*
 else
-  ls -lh target/*/release/riff
+  ls -lh target/*/release/riff target/*/release/riff.exe
 fi
 
 $LIVE && echo
