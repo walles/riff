@@ -1,0 +1,12 @@
+--- /tmp/hej/before.txt	2022-12-09 21:33:03.000000000 +0100
++++ /tmp/hej/after.txt	2022-12-09 21:33:07.000000000 +0100
+@@ -1,6 +1,6 @@
+ Minus to not-minus:
+----------------
++xxxxxxxxxxxxxxx
+ Not-plus to plus:
+-yyyyyyyyyyyyyyy
+++++++++++++++++
+ Longer case, minus to plus:
+----------------
+++++++++++++++++
