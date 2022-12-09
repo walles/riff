@@ -167,6 +167,13 @@ rustup target add x86_64-unknown-linux-musl
 cargo build --release --target=x86_64-unknown-linux-musl
 $LIVE && cp "target/x86_64-unknown-linux-musl/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-linux"
 
+# Build a Windows binary on macOS
+#
+# From: https://gist.github.com/Mefistophell/9787e1b6d2d9441c16d2ac79d6a505e6
+rustup target add x86_64-pc-windows-gnu
+cargo build --release --target=x86_64-pc-windows-gnu
+$LIVE && cp "target/x86_64-pc-windows-gnu/release/riff.exe" "riff-$NEW_VERSION_NUMBER-x86_64-windows.exe"
+
 # Mark new release on Github
 $LIVE && git push && git push --tags
 
