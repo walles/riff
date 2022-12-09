@@ -353,7 +353,7 @@ impl LineCollector {
             return;
         }
 
-        if line.starts_with("---") || line.starts_with("+++") {
+        if line.starts_with("--- ") || line.starts_with("+++ ") {
             self.consume_plusminus_header(&line);
             return;
         }
