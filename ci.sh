@@ -23,6 +23,10 @@ cargo clippy
 cargo build --workspace
 cargo test --workspace
 
+# Try a Windows build, cross compiles must work
+rustup target add x86_64-pc-windows-gnu
+cargo build --release --target=x86_64-pc-windows-gnu
+
 # If you have an editor that formats on save this will never be a problem
 cargo fmt -- --check
 
