@@ -1,7 +1,0 @@
-language: rust
-
-before_script:
-  - rustup component add clippy-preview rustfmt
-
-script:
-  - ./ci.sh

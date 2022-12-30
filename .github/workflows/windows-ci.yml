@@ -1,0 +1,21 @@
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      # Copied from here:
+      # <https://docs.travis-ci.com/user/languages/rust/#default-build-script>
+      - run: cargo build --workspace
+      - run: cargo test --workspace
+
+      # Test making a release build as well
+      - run: cargo build --release
