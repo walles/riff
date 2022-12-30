@@ -11,4 +11,8 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+
+      # For testing cross compiling to Windows
+      - uses: egor-tensin/setup-mingw@v2
+
       - run: ./ci.sh
