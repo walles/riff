@@ -14,8 +14,4 @@ jobs:
 
       # Copied from here:
       # <https://docs.travis-ci.com/user/languages/rust/#default-build-script>
-      - run: cargo build --workspace
       - run: cargo test --workspace
-
-      # Test making a release build as well
-      - run: cargo build --release
