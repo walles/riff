@@ -6,8 +6,13 @@
 
 set -euxo pipefail
 
-# Make sure we're on latest, mostly for Clippy's sake
-rustup update
+# Make sure we're on latest, mostly for Clippy's sake. On CI, we don't do this
+# because GitHub already put some level of this tooling in place.
+#
+# $CI check from: https://stackoverflow.com/a/13864829/473672
+if [[ -z "${CI+x}" ]]; then
+    rustup update
+fi
 rustup component add clippy rustfmt
 
 # Settings are at the top of main.rs
