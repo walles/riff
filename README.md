@@ -69,8 +69,9 @@ git config --global interactive.diffFilter riff
 
 # See Also
 
-Check out [this VSCode extension for improved Git commit message
-editing](https://marketplace.visualstudio.com/items?itemName=walles.git-commit-message-plus).
+[This VSCode extension for improved Git commit message
+editing](https://marketplace.visualstudio.com/items?itemName=walles.git-commit-message-plus)
+is nice. Yes, I wrote it and I'm tooting my own horn here.
 
 Good choice if you (like me!) are [using VSCode for Git commit message
 editing](https://jonasbn.github.io/til/vscode/integrate_with_cli.html).
