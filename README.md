@@ -67,6 +67,14 @@ git config --global pager.log riff
 git config --global interactive.diffFilter riff
 ```
 
+# See Also
+
+Check out [this VSCode extension for improved Git commit message
+editing](https://marketplace.visualstudio.com/items?itemName=walles.git-commit-message-plus).
+
+Good choice if you (like me!) are [using VSCode for Git commit message
+editing](https://jonasbn.github.io/til/vscode/integrate_with_cli.html).
+
 # Development
 
 If you put example input and output in the `testdata` directory, then `cargo test` will verify that they match.
