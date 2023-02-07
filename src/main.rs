@@ -187,20 +187,20 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
     eprintln!("\n\n-v-v-v----------- RIFF CRASHED ---------------v-v-v-\n",);
 
     // Panic message
-    eprintln!("Panic message: <{:#?}>", panic_info);
+    eprintln!("Panic message: <{panic_info:#?}>");
     eprintln!();
 
     // Backtrace
     eprintln!("{:?}", Backtrace::new());
 
-    eprintln!("Riff version: {}", GIT_VERSION);
+    eprintln!("Riff version: {GIT_VERSION}");
 
     eprintln!();
     eprintln!("Command line arguments: {:?}", env::args());
 
     eprintln!("\n-^-^-^------- END OF RIFF CRASH REPORT -------^-^-^-\n",);
 
-    eprintln!("{}", CRASH_FOOTER);
+    eprintln!("{CRASH_FOOTER}");
 }
 
 fn highlight_stream(input: &mut dyn io::Read, no_pager: bool) {
@@ -299,15 +299,12 @@ fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool, no_p
         .arg(path2)
         .stdout(Stdio::piped());
 
-    let pretty_command = format!("{:#?}", command);
+    let pretty_command = format!("{command:#?}");
     let mut diff_subprocess: std::process::Child;
     match command.spawn() {
         Ok(subprocess) => diff_subprocess = subprocess,
         Err(err) => {
-            eprintln!(
-                "ERROR: Spawning diff failed:\n  {}\n  {}\n",
-                pretty_command, err
-            );
+            eprintln!("ERROR: Spawning diff failed:\n  {pretty_command}\n  {err}\n");
             exit(1);
         }
     }
@@ -320,7 +317,7 @@ fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool, no_p
     if diff_exit_code != 0 && diff_exit_code != 1 {
         // diff exit code was neither 0 (comparees identical) or 1 (differences
         // found), this means trouble.
-        eprintln!("Exit code {}: {}", diff_exit_code, pretty_command);
+        eprintln!("Exit code {diff_exit_code}: {pretty_command}");
         exit(diff_exit_code);
     }
 }
@@ -337,7 +334,7 @@ fn main() {
     }
 
     if consume("--version", &mut args) {
-        println!("riff {}", GIT_VERSION);
+        println!("riff {GIT_VERSION}");
         println!();
         println!("Source code available at <https://github.com/walles/riff>.");
         return;
@@ -372,7 +369,7 @@ fn main() {
     }
 
     if args.len() != 1 {
-        eprintln!("ERROR: Unknown command line: {:?}", args);
+        eprintln!("ERROR: Unknown command line: {args:?}");
         eprintln!();
         print_help(&mut io::stderr());
         exit(1);
@@ -399,7 +396,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn new(text: &str) -> String {
-        return format!("{}{}{}", NEW, text, NORMAL);
+        return format!("{NEW}{text}{NORMAL}");
     }
 
     #[test]

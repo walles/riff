@@ -34,8 +34,7 @@ fn simple_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
     }
     if (!old_text.is_empty()) && !old_text.ends_with('\n') {
         old_lines.push(format!(
-            "{}{}{}",
-            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
+            "{NO_EOF_NEWLINE_COLOR}{NO_EOF_NEWLINE_MARKER}{NORMAL}"
         ));
     }
 
@@ -45,8 +44,7 @@ fn simple_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
     }
     if (!new_text.is_empty()) && !new_text.ends_with('\n') {
         new_lines.push(format!(
-            "{}{}{}",
-            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
+            "{NO_EOF_NEWLINE_COLOR}{NO_EOF_NEWLINE_MARKER}{NORMAL}"
         ));
     }
 
@@ -161,8 +159,7 @@ fn to_lines(old: &str, new: &str) -> (Vec<String>, Vec<String>) {
     }
     if (!old.is_empty()) && !old.ends_with('\n') {
         old_lines.push(format!(
-            "{}{}{}",
-            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
+            "{NO_EOF_NEWLINE_COLOR}{NO_EOF_NEWLINE_MARKER}{NORMAL}"
         ));
     }
 
@@ -172,8 +169,7 @@ fn to_lines(old: &str, new: &str) -> (Vec<String>, Vec<String>) {
     }
     if (!new.is_empty()) && !new.ends_with('\n') {
         new_lines.push(format!(
-            "{}{}{}",
-            NO_EOF_NEWLINE_COLOR, NO_EOF_NEWLINE_MARKER, NORMAL
+            "{NO_EOF_NEWLINE_COLOR}{NO_EOF_NEWLINE_MARKER}{NORMAL}"
         ));
     }
 
@@ -235,12 +231,10 @@ mod tests {
             result,
             [
                 format!(
-                    "{}-{}<{}unchanged text between quotes{}>{}",
-                    OLD, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NORMAL
+                    "{OLD}-{INVERSE_VIDEO}<{NOT_INVERSE_VIDEO}unchanged text between quotes{INVERSE_VIDEO}>{NORMAL}"
                 ),
                 format!(
-                    "{}+{}[{}unchanged text between quotes{}]{}",
-                    NEW, INVERSE_VIDEO, NOT_INVERSE_VIDEO, INVERSE_VIDEO, NORMAL
+                    "{NEW}+{INVERSE_VIDEO}[{NOT_INVERSE_VIDEO}unchanged text between quotes{INVERSE_VIDEO}]{NORMAL}"
                 ),
             ]
         )
@@ -249,9 +243,9 @@ mod tests {
     #[test]
     fn test_almost_empty_changes() {
         let result = format("x\n", "");
-        assert_eq!(result, [format!("{}-x{}", OLD, NORMAL),]);
+        assert_eq!(result, [format!("{OLD}-x{NORMAL}"),]);
 
         let result = format("", "x\n");
-        assert_eq!(result, [format!("{}+x{}", NEW, NORMAL),]);
+        assert_eq!(result, [format!("{NEW}+x{NORMAL}"),]);
     }
 }

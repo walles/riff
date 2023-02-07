@@ -324,7 +324,7 @@ mod tests {
         });
 
         let rendered = test_me.render();
-        assert_eq!(rendered, format!("{}+hej{}\n", NEW, NORMAL));
+        assert_eq!(rendered, format!("{NEW}+hej{NORMAL}\n"));
     }
 
     #[test]
@@ -370,7 +370,7 @@ mod tests {
         test_me.push(StyledToken::new(" ".to_string(), Style::Old));
         let actual = test_me.render();
 
-        assert_eq!(actual, format!("{}- {}", OLD, NORMAL));
+        assert_eq!(actual, format!("{OLD}- {NORMAL}"));
     }
 
     #[test]
@@ -433,7 +433,7 @@ mod tests {
         test_me.push(StyledToken::new("\t".to_string(), Style::Old));
         let actual = test_me.render();
 
-        assert_eq!(actual, format!("{}-x\t{}", OLD, NORMAL));
+        assert_eq!(actual, format!("{OLD}-x\t{NORMAL}"));
     }
 
     #[test]
