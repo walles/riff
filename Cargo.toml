@@ -39,7 +39,7 @@ itertools = "0.10.1"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
-tempfile = "3"
+tempfile = "3.4.0"
 
 # See: https://doc.rust-lang.org/cargo/reference/profiles.html
 [profile.release]
