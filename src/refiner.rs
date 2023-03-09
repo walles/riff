@@ -105,8 +105,15 @@ fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<Stri
     let mut new_collector = TokenCollector::create(StyledToken::new("+".to_string(), Style::New));
 
     // Tokenize adds and removes before diffing them
-    let tokenized_old = tokenizer::tokenize(old_text);
-    let tokenized_new = tokenizer::tokenize(new_text);
+    let mut tokenized_old = tokenizer::tokenize(old_text);
+    let mut tokenized_new = tokenizer::tokenize(new_text);
+
+    // Help visualize what actually happens in "No newline at end of file" diffs
+    if old_text.ends_with('\n') && !new_text.ends_with('\n') {
+        tokenized_old.insert(tokenized_old.len() - 1, "⏎");
+    } else if new_text.ends_with('\n') && !old_text.ends_with('\n') {
+        tokenized_new.insert(tokenized_new.len() - 1, "⏎");
+    }
 
     let diff = tokenized_old.diff(&tokenized_new);
     match diff {

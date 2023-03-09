@@ -101,6 +101,7 @@ If you want to test the release script without actually releasing anything, do:
 
 ## Misc
 
+- Render ESC characters in the diff as Unicode ␛
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
   executed from inside of the `$PATH`
 - Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
