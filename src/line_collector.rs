@@ -3,6 +3,7 @@ use crate::io::ErrorKind;
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
+use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 
 use crate::{constants::*, refiner};
@@ -26,7 +27,17 @@ lazy_static! {
         ("--- /dev/null", FAINT),
         ("+++ /dev/null", FAINT),
     ];
+
     static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b\\[[0-9;]*[^0-9;]").unwrap();
+
+    // This is the "\ No newline at end of file" string. But since it can come
+    // in not-English as well as English, we take it from the input and store it
+    // in this variable. None means we don't know yet.
+    //
+    // Ref: https://github.com/walles/riff/issues/39
+    pub(crate) static ref NO_EOF_NEWLINE_MARKER_HOLDER: std::sync::Arc<
+        std::sync::Mutex<std::option::Option<std::string::String>>,
+    > = Arc::new(Mutex::<Option<String>>::new(None));
 }
 
 #[must_use]
@@ -271,7 +282,7 @@ impl LineCollector {
         self.new_text.push('\n');
     }
 
-    fn consume_no_eof_newline_marker(&mut self) {
+    fn consume_no_eof_newline_marker(&mut self, no_eof_newline_marker: &str) {
         if !self.new_text.is_empty() {
             // New section comes after old, so if we get in here it's a new
             // section that doesn't end in a newline. Remove its trailing
@@ -290,7 +301,7 @@ impl LineCollector {
         // consume the colorized marker as plain text
         self.consume_plain_line(&format!(
             "{}{}{}",
-            NO_EOF_NEWLINE_COLOR, &NO_EOF_NEWLINE_MARKER, NORMAL
+            NO_EOF_NEWLINE_COLOR, no_eof_newline_marker, NORMAL
         ))
     }
 
@@ -332,6 +343,7 @@ impl LineCollector {
         return ANSI_COLOR_REGEX.replace_all(input, "");
     }
 
+    /// The line parameter is expected *not* to end in a newline
     pub fn consume_line(&mut self, line: String) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
@@ -378,8 +390,14 @@ impl LineCollector {
             return;
         }
 
-        if line == NO_EOF_NEWLINE_MARKER {
-            self.consume_no_eof_newline_marker();
+        if line.starts_with('\\') {
+            self.consume_no_eof_newline_marker(&line);
+
+            // Store the "\ No newline at end of file" string however it is
+            // phrased in this particular diff
+            let mut no_eof_newline_marker = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+            *no_eof_newline_marker = Some(line.to_string());
+
             return;
         }
 
