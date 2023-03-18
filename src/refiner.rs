@@ -1,3 +1,4 @@
+use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::tokenizer;
 use crate::{
     constants::*,
@@ -33,8 +34,10 @@ fn simple_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
         old_lines.push(format_simple_line(OLD, '-', old_line));
     }
     if (!old_text.is_empty()) && !old_text.ends_with('\n') {
+        let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+        let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
         old_lines.push(format!(
-            "{NO_EOF_NEWLINE_COLOR}{NO_EOF_NEWLINE_MARKER}{NORMAL}"
+            "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
         ));
     }
 
@@ -43,8 +46,10 @@ fn simple_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
         new_lines.push(format_simple_line(NEW, '+', add_line));
     }
     if (!new_text.is_empty()) && !new_text.ends_with('\n') {
+        let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+        let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
         new_lines.push(format!(
-            "{NO_EOF_NEWLINE_COLOR}{NO_EOF_NEWLINE_MARKER}{NORMAL}"
+            "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
         ));
     }
 
@@ -165,8 +170,10 @@ fn to_lines(old: &str, new: &str) -> (Vec<String>, Vec<String>) {
         old_lines.push(highlighted_old_line.to_string());
     }
     if (!old.is_empty()) && !old.ends_with('\n') {
+        let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+        let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
         old_lines.push(format!(
-            "{NO_EOF_NEWLINE_COLOR}{NO_EOF_NEWLINE_MARKER}{NORMAL}"
+            "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
         ));
     }
 
@@ -175,8 +182,10 @@ fn to_lines(old: &str, new: &str) -> (Vec<String>, Vec<String>) {
         new_lines.push(highlighted_new_line.to_string());
     }
     if (!new.is_empty()) && !new.ends_with('\n') {
+        let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+        let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
         new_lines.push(format!(
-            "{NO_EOF_NEWLINE_COLOR}{NO_EOF_NEWLINE_MARKER}{NORMAL}"
+            "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
         ));
     }
 
