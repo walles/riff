@@ -391,12 +391,24 @@ impl LineCollector {
         }
 
         if line.starts_with('\\') {
-            self.consume_no_eof_newline_marker(&line);
+            {
+                // Store the "\ No newline at end of file" string however it is
+                // phrased in this particular diff.
+                //
+                // Note that this must be done before consuming it below so we
+                // know it's set before the consumer decides it wants to emit a
+                // copy. Otherwise we get a race condition and we don't want
+                // that.
+                //
+                // We do it in a block to release the lock as soon as possible.
+                let mut no_eof_newline_marker = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+                *no_eof_newline_marker = Some(line.to_string());
+            }
 
-            // Store the "\ No newline at end of file" string however it is
-            // phrased in this particular diff
-            let mut no_eof_newline_marker = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
-            *no_eof_newline_marker = Some(line.to_string());
+            // Consume the marker *after* we just updated our
+            // no_eof_newline_marker above. In the other order we'd have a race
+            // condition.
+            self.consume_no_eof_newline_marker(&line);
 
             return;
         }
