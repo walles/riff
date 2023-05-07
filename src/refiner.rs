@@ -25,7 +25,7 @@ fn format_simple_line(old_new: &str, plus_minus: char, contents: &str) -> String
 ///
 /// Returns one old and one new line array.
 #[must_use]
-fn simple_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
+fn format_simple(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
     let mut old_lines: Vec<String> = Vec::new();
     let mut new_lines: Vec<String> = Vec::new();
 
@@ -41,9 +41,17 @@ fn simple_format(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
         ));
     }
 
-    for add_line in new_text.lines() {
-        // Use a specialized line formatter since this code is in a hot path
-        new_lines.push(format_simple_line(NEW, '+', add_line));
+    let announce_lost_newline = !new_text.is_empty() && !new_text.ends_with('\n');
+    for (line_number, add_line) in new_text.lines().enumerate() {
+        let new_line: String =
+            if announce_lost_newline && line_number == new_text.lines().count() - 1 {
+                // Add a red highlighted newline symbol at the end
+                format!("{NEW}+{add_line}{OLD}{INVERSE_VIDEO}⏎{NORMAL}")
+            } else {
+                // Use a specialized line formatter since this code is in a hot path
+                format_simple_line(NEW, '+', add_line)
+            };
+        new_lines.push(new_line);
     }
     if (!new_text.is_empty()) && !new_text.ends_with('\n') {
         let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
@@ -67,16 +75,8 @@ fn concat(mut a: Vec<String>, mut b: Vec<String>) -> Vec<String> {
 /// Returns a vector of ANSI highlighted lines
 #[must_use]
 pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
-    match format_split(old_text, new_text) {
-        None => {
-            let (old_lines, new_lines) = simple_format(old_text, new_text);
-            return concat(old_lines, new_lines);
-        }
-
-        Some((old_lines, new_lines)) => {
-            return concat(old_lines, new_lines);
-        }
-    }
+    let (old_lines, new_lines) = format_split(old_text, new_text);
+    return concat(old_lines, new_lines);
 }
 
 /// LCS is O(m * n) complexity. If it gets too complex, refining will take too
@@ -93,16 +93,14 @@ fn too_large_to_refine(old_text: &str, new_text: &str) -> bool {
 
 /// Returns two vectors of ANSI highlighted lines, the old lines and the new
 /// lines.
-///
-/// A return value of None means you should try simple_format() instead.
 #[must_use]
-fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<String>)> {
+fn format_split(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
     if old_text.is_empty() || new_text.is_empty() {
-        return Some(simple_format(old_text, new_text));
+        return format_simple(old_text, new_text);
     }
 
     if too_large_to_refine(old_text, new_text) {
-        return Some(simple_format(old_text, new_text));
+        return format_simple(old_text, new_text);
     }
 
     // Find diffs between adds and removals
@@ -160,7 +158,7 @@ fn format_split(old_text: &str, new_text: &str) -> Option<(Vec<String>, Vec<Stri
     let highlighted_old_text = old_collector.render();
     let highlighted_new_text = new_collector.render();
 
-    return Some(to_lines(&highlighted_old_text, &highlighted_new_text));
+    return to_lines(&highlighted_old_text, &highlighted_new_text);
 }
 
 #[must_use]
@@ -200,7 +198,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn simple_format_merged(old_text: &str, new_text: &str) -> Vec<String> {
-        let (old_lines, new_lines) = simple_format(old_text, new_text);
+        let (old_lines, new_lines) = format_simple(old_text, new_text);
 
         return concat(old_lines, new_lines);
     }

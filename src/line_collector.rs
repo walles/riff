@@ -30,11 +30,11 @@ lazy_static! {
 
     static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b\\[[0-9;]*[^0-9;]").unwrap();
 
-    // This is the "\ No newline at end of file" string. But since it can come
-    // in not-English as well as English, we take it from the input and store it
-    // in this variable. None means we don't know yet.
-    //
-    // Ref: https://github.com/walles/riff/issues/39
+    /// This is the `\ No newline at end of file` string. But since it can come
+    /// in not-English as well as English, we take it from the input and store it
+    /// in this variable. None means we don't know yet.
+    ///
+    /// See also: https://github.com/walles/riff/issues/39
     pub(crate) static ref NO_EOF_NEWLINE_MARKER_HOLDER: std::sync::Arc<
         std::sync::Mutex<std::option::Option<std::string::String>>,
     > = Arc::new(Mutex::<Option<String>>::new(None));
