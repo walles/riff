@@ -22,21 +22,18 @@ fn format_simple_line(old_new: &str, plus_minus: char, contents: &str) -> String
 /// Format old and new lines in OLD and NEW colors.
 ///
 /// No intra-line refinement.
-///
-/// Returns one old and one new line array.
 #[must_use]
-fn format_simple(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
-    let mut old_lines: Vec<String> = Vec::new();
-    let mut new_lines: Vec<String> = Vec::new();
+fn format_simple(old_text: &str, new_text: &str) -> Vec<String> {
+    let mut lines: Vec<String> = Vec::new();
 
     for old_line in old_text.lines() {
         // Use a specialized line formatter since this code is in a hot path
-        old_lines.push(format_simple_line(OLD, '-', old_line));
+        lines.push(format_simple_line(OLD, '-', old_line));
     }
     if (!old_text.is_empty()) && !old_text.ends_with('\n') {
         let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
         let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-        old_lines.push(format!(
+        lines.push(format!(
             "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
         ));
     }
@@ -51,32 +48,17 @@ fn format_simple(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
                 // Use a specialized line formatter since this code is in a hot path
                 format_simple_line(NEW, '+', add_line)
             };
-        new_lines.push(new_line);
+        lines.push(new_line);
     }
     if (!new_text.is_empty()) && !new_text.ends_with('\n') {
         let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
         let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-        new_lines.push(format!(
+        lines.push(format!(
             "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
         ));
     }
 
-    return (old_lines, new_lines);
-}
-
-#[must_use]
-fn concat(mut a: Vec<String>, mut b: Vec<String>) -> Vec<String> {
-    let mut merged: Vec<String> = Vec::new();
-    merged.append(&mut a);
-    merged.append(&mut b);
-    return merged;
-}
-
-/// Returns a vector of ANSI highlighted lines
-#[must_use]
-pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
-    let (old_lines, new_lines) = format_split(old_text, new_text);
-    return concat(old_lines, new_lines);
+    return lines;
 }
 
 /// LCS is O(m * n) complexity. If it gets too complex, refining will take too
@@ -91,10 +73,9 @@ fn too_large_to_refine(old_text: &str, new_text: &str) -> bool {
     return complexity > 13_000u64 * 13_000u64;
 }
 
-/// Returns two vectors of ANSI highlighted lines, the old lines and the new
-/// lines.
+/// Returns a vector of ANSI highlighted lines
 #[must_use]
-fn format_split(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
+pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     if old_text.is_empty() || new_text.is_empty() {
         return format_simple(old_text, new_text);
     }
@@ -162,32 +143,32 @@ fn format_split(old_text: &str, new_text: &str) -> (Vec<String>, Vec<String>) {
 }
 
 #[must_use]
-fn to_lines(old: &str, new: &str) -> (Vec<String>, Vec<String>) {
-    let mut old_lines: Vec<String> = Vec::new();
+fn to_lines(old: &str, new: &str) -> Vec<String> {
+    let mut lines: Vec<String> = Vec::new();
+
     for highlighted_old_line in old.lines() {
-        old_lines.push(highlighted_old_line.to_string());
+        lines.push(highlighted_old_line.to_string());
     }
     if (!old.is_empty()) && !old.ends_with('\n') {
         let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
         let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-        old_lines.push(format!(
+        lines.push(format!(
             "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
         ));
     }
 
-    let mut new_lines: Vec<String> = Vec::new();
     for highlighted_new_line in new.lines() {
-        new_lines.push(highlighted_new_line.to_string());
+        lines.push(highlighted_new_line.to_string());
     }
     if (!new.is_empty()) && !new.ends_with('\n') {
         let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
         let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-        new_lines.push(format!(
+        lines.push(format!(
             "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
         ));
     }
 
-    return (old_lines, new_lines);
+    return lines;
 }
 
 #[cfg(test)]
@@ -197,24 +178,18 @@ mod tests {
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
-    fn simple_format_merged(old_text: &str, new_text: &str) -> Vec<String> {
-        let (old_lines, new_lines) = format_simple(old_text, new_text);
-
-        return concat(old_lines, new_lines);
-    }
-
     #[test]
     fn test_simple_format_adds_and_removes() {
         let empty: Vec<String> = Vec::new();
-        assert_eq!(simple_format_merged("", ""), empty);
+        assert_eq!(format_simple("", ""), empty);
 
         // Test adds-only
         assert_eq!(
-            simple_format_merged("", "a\n"),
+            format_simple("", "a\n"),
             ["".to_string() + NEW + "+a" + NORMAL]
         );
         assert_eq!(
-            simple_format_merged("", "a\nb\n"),
+            format_simple("", "a\nb\n"),
             [
                 "".to_string() + NEW + "+a" + NORMAL,
                 "".to_string() + NEW + "+b" + NORMAL,
@@ -223,11 +198,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            simple_format_merged("a\n", ""),
+            format_simple("a\n", ""),
             ["".to_string() + OLD + "-a" + NORMAL]
         );
         assert_eq!(
-            simple_format_merged("a\nb\n", ""),
+            format_simple("a\nb\n", ""),
             [
                 "".to_string() + OLD + "-a" + NORMAL,
                 "".to_string() + OLD + "-b" + NORMAL,
