@@ -1,5 +1,7 @@
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
-use crate::token_collector::{bridge_consecutive_highlighted_tokens, render};
+use crate::token_collector::{
+    bridge_consecutive_highlighted_tokens, render, unhighlight_noisy_rows,
+};
 use crate::tokenizer;
 use crate::{
     constants::*,
@@ -138,9 +140,11 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
+    unhighlight_noisy_rows(&mut old_tokens);
     let highlighted_old_text = render(&old_prefix, &mut old_tokens);
 
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
+    unhighlight_noisy_rows(&mut new_tokens);
     let highlighted_new_text = render(&new_prefix, &mut new_tokens);
 
     return to_lines(&highlighted_old_text, &highlighted_new_text);

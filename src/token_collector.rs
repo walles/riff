@@ -92,8 +92,6 @@ impl Style {
 fn render_row(line_prefix: &StyledToken, row: &mut [StyledToken]) -> String {
     let mut rendered = String::new();
 
-    unhighlight_noisy_rows(row);
-
     if line_prefix.style == Style::New {
         highlight_trailing_whitespace(row);
         highlight_nonleading_tab(row);
@@ -160,28 +158,56 @@ pub fn render(line_prefix: &StyledToken, tokens: &mut Vec<StyledToken>) -> Strin
     return rendered;
 }
 
-/// Unhighlight everything if too much of the line is highlighted
-fn unhighlight_noisy_rows(row: &mut [StyledToken]) {
+/// Unhighlight rows that have too much highlighting.
+///
+/// Returns true if something was unhighlighted, false otherwise.
+pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
     let mut highlighted_tokens_count = 0;
+    let mut total_tokens_count: usize = 0;
+    let mut line_start_index = 0;
+    let mut changed = false;
 
-    for token in row.iter_mut().rev() {
+    for i in 0..tokens.len() {
+        let token = &tokens[i];
+        if token.token == "\n" {
+            // End of line, evaluate!
+            if total_tokens_count > 0 {
+                let highlighted_percentage = (100 * highlighted_tokens_count) / total_tokens_count;
+                if highlighted_percentage > 70 {
+                    // Unhighlight the current row
+                    changed = true;
+                    for token in tokens[line_start_index..i].iter_mut() {
+                        token.style = token.style.not_inverted();
+                    }
+                }
+            }
+
+            // Reset for the next row
+            line_start_index = i + 1;
+            highlighted_tokens_count = 0;
+            total_tokens_count = 0;
+            continue;
+        }
+
+        total_tokens_count += 1;
         if token.style.is_inverse() {
             highlighted_tokens_count += 1;
         }
     }
 
-    if !row.is_empty() {
-        let highlighted_percentage = (100 * highlighted_tokens_count) / row.len();
-        if highlighted_percentage <= 70 {
-            // Little enough of the line highlighted, let it be
-            return;
+    // Handle the last row
+    if total_tokens_count > 0 {
+        let highlighted_percentage = (100 * highlighted_tokens_count) / total_tokens_count;
+        if highlighted_percentage > 70 {
+            // Unhighlight the current row
+            changed = true;
+            for token in tokens[line_start_index..].iter_mut() {
+                token.style = token.style.not_inverted();
+            }
         }
     }
 
-    // Line too noisy, unhighlight!
-    for token in row.iter_mut() {
-        token.style = token.style.not_inverted();
-    }
+    return changed;
 }
 
 fn highlight_trailing_whitespace(row: &mut [StyledToken]) {
@@ -225,7 +251,7 @@ fn highlight_nonleading_tab(row: &mut [StyledToken]) {
 }
 
 /// Highlight single space between two highlighted tokens
-pub fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
+pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     enum FoundState {
         Nothing,
         HighlightedWord,
@@ -234,7 +260,7 @@ pub fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
 
     let mut found_state = FoundState::Nothing;
     let mut previous_token: Option<&mut StyledToken> = None;
-    for token in row.iter_mut() {
+    for token in tokens.iter_mut() {
         match found_state {
             FoundState::Nothing => {
                 if token.style.is_inverse() {
@@ -257,8 +283,8 @@ pub fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
             FoundState::WordSpace => {
                 if token.style.is_inverse() {
                     // Found "Monkey Dance"
-                    if let Some(_previous_token) = previous_token {
-                        _previous_token.style = _previous_token.style.inverted();
+                    if let Some(whitespace) = previous_token {
+                        whitespace.style = whitespace.style.inverted();
                     }
 
                     found_state = FoundState::HighlightedWord;
