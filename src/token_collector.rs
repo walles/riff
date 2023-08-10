@@ -140,8 +140,6 @@ pub fn render(line_prefix: &StyledToken, tokens: &mut Vec<StyledToken>) -> Strin
     let mut current_row: Vec<StyledToken> = Vec::new();
     let mut rendered = String::new();
 
-    bridge_consecutive_highlighted_tokens(tokens);
-
     for token in tokens {
         if token.token == "\n" {
             let rendered_row = &render_row(line_prefix, &mut current_row);
@@ -227,7 +225,7 @@ fn highlight_nonleading_tab(row: &mut [StyledToken]) {
 }
 
 /// Highlight single space between two highlighted tokens
-fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
+pub fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
     enum FoundState {
         Nothing,
         HighlightedWord,
