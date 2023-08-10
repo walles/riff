@@ -105,6 +105,7 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     let diff = tokenized_old.diff(&tokenized_new);
+    let mut old_highlights = false;
     match diff {
         edit::Edit::Copy(tokens) => {
             for &token in tokens {
@@ -129,6 +130,7 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                         }
                         collection::Edit::Remove(token) => {
                             old_tokens.push(StyledToken::new(token.to_string(), Style::OldInverse));
+                            old_highlights = true;
                         }
                         collection::Edit::Change(_) => {
                             unimplemented!("Edit/Change/Change not implemented, help!")
@@ -141,11 +143,18 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
 
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
     unhighlight_noisy_rows(&mut old_tokens);
-    let highlighted_old_text = render(&old_prefix, &mut old_tokens);
-
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
-    unhighlight_noisy_rows(&mut new_tokens);
-    let highlighted_new_text = render(&new_prefix, &mut new_tokens);
+    let new_unhighlighted = unhighlight_noisy_rows(&mut new_tokens);
+
+    let highlighted_old_text: String;
+    let highlighted_new_text: String;
+    if old_highlights || new_unhighlighted || count_lines(old_tokens) != count_lines(new_tokens) {
+        highlighted_old_text = render(&old_prefix, &mut old_tokens);
+        highlighted_new_text = render(&new_prefix, &mut new_tokens);
+    } else {
+        // FIXME: Special highlighting!
+        write code here
+    }
 
     return to_lines(&highlighted_old_text, &highlighted_new_text);
 }
