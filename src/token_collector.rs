@@ -33,12 +33,6 @@ impl StyledToken {
     }
 }
 
-pub struct TokenCollector {
-    line_prefix: StyledToken,
-    tokens: Vec<StyledToken>,
-    rendered: bool,
-}
-
 impl Style {
     #[must_use]
     pub fn is_inverse(&self) -> bool {
@@ -94,97 +88,78 @@ impl Style {
     }
 }
 
-impl TokenCollector {
-    #[must_use]
-    pub fn create(line_prefix: StyledToken) -> Self {
-        return TokenCollector {
-            line_prefix,
-            tokens: Vec::new(),
-            rendered: false,
-        };
+#[must_use]
+fn render_row(line_prefix: &StyledToken, row: &mut [StyledToken]) -> String {
+    let mut rendered = String::new();
+
+    unhighlight_noisy_rows(row);
+
+    if line_prefix.style == Style::New {
+        highlight_trailing_whitespace(row);
+        highlight_nonleading_tab(row);
     }
 
-    pub fn push(&mut self, token: StyledToken) {
-        self.tokens.push(token);
+    // Set inverse from prefix
+    let mut is_inverse = line_prefix.style.is_inverse();
+    if is_inverse {
+        rendered.push_str(INVERSE_VIDEO);
     }
 
-    #[must_use]
-    fn render_row(&self, row: &mut [StyledToken]) -> String {
-        let mut rendered = String::new();
+    // Set line color from prefix
+    let mut color = line_prefix.style.color();
+    rendered.push_str(line_prefix.style.color());
 
-        unhighlight_noisy_rows(row);
+    // Render prefix
+    rendered.push_str(&line_prefix.token);
 
-        if self.line_prefix.style == Style::New {
-            highlight_trailing_whitespace(row);
-            highlight_nonleading_tab(row);
-        }
-
-        // Set inverse from prefix
-        let mut is_inverse = self.line_prefix.style.is_inverse();
-        if is_inverse {
+    for token in row {
+        if token.style.is_inverse() && !is_inverse {
             rendered.push_str(INVERSE_VIDEO);
         }
+        if is_inverse && !token.style.is_inverse() {
+            rendered.push_str(NOT_INVERSE_VIDEO);
+        }
+        is_inverse = token.style.is_inverse();
 
-        // Set line color from prefix
-        let mut color = self.line_prefix.style.color();
-        rendered.push_str(self.line_prefix.style.color());
-
-        // Render prefix
-        rendered.push_str(&self.line_prefix.token);
-
-        for token in row {
-            if token.style.is_inverse() && !is_inverse {
-                rendered.push_str(INVERSE_VIDEO);
-            }
-            if is_inverse && !token.style.is_inverse() {
-                rendered.push_str(NOT_INVERSE_VIDEO);
-            }
-            is_inverse = token.style.is_inverse();
-
-            if token.style.color() != color {
-                rendered.push_str(token.style.color());
-                color = token.style.color();
-            }
-
-            rendered.push_str(&token.token);
+        if token.style.color() != color {
+            rendered.push_str(token.style.color());
+            color = token.style.color();
         }
 
-        rendered.push_str(NORMAL);
-
-        return rendered;
+        rendered.push_str(&token.token);
     }
 
-    /// Render all the tokens into a (most of the time multiline) string
-    #[must_use]
-    pub fn render(&mut self) -> String {
-        assert!(!self.rendered);
-        let mut current_row: Vec<StyledToken> = Vec::new();
-        let mut rendered = String::new();
+    rendered.push_str(NORMAL);
 
-        let mut tokens = std::mem::take(&mut self.tokens);
+    return rendered;
+}
 
-        bridge_consecutive_highlighted_tokens(&mut tokens);
+/// Render all the tokens into a (most of the time multiline) string
+#[must_use]
+pub fn render(line_prefix: &StyledToken, tokens: &mut Vec<StyledToken>) -> String {
+    let mut current_row: Vec<StyledToken> = Vec::new();
+    let mut rendered = String::new();
 
-        for token in tokens {
-            if token.token == "\n" {
-                let rendered_row = &self.render_row(&mut current_row);
-                rendered.push_str(rendered_row);
-                rendered.push('\n');
-                current_row.clear();
-                continue;
-            }
+    bridge_consecutive_highlighted_tokens(tokens);
 
-            current_row.push(token);
-        }
-
-        if !current_row.is_empty() {
-            let rendered_row = &self.render_row(&mut current_row);
+    for token in tokens {
+        if token.token == "\n" {
+            let rendered_row = &render_row(line_prefix, &mut current_row);
             rendered.push_str(rendered_row);
+            rendered.push('\n');
+            current_row.clear();
+            continue;
         }
 
-        self.rendered = true;
-        return rendered;
+        current_row.push(token.to_owned());
     }
+
+    if !current_row.is_empty() {
+        let rendered_row = render_row(line_prefix, &mut current_row);
+        rendered.push_str(&rendered_row);
+    }
+
+    return rendered;
 }
 
 /// Unhighlight everything if too much of the line is highlighted
@@ -308,22 +283,22 @@ mod tests {
 
     #[test]
     fn test_basic() {
-        let mut test_me = TokenCollector::create(StyledToken {
+        let line_prefix = StyledToken {
             token: "+".to_string(),
             style: Style::New,
-        });
+        };
+        let mut tokens = vec![
+            StyledToken {
+                token: "hej".to_string(),
+                style: Style::New,
+            },
+            StyledToken {
+                token: "\n".to_string(),
+                style: Style::New,
+            },
+        ];
 
-        test_me.push(StyledToken {
-            token: "hej".to_string(),
-            style: Style::New,
-        });
-
-        test_me.push(StyledToken {
-            token: "\n".to_string(),
-            style: Style::New,
-        });
-
-        let rendered = test_me.render();
+        let rendered = render(&line_prefix, &mut tokens);
         assert_eq!(rendered, format!("{NEW}+hej{NORMAL}\n"));
     }
 
@@ -366,9 +341,9 @@ mod tests {
     #[test]
     fn test_removed_trailing_whitespace() {
         // It shouldn't be highlighted, just added ones should
-        let mut test_me = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
-        test_me.push(StyledToken::new(" ".to_string(), Style::Old));
-        let actual = test_me.render();
+        let mut tokens = vec![StyledToken::new(" ".to_string(), Style::Old)];
+        let line_prefix = StyledToken::new("-".to_string(), Style::Old);
+        let actual = render(&line_prefix, &mut tokens);
 
         assert_eq!(actual, format!("{OLD}- {NORMAL}"));
     }
@@ -428,10 +403,12 @@ mod tests {
     #[test]
     fn test_removed_nonleading_tab() {
         // It shouldn't be highlighted, just added ones should
-        let mut test_me = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
-        test_me.push(StyledToken::new("x".to_string(), Style::Old));
-        test_me.push(StyledToken::new("\t".to_string(), Style::Old));
-        let actual = test_me.render();
+        let line_prefix = StyledToken::new("-".to_string(), Style::Old);
+        let mut test_me = vec![
+            StyledToken::new("x".to_string(), Style::Old),
+            StyledToken::new("\t".to_string(), Style::Old),
+        ];
+        let actual = render(&line_prefix, &mut test_me);
 
         assert_eq!(actual, format!("{OLD}-x\t{NORMAL}"));
     }
