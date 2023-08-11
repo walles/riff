@@ -1,7 +1,7 @@
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::token_collector::{
-    bridge_consecutive_highlighted_tokens, highlight_trailing_whitespace, render,
-    unhighlight_noisy_rows,
+    bridge_consecutive_highlighted_tokens, highlight_nonleading_tabs,
+    highlight_trailing_whitespace, render, unhighlight_noisy_rows,
 };
 use crate::tokenizer;
 use crate::{
@@ -148,11 +148,11 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
     let _new_unhighlighted = unhighlight_noisy_rows(&mut new_tokens);
     highlight_trailing_whitespace(&mut new_tokens);
-    // FIXME: highlight_nonleading_tabs(&mut new_tokens);
+    highlight_nonleading_tabs(&mut new_tokens);
 
     // FIXME: Do classical highlighting only if old_highlights || new_unhighlighted || count_lines(&old_tokens) != count_lines(&new_tokens)
-    let highlighted_old_text: String = render(&old_prefix, &mut old_tokens);
-    let highlighted_new_text: String = render(&new_prefix, &mut new_tokens);
+    let highlighted_old_text: String = render(&old_prefix, &old_tokens);
+    let highlighted_new_text: String = render(&new_prefix, &new_tokens);
 
     return to_lines(&highlighted_old_text, &highlighted_new_text);
 }

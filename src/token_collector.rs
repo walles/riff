@@ -89,12 +89,8 @@ impl Style {
 }
 
 #[must_use]
-fn render_row(line_prefix: &StyledToken, row: &mut [StyledToken]) -> String {
+fn render_row(line_prefix: &StyledToken, row: &[StyledToken]) -> String {
     let mut rendered = String::new();
-
-    if line_prefix.style == Style::New {
-        highlight_nonleading_tab(row);
-    }
 
     // Set inverse from prefix
     let mut is_inverse = line_prefix.style.is_inverse();
@@ -133,13 +129,13 @@ fn render_row(line_prefix: &StyledToken, row: &mut [StyledToken]) -> String {
 
 /// Render all the tokens into a (most of the time multiline) string
 #[must_use]
-pub fn render(line_prefix: &StyledToken, tokens: &mut Vec<StyledToken>) -> String {
+pub fn render(line_prefix: &StyledToken, tokens: &Vec<StyledToken>) -> String {
     let mut current_row: Vec<StyledToken> = Vec::new();
     let mut rendered = String::new();
 
     for token in tokens {
         if token.token == "\n" {
-            let rendered_row = &render_row(line_prefix, &mut current_row);
+            let rendered_row = &render_row(line_prefix, &current_row);
             rendered.push_str(rendered_row);
             rendered.push('\n');
             current_row.clear();
@@ -150,7 +146,7 @@ pub fn render(line_prefix: &StyledToken, tokens: &mut Vec<StyledToken>) -> Strin
     }
 
     if !current_row.is_empty() {
-        let rendered_row = render_row(line_prefix, &mut current_row);
+        let rendered_row = render_row(line_prefix, &current_row);
         rendered.push_str(&rendered_row);
     }
 
@@ -226,33 +222,20 @@ pub fn highlight_trailing_whitespace(tokens: &mut [StyledToken]) {
     }
 }
 
-fn highlight_nonleading_tab(row: &mut [StyledToken]) {
-    let mut token_iter = row.iter_mut();
-
-    // Skip leading TABs
-    loop {
-        let next = token_iter.next();
-        if next.is_none() {
-            // Done!
-            return;
-        }
-
-        let token = next.unwrap();
-        if token.token != "\t" {
-            // Not a TAB, this means we're out of skipping the leading TABs
-            break;
-        }
-    }
-
-    // Scan the rest of the line for non-leading TABs
-    for token in token_iter {
-        if token.token != "\t" {
-            // Not a TAB, never mind
+pub fn highlight_nonleading_tabs(tokens: &mut [StyledToken]) {
+    let mut leading = true;
+    for token in tokens.iter_mut() {
+        if token.token == "\n" {
+            leading = true;
             continue;
         }
 
-        // Non-leading TAB, mark it!
-        token.style = Style::Error;
+        if !leading && token.token == "\t" {
+            token.style = Style::Error;
+            continue;
+        }
+
+        leading = false;
     }
 }
 
@@ -317,7 +300,7 @@ mod tests {
             token: "+".to_string(),
             style: Style::New,
         };
-        let mut tokens = vec![
+        let tokens = vec![
             StyledToken {
                 token: "hej".to_string(),
                 style: Style::New,
@@ -328,7 +311,7 @@ mod tests {
             },
         ];
 
-        let rendered = render(&line_prefix, &mut tokens);
+        let rendered = render(&line_prefix, &tokens);
         assert_eq!(rendered, format!("{NEW}+hej{NORMAL}\n"));
     }
 
@@ -371,9 +354,9 @@ mod tests {
     #[test]
     fn test_removed_trailing_whitespace() {
         // It shouldn't be highlighted, just added ones should
-        let mut tokens = vec![StyledToken::new(" ".to_string(), Style::Old)];
+        let tokens = vec![StyledToken::new(" ".to_string(), Style::Old)];
         let line_prefix = StyledToken::new("-".to_string(), Style::Old);
-        let actual = render(&line_prefix, &mut tokens);
+        let actual = render(&line_prefix, &tokens);
 
         assert_eq!(actual, format!("{OLD}- {NORMAL}"));
     }
@@ -385,7 +368,7 @@ mod tests {
             StyledToken::new("x".to_string(), Style::New),
             StyledToken::new("\t".to_string(), Style::New),
         ];
-        highlight_nonleading_tab(&mut row);
+        highlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
@@ -400,7 +383,7 @@ mod tests {
             StyledToken::new("\t".to_string(), Style::New),
             StyledToken::new("y".to_string(), Style::New),
         ];
-        highlight_nonleading_tab(&mut row);
+        highlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
@@ -415,7 +398,7 @@ mod tests {
             StyledToken::new("\t".to_string(), Style::New),
             StyledToken::new("x".to_string(), Style::New),
         ];
-        highlight_nonleading_tab(&mut row);
+        highlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
@@ -426,7 +409,7 @@ mod tests {
 
         // Single TAB (don't highlight because it is leading)
         let mut row = [StyledToken::new("\t".to_string(), Style::New)];
-        highlight_nonleading_tab(&mut row);
+        highlight_nonleading_tabs(&mut row);
         assert_eq!(row, [StyledToken::new("\t".to_string(), Style::New),]);
     }
 
@@ -434,11 +417,11 @@ mod tests {
     fn test_removed_nonleading_tab() {
         // It shouldn't be highlighted, just added ones should
         let line_prefix = StyledToken::new("-".to_string(), Style::Old);
-        let mut test_me = vec![
+        let test_me = vec![
             StyledToken::new("x".to_string(), Style::Old),
             StyledToken::new("\t".to_string(), Style::Old),
         ];
-        let actual = render(&line_prefix, &mut test_me);
+        let actual = render(&line_prefix, &test_me);
 
         assert_eq!(actual, format!("{OLD}-x\t{NORMAL}"));
     }
