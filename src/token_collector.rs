@@ -97,7 +97,7 @@ fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
     };
 
     // Render prefix
-    rendered.push_str(line_style.prefix_style.from(&current_style));
+    rendered.push_str(&line_style.prefix_style.from(&current_style));
     current_style = line_style.prefix_style;
     rendered.push_str(line_style.prefix);
 
@@ -112,14 +112,14 @@ fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
             },
         };
 
-        rendered.push_str(new_style.from(&current_style));
+        rendered.push_str(&new_style.from(&current_style));
         current_style = new_style;
         rendered.push_str(&token.token);
     }
 
     // Reset formatting at the end of the line
     rendered.push_str(
-        AnsiStyle {
+        &AnsiStyle {
             inverse: false,
             color: Default,
         }
@@ -337,7 +337,7 @@ mod tests {
     fn test_removed_trailing_whitespace() {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
-            &LINE_STYLE_NEW,
+            &LINE_STYLE_OLD,
             vec![StyledToken::new(" ".to_string(), Style::Plain)],
         );
 
