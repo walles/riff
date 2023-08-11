@@ -85,8 +85,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     // Find diffs between adds and removals
-    let mut old_collector = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
-    let mut new_collector = TokenCollector::create(StyledToken::new("+".to_string(), Style::New));
+    let mut old_collector = TokenCollector::create(StyledToken::new("-".to_string(), Style::Plain));
+    let mut new_collector = TokenCollector::create(StyledToken::new("+".to_string(), Style::Plain));
 
     // Tokenize adds and removes before diffing them
     let mut tokenized_old = tokenizer::tokenize(old_text);
@@ -107,8 +107,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                 // format_split() called on this non-difference?
                 //
                 // Get here using "git show 686f3d7ae | cargo run" with git 2.35.1
-                old_collector.push(StyledToken::new(token.to_string(), Style::Old));
-                new_collector.push(StyledToken::new(token.to_string(), Style::New));
+                old_collector.push(StyledToken::new(token.to_string(), Style::Plain));
+                new_collector.push(StyledToken::new(token.to_string(), Style::Plain));
             }
         }
         edit::Edit::Change(diff) => {
@@ -116,16 +116,16 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                 .map(|edit| {
                     match edit {
                         collection::Edit::Copy(token) => {
-                            old_collector.push(StyledToken::new(token.to_string(), Style::Old));
-                            new_collector.push(StyledToken::new(token.to_string(), Style::New));
+                            old_collector.push(StyledToken::new(token.to_string(), Style::Plain));
+                            new_collector.push(StyledToken::new(token.to_string(), Style::Plain));
                         }
                         collection::Edit::Insert(token) => {
                             new_collector
-                                .push(StyledToken::new(token.to_string(), Style::NewInverse));
+                                .push(StyledToken::new(token.to_string(), Style::Highlighted));
                         }
                         collection::Edit::Remove(token) => {
                             old_collector
-                                .push(StyledToken::new(token.to_string(), Style::OldInverse));
+                                .push(StyledToken::new(token.to_string(), Style::Highlighted));
                         }
                         collection::Edit::Change(_) => {
                             unimplemented!("Edit/Change/Change not implemented, help!")
