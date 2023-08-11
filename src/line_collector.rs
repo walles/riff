@@ -340,6 +340,10 @@ impl LineCollector {
     }
 
     fn without_ansi_escape_codes(input: &'_ str) -> std::borrow::Cow<'_, str> {
+        if !input.contains('\x1b') {
+            return std::borrow::Cow::Borrowed(input);
+        }
+
         return ANSI_COLOR_REGEX.replace_all(input, "");
     }
 
