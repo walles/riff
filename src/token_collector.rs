@@ -1,3 +1,7 @@
+use crate::ansi::AnsiStyle;
+use crate::ansi::Color::Default;
+use crate::ansi::Color::Green;
+use crate::ansi::Color::Red;
 use crate::constants::*;
 use crate::token_collector::Style::Highlighted;
 use crate::token_collector::Style::Plain;
@@ -9,11 +13,55 @@ pub enum Style {
     Error,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct StyledToken {
     token: String,
     style: Style,
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct LineStyle<'a> {
+    prefix: &'a str,
+    prefix_style: AnsiStyle,
+    plain_style: AnsiStyle,
+    highlighted_style: AnsiStyle,
+}
+
+const LINE_STYLE_OLD: LineStyle = {
+    LineStyle {
+        prefix: "-",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            color: Red,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            color: Red,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            color: Red,
+        },
+    }
+};
+
+const LINE_STYLE_NEW: LineStyle = {
+    LineStyle {
+        prefix: "+",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            color: Green,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            color: Green,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            color: Green,
+        },
+    }
+};
 
 impl StyledToken {
     pub fn new(token: String, style: Style) -> StyledToken {
@@ -33,103 +81,85 @@ impl StyledToken {
     }
 }
 
-pub struct TokenCollector {
-    line_prefix: StyledToken,
-    tokens: Vec<StyledToken>,
-    rendered: bool,
+#[must_use]
+fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
+    let mut rendered = String::new();
+
+    unhighlight_noisy_rows(row);
+
+    if line_style == &LINE_STYLE_NEW {
+        highlight_trailing_whitespace(row);
+        highlight_nonleading_tab(row);
+    }
+
+    let mut current_style = AnsiStyle {
+        inverse: false,
+        color: Default,
+    };
+
+    // Render prefix
+    rendered.push_str(line_style.prefix_style.from(&current_style));
+    current_style = line_style.prefix_style;
+    rendered.push_str(line_style.prefix);
+
+    // Render tokens
+    for token in row {
+        let new_style = match token.style {
+            Plain => line_style.plain_style,
+            Highlighted => line_style.highlighted_style,
+            Error => AnsiStyle {
+                inverse: true,
+                color: Red,
+            },
+        };
+
+        rendered.push_str(new_style.from(&current_style));
+        current_style = new_style;
+        rendered.push_str(&token.token);
+    }
+
+    // Reset formatting at the end of the line
+    rendered.push_str(
+        AnsiStyle {
+            inverse: false,
+            color: Default,
+        }
+        .from(&current_style),
+    );
+
+    return rendered;
 }
 
-impl TokenCollector {
-    #[must_use]
-    pub fn create(line_prefix: StyledToken) -> Self {
-        return TokenCollector {
-            line_prefix,
-            tokens: Vec::new(),
-            rendered: false,
-        };
-    }
+/// Render all the tokens into a (most of the time multiline) string
+#[must_use]
+pub fn render(&mut self) -> String {
+    assert!(!self.rendered);
+    let mut current_row: Vec<StyledToken> = Vec::new();
+    let mut rendered = String::new();
 
-    pub fn push(&mut self, token: StyledToken) {
-        self.tokens.push(token);
-    }
+    let mut tokens = std::mem::take(&mut self.tokens);
 
-    #[must_use]
-    fn render_row(&self, row: &mut [StyledToken]) -> String {
-        let mut rendered = String::new();
+    bridge_consecutive_highlighted_tokens(&mut tokens);
 
-        unhighlight_noisy_rows(row);
-
-        if self.line_prefix.style == Style::New {
-            highlight_trailing_whitespace(row);
-            highlight_nonleading_tab(row);
-        }
-
-        // Set inverse from prefix
-        let mut is_inverse = self.line_prefix.style == Highlighted;
-        if is_inverse {
-            rendered.push_str(INVERSE_VIDEO);
-        }
-
-        // Set line color from prefix
-        let mut color = self.line_prefix.style.color();
-        rendered.push_str(self.line_prefix.style.color());
-
-        // Render prefix
-        rendered.push_str(&self.line_prefix.token);
-
-        for token in row {
-            if token.style == Highlighted && !is_inverse {
-                rendered.push_str(INVERSE_VIDEO);
-            }
-            if is_inverse && !token.style == Highlighted {
-                rendered.push_str(NOT_INVERSE_VIDEO);
-            }
-            is_inverse = token.style == Highlighted;
-
-            if token.style.color() != color {
-                rendered.push_str(token.style.color());
-                color = token.style.color();
-            }
-
-            rendered.push_str(&token.token);
-        }
-
-        rendered.push_str(NORMAL);
-
-        return rendered;
-    }
-
-    /// Render all the tokens into a (most of the time multiline) string
-    #[must_use]
-    pub fn render(&mut self) -> String {
-        assert!(!self.rendered);
-        let mut current_row: Vec<StyledToken> = Vec::new();
-        let mut rendered = String::new();
-
-        let mut tokens = std::mem::take(&mut self.tokens);
-
-        bridge_consecutive_highlighted_tokens(&mut tokens);
-
-        for token in tokens {
-            if token.token == "\n" {
-                let rendered_row = &self.render_row(&mut current_row);
-                rendered.push_str(rendered_row);
-                rendered.push('\n');
-                current_row.clear();
-                continue;
-            }
-
-            current_row.push(token);
-        }
-
-        if !current_row.is_empty() {
+    for token in tokens {
+        if token.token == "\n" {
             let rendered_row = &self.render_row(&mut current_row);
             rendered.push_str(rendered_row);
+            rendered.push('\n');
+            current_row.clear();
+            continue;
         }
 
-        self.rendered = true;
-        return rendered;
+        current_row.push(token);
     }
+
+    if !current_row.is_empty() {
+        let rendered_row = &self.render_row(&mut current_row);
+        rendered.push_str(rendered_row);
+    }
+
+    self.rendered = true;
+    return rendered;
 }
 
 /// Unhighlight everything if too much of the line is highlighted

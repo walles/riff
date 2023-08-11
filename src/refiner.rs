@@ -2,7 +2,7 @@ use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::tokenizer;
 use crate::{
     constants::*,
-    token_collector::{Style, StyledToken, TokenCollector},
+    token_collector::{Style, StyledToken},
 };
 use diffus::{
     edit::{self, collection},
