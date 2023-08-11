@@ -3,6 +3,7 @@ use crate::token_collector::{
     bridge_consecutive_highlighted_tokens, highlight_nonleading_tabs,
     highlight_trailing_whitespace, render, unhighlight_noisy_rows,
 };
+use crate::token_collector::{LINE_STYLE_NEW, LINE_STYLE_OLD};
 use crate::tokenizer;
 use crate::{
     constants::*,
@@ -89,9 +90,7 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     // Find diffs between adds and removals
-    let old_prefix = StyledToken::new("-".to_string(), Style::Old);
     let mut old_tokens: Vec<StyledToken> = vec![];
-    let new_prefix = StyledToken::new("+".to_string(), Style::New);
     let mut new_tokens: Vec<StyledToken> = vec![];
 
     // Tokenize adds and removes before diffing them
@@ -114,8 +113,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                 // format_split() called on this non-difference?
                 //
                 // Get here using "git show 686f3d7ae | cargo run" with git 2.35.1
-                old_tokens.push(StyledToken::new(token.to_string(), Style::Old));
-                new_tokens.push(StyledToken::new(token.to_string(), Style::New));
+                old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
+                new_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
             }
         }
         edit::Edit::Change(diff) => {
@@ -123,14 +122,16 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                 .map(|edit| {
                     match edit {
                         collection::Edit::Copy(token) => {
-                            old_tokens.push(StyledToken::new(token.to_string(), Style::Old));
-                            new_tokens.push(StyledToken::new(token.to_string(), Style::New));
+                            old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
+                            new_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
                         }
                         collection::Edit::Insert(token) => {
-                            new_tokens.push(StyledToken::new(token.to_string(), Style::NewInverse));
+                            new_tokens
+                                .push(StyledToken::new(token.to_string(), Style::Highlighted));
                         }
                         collection::Edit::Remove(token) => {
-                            old_tokens.push(StyledToken::new(token.to_string(), Style::OldInverse));
+                            old_tokens
+                                .push(StyledToken::new(token.to_string(), Style::Highlighted));
                             old_highlights = true;
                         }
                         collection::Edit::Change(_) => {
@@ -151,8 +152,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     highlight_nonleading_tabs(&mut new_tokens);
 
     // FIXME: Do classical highlighting only if old_highlights || new_unhighlighted || count_lines(&old_tokens) != count_lines(&new_tokens)
-    let highlighted_old_text: String = render(&old_prefix, &old_tokens);
-    let highlighted_new_text: String = render(&new_prefix, &new_tokens);
+    let highlighted_old_text: String = render(&LINE_STYLE_OLD, old_tokens);
+    let highlighted_new_text: String = render(&LINE_STYLE_NEW, new_tokens);
 
     return to_lines(&highlighted_old_text, &highlighted_new_text);
 }
@@ -227,6 +228,9 @@ mod tests {
 
     #[test]
     fn test_quote_change() {
+        // FIXME: Get this from somewhere else?
+        const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
+
         let result = format(
             "<unchanged text between quotes>\n",
             "[unchanged text between quotes]\n",
