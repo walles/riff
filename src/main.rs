@@ -390,7 +390,7 @@ mod tests {
     use crate::constants::*;
 
     use super::*;
-    use std::fs;
+    use std::{fs, path::PathBuf};
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
@@ -448,13 +448,28 @@ mod tests {
         }
         assert!(testdata_path.is_dir());
 
-        // Iterate all files in there
-        let mut failing_example: Option<String> = None;
-        let mut failing_example_expected = vec![];
-        let mut failing_example_actual = vec![];
+        // Find all .diff example files
+        let mut diff_example_files: Vec<PathBuf> = vec![];
         for diff in fs::read_dir(&testdata_path).unwrap() {
             let diff = diff.unwrap();
             let diff = diff.path();
+            if !diff.is_file() {
+                continue;
+            }
+
+            if diff.extension().unwrap() != "diff" {
+                continue;
+            }
+
+            diff_example_files.push(diff);
+        }
+        diff_example_files.sort();
+
+        // Iterate over all the example files
+        let mut failing_example: Option<String> = None;
+        let mut failing_example_expected = vec![];
+        let mut failing_example_actual = vec![];
+        for diff in diff_example_files {
             let diff = diff.as_path();
             if !diff.is_file() {
                 continue;
