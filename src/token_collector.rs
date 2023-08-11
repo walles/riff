@@ -203,8 +203,24 @@ pub fn render(line_style: &LineStyle, tokens: Vec<StyledToken>) -> String {
 ///
 /// Returns true if something was unhighlighted, false otherwise.
 pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
+    fn maybe_unhighlight_row(row: &mut [StyledToken], highlighted_tokens_count: usize) -> bool {
+        if row.is_empty() {
+            return false;
+        }
+
+        let highlighted_percentage = (100 * highlighted_tokens_count) / row.len();
+        if highlighted_percentage <= 70 {
+            return false;
+        }
+
+        // Unhighlight the current row
+        for token in row.iter_mut() {
+            token.style = Plain;
+        }
+        return true;
+    }
+
     let mut highlighted_tokens_count = 0;
-    let mut total_tokens_count: usize = 0;
     let mut line_start_index = 0;
     let mut changed = false;
 
@@ -212,41 +228,22 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
         let token = &tokens[i];
         if token.token == "\n" {
             // End of line, evaluate!
-            if total_tokens_count > 0 {
-                let highlighted_percentage = (100 * highlighted_tokens_count) / total_tokens_count;
-                if highlighted_percentage > 70 {
-                    // Unhighlight the current row
-                    changed = true;
-                    for token in tokens[line_start_index..i].iter_mut() {
-                        token.style = Plain;
-                    }
-                }
-            }
+            changed |=
+                maybe_unhighlight_row(&mut tokens[line_start_index..i], highlighted_tokens_count);
 
             // Reset for the next row
             line_start_index = i + 1;
             highlighted_tokens_count = 0;
-            total_tokens_count = 0;
             continue;
         }
 
-        total_tokens_count += 1;
         if token.style == Highlighted {
             highlighted_tokens_count += 1;
         }
     }
 
     // Handle the last row
-    if total_tokens_count > 0 {
-        let highlighted_percentage = (100 * highlighted_tokens_count) / total_tokens_count;
-        if highlighted_percentage > 70 {
-            // Unhighlight the current row
-            changed = true;
-            for token in tokens[line_start_index..].iter_mut() {
-                token.style = Plain;
-            }
-        }
-    }
+    changed |= maybe_unhighlight_row(&mut tokens[line_start_index..], highlighted_tokens_count);
 
     return changed;
 }
