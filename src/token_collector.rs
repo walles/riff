@@ -2,7 +2,6 @@ use crate::ansi::AnsiStyle;
 use crate::ansi::Color::Default;
 use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
-use crate::constants::*;
 use crate::token_collector::Style::Highlighted;
 use crate::token_collector::Style::Plain;
 
@@ -132,33 +131,29 @@ fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
 
 /// Render all the tokens into a (most of the time multiline) string
 #[must_use]
-pub fn render(&mut self) -> String {
-    assert!(!self.rendered);
+pub fn render(line_style: &LineStyle, mut tokens: &[StyledToken]) -> String {
     let mut current_row: Vec<StyledToken> = Vec::new();
     let mut rendered = String::new();
-
-    let mut tokens = std::mem::take(&mut self.tokens);
 
     bridge_consecutive_highlighted_tokens(&mut tokens);
 
     for token in tokens {
         if token.token == "\n" {
-            let rendered_row = &self.render_row(&mut current_row);
+            let rendered_row = &render_row(line_style, &mut current_row);
             rendered.push_str(rendered_row);
             rendered.push('\n');
             current_row.clear();
             continue;
         }
 
-        current_row.push(token);
+        current_row.push(*token);
     }
 
     if !current_row.is_empty() {
-        let rendered_row = &self.render_row(&mut current_row);
+        let rendered_row = &render_row(line_style, &mut current_row);
         rendered.push_str(rendered_row);
     }
 
-    self.rendered = true;
     return rendered;
 }
 
@@ -277,28 +272,28 @@ fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::NEW;
+    use crate::constants::NORMAL;
+    use crate::constants::OLD;
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
     #[test]
     fn test_basic() {
-        let mut test_me = TokenCollector::create(StyledToken {
-            token: "+".to_string(),
-            style: Style::Plain,
-        });
-
-        test_me.push(StyledToken {
-            token: "hej".to_string(),
-            style: Style::Plain,
-        });
-
-        test_me.push(StyledToken {
-            token: "\n".to_string(),
-            style: Style::Plain,
-        });
-
-        let rendered = test_me.render();
+        let rendered = render(
+            &LINE_STYLE_NEW,
+            &vec![
+                StyledToken {
+                    token: "hej".to_string(),
+                    style: Style::Plain,
+                },
+                StyledToken {
+                    token: "\n".to_string(),
+                    style: Style::Plain,
+                },
+            ],
+        );
         assert_eq!(rendered, format!("{NEW}+hej{NORMAL}\n"));
     }
 
@@ -341,9 +336,10 @@ mod tests {
     #[test]
     fn test_removed_trailing_whitespace() {
         // It shouldn't be highlighted, just added ones should
-        let mut test_me = TokenCollector::create(StyledToken::new("-".to_string(), Style::Plain));
-        test_me.push(StyledToken::new(" ".to_string(), Style::Plain));
-        let actual = test_me.render();
+        let actual = render(
+            &LINE_STYLE_NEW,
+            &vec![StyledToken::new(" ".to_string(), Style::Plain)],
+        );
 
         assert_eq!(actual, format!("{OLD}- {NORMAL}"));
     }
@@ -403,10 +399,13 @@ mod tests {
     #[test]
     fn test_removed_nonleading_tab() {
         // It shouldn't be highlighted, just added ones should
-        let mut test_me = TokenCollector::create(StyledToken::new("-".to_string(), Style::Plain));
-        test_me.push(StyledToken::new("x".to_string(), Style::Plain));
-        test_me.push(StyledToken::new("\t".to_string(), Style::Plain));
-        let actual = test_me.render();
+        let actual = render(
+            &LINE_STYLE_OLD,
+            &vec![
+                StyledToken::new("x".to_string(), Style::Plain),
+                StyledToken::new("\t".to_string(), Style::Plain),
+            ],
+        );
 
         assert_eq!(actual, format!("{OLD}-x\t{NORMAL}"));
     }
