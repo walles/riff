@@ -1,6 +1,6 @@
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::token_collector::{
-    bridge_consecutive_highlighted_tokens, highlight_nonleading_tabs,
+    bridge_consecutive_highlighted_tokens, count_lines, highlight_nonleading_tabs,
     highlight_trailing_whitespace, render, unhighlight_noisy_rows, LINE_STYLE_ADDS_ONLY,
     LINE_STYLE_OLD_FAINT,
 };

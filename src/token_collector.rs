@@ -333,6 +333,29 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     }
 }
 
+pub fn count_lines(tokens: &[StyledToken]) -> usize {
+    if tokens.is_empty() {
+        return 0;
+    }
+
+    let mut lines = 0;
+    let mut ends_with_newline = false;
+    for token in tokens {
+        if token.token == "\n" {
+            lines += 1;
+            ends_with_newline = true;
+            continue;
+        }
+        ends_with_newline = false;
+    }
+
+    if !ends_with_newline {
+        lines += 1;
+    }
+
+    return lines;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
