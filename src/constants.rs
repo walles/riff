@@ -1,9 +1,7 @@
 pub const OLD: &str = "\x1b[31m"; // Red
 pub const NEW: &str = "\x1b[32m"; // Green
-pub const ERROR: &str = "\x1b[31m"; // Same as old red
 
 pub const INVERSE_VIDEO: &str = "\x1b[7m";
-pub const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
 
 pub const NO_EOF_NEWLINE_COLOR: &str = "\x1b[2m"; // Faint
 

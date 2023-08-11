@@ -19,6 +19,7 @@ use std::process::{Command, Stdio};
 use std::str;
 use std::{env, fs::File};
 
+mod ansi;
 mod commit_line;
 mod constants;
 mod line_collector;

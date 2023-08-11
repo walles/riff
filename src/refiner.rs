@@ -1,8 +1,9 @@
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
+use crate::token_collector::{render, LINE_STYLE_NEW, LINE_STYLE_OLD};
 use crate::tokenizer;
 use crate::{
     constants::*,
-    token_collector::{Style, StyledToken, TokenCollector},
+    token_collector::{Style, StyledToken},
 };
 use diffus::{
     edit::{self, collection},
@@ -85,8 +86,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     // Find diffs between adds and removals
-    let mut old_collector = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));
-    let mut new_collector = TokenCollector::create(StyledToken::new("+".to_string(), Style::New));
+    let mut old_tokens = Vec::new();
+    let mut new_tokens = Vec::new();
 
     // Tokenize adds and removes before diffing them
     let mut tokenized_old = tokenizer::tokenize(old_text);
@@ -107,8 +108,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                 // format_split() called on this non-difference?
                 //
                 // Get here using "git show 686f3d7ae | cargo run" with git 2.35.1
-                old_collector.push(StyledToken::new(token.to_string(), Style::Old));
-                new_collector.push(StyledToken::new(token.to_string(), Style::New));
+                old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
+                new_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
             }
         }
         edit::Edit::Change(diff) => {
@@ -116,16 +117,16 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                 .map(|edit| {
                     match edit {
                         collection::Edit::Copy(token) => {
-                            old_collector.push(StyledToken::new(token.to_string(), Style::Old));
-                            new_collector.push(StyledToken::new(token.to_string(), Style::New));
+                            old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
+                            new_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
                         }
                         collection::Edit::Insert(token) => {
-                            new_collector
-                                .push(StyledToken::new(token.to_string(), Style::NewInverse));
+                            new_tokens
+                                .push(StyledToken::new(token.to_string(), Style::Highlighted));
                         }
                         collection::Edit::Remove(token) => {
-                            old_collector
-                                .push(StyledToken::new(token.to_string(), Style::OldInverse));
+                            old_tokens
+                                .push(StyledToken::new(token.to_string(), Style::Highlighted));
                         }
                         collection::Edit::Change(_) => {
                             unimplemented!("Edit/Change/Change not implemented, help!")
@@ -136,8 +137,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
         }
     }
 
-    let highlighted_old_text = old_collector.render();
-    let highlighted_new_text = new_collector.render();
+    let highlighted_old_text = render(&LINE_STYLE_OLD, old_tokens);
+    let highlighted_new_text = render(&LINE_STYLE_NEW, new_tokens);
 
     return to_lines(&highlighted_old_text, &highlighted_new_text);
 }
@@ -212,6 +213,9 @@ mod tests {
 
     #[test]
     fn test_quote_change() {
+        // FIXME: Get this from somewhere else?
+        const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
+
         let result = format(
             "<unchanged text between quotes>\n",
             "[unchanged text between quotes]\n",
