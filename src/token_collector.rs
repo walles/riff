@@ -31,14 +31,38 @@ pub const LINE_STYLE_OLD: LineStyle = {
         prefix: "-",
         prefix_style: AnsiStyle {
             inverse: false,
+            faint: false,
             color: Red,
         },
         plain_style: AnsiStyle {
             inverse: false,
+            faint: false,
             color: Red,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
+            faint: false,
+            color: Red,
+        },
+    }
+};
+
+pub const LINE_STYLE_OLD_FAINT: LineStyle = {
+    LineStyle {
+        prefix: "-",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            faint: true,
+            color: Red,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            faint: true,
+            color: Red,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            faint: true,
             color: Red,
         },
     }
@@ -49,14 +73,38 @@ pub const LINE_STYLE_NEW: LineStyle = {
         prefix: "+",
         prefix_style: AnsiStyle {
             inverse: false,
+            faint: false,
             color: Green,
         },
         plain_style: AnsiStyle {
             inverse: false,
+            faint: false,
             color: Green,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
+            faint: false,
+            color: Green,
+        },
+    }
+};
+
+pub const LINE_STYLE_ADDS_ONLY: LineStyle = {
+    LineStyle {
+        prefix: "+",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            faint: true,
+            color: Green,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            faint: false,
+            color: Default,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            faint: false,
             color: Green,
         },
     }
@@ -86,6 +134,7 @@ fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
 
     let mut current_style = AnsiStyle {
         inverse: false,
+        faint: false,
         color: Default,
     };
 
@@ -101,6 +150,7 @@ fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
             Highlighted => line_style.highlighted_style,
             Style::Error => AnsiStyle {
                 inverse: true,
+                faint: false,
                 color: Red,
             },
         };
@@ -114,6 +164,7 @@ fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
     rendered.push_str(
         &AnsiStyle {
             inverse: false,
+            faint: false,
             color: Default,
         }
         .from(&current_style),

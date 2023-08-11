@@ -1,7 +1,8 @@
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::token_collector::{
     bridge_consecutive_highlighted_tokens, highlight_nonleading_tabs,
-    highlight_trailing_whitespace, render, unhighlight_noisy_rows,
+    highlight_trailing_whitespace, render, unhighlight_noisy_rows, LINE_STYLE_ADDS_ONLY,
+    LINE_STYLE_OLD_FAINT,
 };
 use crate::token_collector::{LINE_STYLE_NEW, LINE_STYLE_OLD};
 use crate::tokenizer;
@@ -147,13 +148,19 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     unhighlight_noisy_rows(&mut old_tokens);
 
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
-    let _new_unhighlighted = unhighlight_noisy_rows(&mut new_tokens);
+    let new_unhighlighted = unhighlight_noisy_rows(&mut new_tokens);
     highlight_trailing_whitespace(&mut new_tokens);
     highlight_nonleading_tabs(&mut new_tokens);
 
-    // FIXME: Do classical highlighting only if old_highlights || new_unhighlighted || count_lines(&old_tokens) != count_lines(&new_tokens)
-    let highlighted_old_text: String = render(&LINE_STYLE_OLD, old_tokens);
-    let highlighted_new_text: String = render(&LINE_STYLE_NEW, new_tokens);
+    let highlighted_old_text;
+    let highlighted_new_text;
+    if old_highlights || new_unhighlighted || count_lines(&old_tokens) != count_lines(&new_tokens) {
+        highlighted_old_text = render(&LINE_STYLE_OLD, old_tokens);
+        highlighted_new_text = render(&LINE_STYLE_NEW, new_tokens);
+    } else {
+        highlighted_old_text = render(&LINE_STYLE_OLD_FAINT, old_tokens);
+        highlighted_new_text = render(&LINE_STYLE_ADDS_ONLY, new_tokens);
+    }
 
     return to_lines(&highlighted_old_text, &highlighted_new_text);
 }
