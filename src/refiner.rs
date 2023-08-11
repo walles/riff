@@ -91,8 +91,8 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     // Find diffs between adds and removals
-    let mut old_tokens: Vec<StyledToken> = vec![];
-    let mut new_tokens: Vec<StyledToken> = vec![];
+    let mut old_tokens = Vec::new();
+    let mut new_tokens = Vec::new();
 
     // Tokenize adds and removes before diffing them
     let mut tokenized_old = tokenizer::tokenize(old_text);
