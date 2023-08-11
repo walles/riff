@@ -93,7 +93,6 @@ fn render_row(line_prefix: &StyledToken, row: &mut [StyledToken]) -> String {
     let mut rendered = String::new();
 
     if line_prefix.style == Style::New {
-        highlight_trailing_whitespace(row);
         highlight_nonleading_tab(row);
     }
 
@@ -210,13 +209,20 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
     return changed;
 }
 
-fn highlight_trailing_whitespace(row: &mut [StyledToken]) {
-    for token in row.iter_mut().rev() {
-        if !token.is_whitespace() {
-            return;
+pub fn highlight_trailing_whitespace(tokens: &mut [StyledToken]) {
+    let mut in_trailer = true;
+    for token in tokens.iter_mut().rev() {
+        if token.token == "\n" {
+            in_trailer = true;
+            continue;
         }
 
-        token.style = Style::Error;
+        if in_trailer && token.is_whitespace() {
+            token.style = Style::Error;
+            continue;
+        }
+
+        in_trailer = false;
     }
 }
 
