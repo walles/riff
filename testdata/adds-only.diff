@@ -1,0 +1,6 @@
+--- /tmp/a.txt  2023-08-06 16:07:37.000000000 +0200
++++ /tmp/b.txt  2023-08-06 16:07:39.000000000 +0200
+@@ -1,2 +1,2 @@
+-Hello, my name is Johan
++Hello, my first name is Johan
+ I like pie.

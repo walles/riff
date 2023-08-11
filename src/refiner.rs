@@ -1,5 +1,10 @@
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
-use crate::token_collector::{render, LINE_STYLE_NEW, LINE_STYLE_OLD};
+use crate::token_collector::{
+    bridge_consecutive_highlighted_tokens, count_lines, highlight_nonleading_tabs,
+    highlight_trailing_whitespace, render, unhighlight_noisy_rows, LINE_STYLE_ADDS_ONLY,
+    LINE_STYLE_OLD_FAINT,
+};
+use crate::token_collector::{LINE_STYLE_NEW, LINE_STYLE_OLD};
 use crate::tokenizer;
 use crate::{
     constants::*,
@@ -101,6 +106,7 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     }
 
     let diff = tokenized_old.diff(&tokenized_new);
+    let mut old_highlights = false;
     match diff {
         edit::Edit::Copy(tokens) => {
             for &token in tokens {
@@ -127,6 +133,7 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
                         collection::Edit::Remove(token) => {
                             old_tokens
                                 .push(StyledToken::new(token.to_string(), Style::Highlighted));
+                            old_highlights = true;
                         }
                         collection::Edit::Change(_) => {
                             unimplemented!("Edit/Change/Change not implemented, help!")
@@ -137,8 +144,23 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
         }
     }
 
-    let highlighted_old_text = render(&LINE_STYLE_OLD, old_tokens);
-    let highlighted_new_text = render(&LINE_STYLE_NEW, new_tokens);
+    bridge_consecutive_highlighted_tokens(&mut old_tokens);
+    unhighlight_noisy_rows(&mut old_tokens);
+
+    bridge_consecutive_highlighted_tokens(&mut new_tokens);
+    let new_unhighlighted = unhighlight_noisy_rows(&mut new_tokens);
+    highlight_trailing_whitespace(&mut new_tokens);
+    highlight_nonleading_tabs(&mut new_tokens);
+
+    let highlighted_old_text;
+    let highlighted_new_text;
+    if old_highlights || new_unhighlighted || count_lines(&old_tokens) != count_lines(&new_tokens) {
+        highlighted_old_text = render(&LINE_STYLE_OLD, old_tokens);
+        highlighted_new_text = render(&LINE_STYLE_NEW, new_tokens);
+    } else {
+        highlighted_old_text = render(&LINE_STYLE_OLD_FAINT, old_tokens);
+        highlighted_new_text = render(&LINE_STYLE_ADDS_ONLY, new_tokens);
+    }
 
     return to_lines(&highlighted_old_text, &highlighted_new_text);
 }

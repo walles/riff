@@ -31,14 +31,38 @@ pub const LINE_STYLE_OLD: LineStyle = {
         prefix: "-",
         prefix_style: AnsiStyle {
             inverse: false,
+            faint: false,
             color: Red,
         },
         plain_style: AnsiStyle {
             inverse: false,
+            faint: false,
             color: Red,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
+            faint: false,
+            color: Red,
+        },
+    }
+};
+
+pub const LINE_STYLE_OLD_FAINT: LineStyle = {
+    LineStyle {
+        prefix: "-",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            faint: true,
+            color: Red,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            faint: true,
+            color: Red,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            faint: true,
             color: Red,
         },
     }
@@ -49,14 +73,38 @@ pub const LINE_STYLE_NEW: LineStyle = {
         prefix: "+",
         prefix_style: AnsiStyle {
             inverse: false,
+            faint: false,
             color: Green,
         },
         plain_style: AnsiStyle {
             inverse: false,
+            faint: false,
             color: Green,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
+            faint: false,
+            color: Green,
+        },
+    }
+};
+
+pub const LINE_STYLE_ADDS_ONLY: LineStyle = {
+    LineStyle {
+        prefix: "+",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            faint: true,
+            color: Green,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            faint: false,
+            color: Default,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            faint: false,
             color: Green,
         },
     }
@@ -84,15 +132,9 @@ impl StyledToken {
 fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
     let mut rendered = String::new();
 
-    unhighlight_noisy_rows(row);
-
-    if line_style == &LINE_STYLE_NEW {
-        highlight_trailing_whitespace(row);
-        highlight_nonleading_tab(row);
-    }
-
     let mut current_style = AnsiStyle {
         inverse: false,
+        faint: false,
         color: Default,
     };
 
@@ -108,6 +150,7 @@ fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
             Highlighted => line_style.highlighted_style,
             Style::Error => AnsiStyle {
                 inverse: true,
+                faint: false,
                 color: Red,
             },
         };
@@ -121,6 +164,7 @@ fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
     rendered.push_str(
         &AnsiStyle {
             inverse: false,
+            faint: false,
             color: Default,
         }
         .from(&current_style),
@@ -131,11 +175,9 @@ fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
 
 /// Render all the tokens into a (most of the time multiline) string
 #[must_use]
-pub fn render(line_style: &LineStyle, mut tokens: Vec<StyledToken>) -> String {
+pub fn render(line_style: &LineStyle, tokens: Vec<StyledToken>) -> String {
     let mut current_row: Vec<StyledToken> = Vec::new();
     let mut rendered = String::new();
-
-    bridge_consecutive_highlighted_tokens(&mut tokens);
 
     for token in tokens {
         if token.token == "\n" {
@@ -157,72 +199,91 @@ pub fn render(line_style: &LineStyle, mut tokens: Vec<StyledToken>) -> String {
     return rendered;
 }
 
-/// Unhighlight everything if too much of the line is highlighted
-fn unhighlight_noisy_rows(row: &mut [StyledToken]) {
-    let mut highlighted_tokens_count = 0;
+/// Unhighlight rows that have too much highlighting.
+///
+/// Returns true if something was unhighlighted, false otherwise.
+pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
+    fn maybe_unhighlight_row(row: &mut [StyledToken], highlighted_tokens_count: usize) -> bool {
+        if row.is_empty() {
+            return false;
+        }
 
-    for token in row.iter_mut().rev() {
+        let highlighted_percentage = (100 * highlighted_tokens_count) / row.len();
+        if highlighted_percentage <= 70 {
+            return false;
+        }
+
+        // Unhighlight the current row
+        for token in row.iter_mut() {
+            token.style = Plain;
+        }
+        return true;
+    }
+
+    let mut highlighted_tokens_count = 0;
+    let mut line_start_index = 0;
+    let mut changed = false;
+
+    for i in 0..tokens.len() {
+        let token = &tokens[i];
+        if token.token == "\n" {
+            // End of line, evaluate!
+            changed |=
+                maybe_unhighlight_row(&mut tokens[line_start_index..i], highlighted_tokens_count);
+
+            // Reset for the next row
+            line_start_index = i + 1;
+            highlighted_tokens_count = 0;
+            continue;
+        }
+
         if token.style == Highlighted {
             highlighted_tokens_count += 1;
         }
     }
 
-    if !row.is_empty() {
-        let highlighted_percentage = (100 * highlighted_tokens_count) / row.len();
-        if highlighted_percentage <= 70 {
-            // Little enough of the line highlighted, let it be
-            return;
-        }
-    }
+    // Handle the last row
+    changed |= maybe_unhighlight_row(&mut tokens[line_start_index..], highlighted_tokens_count);
 
-    // Line too noisy, unhighlight!
-    for token in row.iter_mut() {
-        token.style = Plain;
-    }
+    return changed;
 }
 
-fn highlight_trailing_whitespace(row: &mut [StyledToken]) {
-    for token in row.iter_mut().rev() {
-        if !token.is_whitespace() {
-            return;
-        }
-
-        token.style = Style::Error;
-    }
-}
-
-fn highlight_nonleading_tab(row: &mut [StyledToken]) {
-    let mut token_iter = row.iter_mut();
-
-    // Skip leading TABs
-    loop {
-        let next = token_iter.next();
-        if next.is_none() {
-            // Done!
-            return;
-        }
-
-        let token = next.unwrap();
-        if token.token != "\t" {
-            // Not a TAB, this means we're out of skipping the leading TABs
-            break;
-        }
-    }
-
-    // Scan the rest of the line for non-leading TABs
-    for token in token_iter {
-        if token.token != "\t" {
-            // Not a TAB, never mind
+pub fn highlight_trailing_whitespace(tokens: &mut [StyledToken]) {
+    let mut in_trailer = true;
+    for token in tokens.iter_mut().rev() {
+        if token.token == "\n" {
+            in_trailer = true;
             continue;
         }
 
-        // Non-leading TAB, mark it!
-        token.style = Style::Error;
+        if in_trailer && token.is_whitespace() {
+            token.style = Style::Error;
+            continue;
+        }
+
+        in_trailer = false;
+    }
+}
+
+pub fn highlight_nonleading_tabs(tokens: &mut [StyledToken]) {
+    let mut leading = true;
+    for token in tokens.iter_mut() {
+        if token.token == "\n" {
+            leading = true;
+            continue;
+        }
+
+        if !leading && token.token == "\t" {
+            token.style = Style::Error;
+            continue;
+        }
+
+        leading = false;
     }
 }
 
 /// Highlight single space between two highlighted tokens
-fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
+pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     enum FoundState {
         Nothing,
         HighlightedWord,
@@ -231,7 +292,7 @@ fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
 
     let mut found_state = FoundState::Nothing;
     let mut previous_token: Option<&mut StyledToken> = None;
-    for token in row.iter_mut() {
+    for token in tokens.iter_mut() {
         match found_state {
             FoundState::Nothing => {
                 if token.style == Highlighted {
@@ -254,8 +315,8 @@ fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
             FoundState::WordSpace => {
                 if token.style == Highlighted {
                     // Found "Monkey Dance"
-                    if let Some(_previous_token) = previous_token {
-                        _previous_token.style = Highlighted;
+                    if let Some(whitespace) = previous_token {
+                        whitespace.style = Highlighted;
                     }
 
                     found_state = FoundState::HighlightedWord;
@@ -267,6 +328,29 @@ fn bridge_consecutive_highlighted_tokens(row: &mut [StyledToken]) {
 
         previous_token = Some(token);
     }
+}
+
+pub fn count_lines(tokens: &[StyledToken]) -> usize {
+    if tokens.is_empty() {
+        return 0;
+    }
+
+    let mut lines = 0;
+    let mut ends_with_newline = false;
+    for token in tokens {
+        if token.token == "\n" {
+            lines += 1;
+            ends_with_newline = true;
+            continue;
+        }
+        ends_with_newline = false;
+    }
+
+    if !ends_with_newline {
+        lines += 1;
+    }
+
+    return lines;
 }
 
 #[cfg(test)]
@@ -351,7 +435,7 @@ mod tests {
             StyledToken::new("x".to_string(), Style::Plain),
             StyledToken::new("\t".to_string(), Style::Plain),
         ];
-        highlight_nonleading_tab(&mut row);
+        highlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
@@ -366,7 +450,7 @@ mod tests {
             StyledToken::new("\t".to_string(), Style::Plain),
             StyledToken::new("y".to_string(), Style::Plain),
         ];
-        highlight_nonleading_tab(&mut row);
+        highlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
@@ -381,7 +465,7 @@ mod tests {
             StyledToken::new("\t".to_string(), Style::Plain),
             StyledToken::new("x".to_string(), Style::Plain),
         ];
-        highlight_nonleading_tab(&mut row);
+        highlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
@@ -392,7 +476,7 @@ mod tests {
 
         // Single TAB (don't highlight because it is leading)
         let mut row = [StyledToken::new("\t".to_string(), Style::Plain)];
-        highlight_nonleading_tab(&mut row);
+        highlight_nonleading_tabs(&mut row);
         assert_eq!(row, [StyledToken::new("\t".to_string(), Style::Plain),]);
     }
 
