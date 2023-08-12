@@ -2,6 +2,7 @@ use crate::ansi::AnsiStyle;
 use crate::ansi::Color::Default;
 use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
+use crate::ansi::Weight;
 use crate::token_collector::Style::Highlighted;
 use crate::token_collector::Style::Plain;
 
@@ -31,17 +32,17 @@ pub const LINE_STYLE_OLD: LineStyle = {
         prefix: "-",
         prefix_style: AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Red,
         },
         plain_style: AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Red,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
-            faint: false,
+            weight: Weight::Normal,
             color: Red,
         },
     }
@@ -52,17 +53,17 @@ pub const LINE_STYLE_OLD_FAINT: LineStyle = {
         prefix: "-",
         prefix_style: AnsiStyle {
             inverse: false,
-            faint: true,
+            weight: Weight::Faint,
             color: Red,
         },
         plain_style: AnsiStyle {
             inverse: false,
-            faint: true,
+            weight: Weight::Faint,
             color: Red,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
-            faint: true,
+            weight: Weight::Faint,
             color: Red,
         },
     }
@@ -73,17 +74,17 @@ pub const LINE_STYLE_NEW: LineStyle = {
         prefix: "+",
         prefix_style: AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Green,
         },
         plain_style: AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Green,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
-            faint: false,
+            weight: Weight::Normal,
             color: Green,
         },
     }
@@ -94,17 +95,17 @@ pub const LINE_STYLE_ADDS_ONLY: LineStyle = {
         prefix: "+",
         prefix_style: AnsiStyle {
             inverse: false,
-            faint: true,
+            weight: Weight::Faint,
             color: Green,
         },
         plain_style: AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Default,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
-            faint: false,
+            weight: Weight::Normal,
             color: Green,
         },
     }
@@ -134,7 +135,7 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
 
     let mut current_style = AnsiStyle {
         inverse: false,
-        faint: false,
+        weight: Weight::Normal,
         color: Default,
     };
 
@@ -150,7 +151,7 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
             Highlighted => line_style.highlighted_style,
             Style::Error => AnsiStyle {
                 inverse: true,
-                faint: false,
+                weight: Weight::Normal,
                 color: Red,
             },
         };
@@ -164,7 +165,7 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
     rendered.push_str(
         &AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Default,
         }
         .from(&current_style),

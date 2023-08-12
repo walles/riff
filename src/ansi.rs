@@ -1,14 +1,21 @@
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Color {
+    Default,
     Red,
     Green,
-    Default,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Weight {
+    Normal,
+    _Bold,
+    Faint,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct AnsiStyle {
     pub inverse: bool,
-    pub faint: bool,
+    pub weight: Weight,
     pub color: Color,
 }
 
@@ -23,7 +30,7 @@ impl AnsiStyle {
         if self
             == (&AnsiStyle {
                 inverse: false,
-                faint: false,
+                weight: Weight::Normal,
                 color: Color::Default,
             })
         {
@@ -42,20 +49,19 @@ impl AnsiStyle {
             return_me.push_str("\x1b[27m");
         }
 
-        if self.faint && !before.faint {
-            // Faint on
-            return_me.push_str("\x1b[2m");
-        }
-        if !self.faint && before.faint {
-            // Faint off
-            return_me.push_str("\x1b[22m");
+        if self.weight != before.weight {
+            match self.weight {
+                Weight::Normal => return_me.push_str("\x1b[22m"),
+                Weight::_Bold => return_me.push_str("\x1b[1m"),
+                Weight::Faint => return_me.push_str("\x1b[2m"),
+            }
         }
 
         if self.color != before.color {
             match self.color {
+                Color::Default => return_me.push_str("\x1b[39m"),
                 Color::Red => return_me.push_str("\x1b[31m"),
                 Color::Green => return_me.push_str("\x1b[32m"),
-                Color::Default => return_me.push_str("\x1b[39m"),
             }
         }
 
