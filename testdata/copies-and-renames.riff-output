@@ -11,7 +11,7 @@
 [1mrename to LICENSE.txt[0m
 [2mindex 7548f52..63df2dc 100644[0m
 [1m--- LICENSE[0m
-[1m+++ LICENSE.txt[0m
+[1m+++ LICENSE[32m[7m.txt[0m
 [36m[2m@@ -9,7 +9,7 @@ [1mto use, copy, modify, merge, publish, distribute, sublicense, and/or sell[0m
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
@@ -27,7 +27,7 @@
 [1mcopy to copy-of-Cargo.toml[0m
 [2mindex 9b7ff8f..4e9afde 100644[0m
 [1m--- Cargo.toml[0m
-[1m+++ copy-of-Cargo.toml[0m
+[1m+++ [32m[7mcopy-of-[39m[27mCargo.toml[0m
 [36m@@ -1,6 +1,6 @@[0m
  # See also .cargo/config
 
