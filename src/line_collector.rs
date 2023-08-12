@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 
 use crate::{constants::*, refiner};
-use regex::Regex;
 use threadpool::ThreadPool;
 
 const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
@@ -27,8 +26,6 @@ lazy_static! {
         ("--- /dev/null", FAINT),
         ("+++ /dev/null", FAINT),
     ];
-
-    static ref ANSI_COLOR_REGEX: Regex = Regex::new("\x1b\\[[0-9;]*[^0-9;]").unwrap();
 
     /// This is the `\ No newline at end of file` string. But since it can come
     /// in not-English as well as English, we take it from the input and store it
@@ -339,12 +336,48 @@ impl LineCollector {
         self.consume_plain_line(NORMAL);
     }
 
-    fn without_ansi_escape_codes(input: &'_ str) -> std::borrow::Cow<'_, str> {
-        if !input.contains('\x1b') {
-            return std::borrow::Cow::Borrowed(input);
+    fn without_ansi_escape_codes(input: &str) -> String {
+        enum State {
+            Normal,
+            Escape,
+            EscapeBracket,
         }
 
-        return ANSI_COLOR_REGEX.replace_all(input, "");
+        let mut return_me = String::with_capacity(input.len());
+        let mut state = State::Normal;
+
+        for char in input.chars() {
+            match state {
+                State::Normal => {
+                    if char == '\x1b' {
+                        state = State::Escape;
+                    } else {
+                        return_me.push(char);
+                    }
+                }
+                State::Escape => {
+                    if char == '[' {
+                        state = State::EscapeBracket;
+                    } else {
+                        // Not an ANSI sequence
+                        state = State::Normal;
+
+                        // Push the characters that we thought were the escape
+                        // sequence's opening
+                        return_me.push('\x1b');
+                        return_me.push(char);
+                    }
+                }
+                State::EscapeBracket => {
+                    if !char.is_ascii_digit() && char != ';' {
+                        // Neither digit nor semicolon, this marks the end of the sequence
+                        state = State::Normal;
+                    }
+                }
+            }
+        }
+
+        return return_me;
     }
 
     /// The line parameter is expected *not* to end in a newline
