@@ -206,7 +206,7 @@ $LIVE && read -r -p "Press ENTER when done: "
 
 $LIVE && echo
 $LIVE && echo "Now, make a PR to bump the Homebrew packaged version to $NEW_VERSION_NUMBER:"
-$LIVE && echo '  https://github.com/walles/homebrew-johan/blob/main/Formula/riffdiff.rb'
+$LIVE && echo '  https://github.com/walles/homebrew-johan/blob/main/Formula/riff.rb'
 $LIVE && echo
 
 $LIVE && read -r -p "Press ENTER when done: "
