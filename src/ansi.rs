@@ -19,6 +19,12 @@ pub struct AnsiStyle {
     pub color: Color,
 }
 
+pub const ANSI_STYLE_NORMAL: AnsiStyle = AnsiStyle {
+    inverse: false,
+    weight: Weight::Normal,
+    color: Color::Default,
+};
+
 impl AnsiStyle {
     /// Renders a (possibly empty) ANSI escape sequence to switch to this style
     /// from the before style.
@@ -27,13 +33,7 @@ impl AnsiStyle {
             return String::from("");
         }
 
-        if self
-            == (&AnsiStyle {
-                inverse: false,
-                weight: Weight::Normal,
-                color: Color::Default,
-            })
-        {
+        if self == &ANSI_STYLE_NORMAL {
             // Special case for resetting to default style
             return String::from("\x1b[0m");
         }

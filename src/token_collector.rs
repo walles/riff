@@ -3,6 +3,7 @@ use crate::ansi::Color::Default;
 use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
 use crate::ansi::Weight;
+use crate::ansi::ANSI_STYLE_NORMAL;
 use crate::token_collector::Style::Highlighted;
 use crate::token_collector::Style::Plain;
 
@@ -175,11 +176,7 @@ impl StyledToken {
 fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
     let mut rendered = String::new();
 
-    let mut current_style = AnsiStyle {
-        inverse: false,
-        weight: Weight::Normal,
-        color: Default,
-    };
+    let mut current_style = ANSI_STYLE_NORMAL;
 
     // Render prefix
     rendered.push_str(&line_style.prefix_style.from(&current_style));
@@ -204,14 +201,7 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
     }
 
     // Reset formatting at the end of the line
-    rendered.push_str(
-        &AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Default,
-        }
-        .from(&current_style),
-    );
+    rendered.push_str(&ANSI_STYLE_NORMAL.from(&current_style));
 
     return rendered;
 }
