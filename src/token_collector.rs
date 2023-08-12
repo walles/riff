@@ -111,6 +111,48 @@ pub const LINE_STYLE_ADDS_ONLY: LineStyle = {
     }
 };
 
+pub const LINE_STYLE_OLD_FILENAME: LineStyle = {
+    LineStyle {
+        prefix: "--- ",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Bold,
+            color: Default,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Bold,
+            color: Default,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Bold,
+            color: Red,
+        },
+    }
+};
+
+pub const LINE_STYLE_NEW_FILENAME: LineStyle = {
+    LineStyle {
+        prefix: "+++ ",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Bold,
+            color: Default,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Bold,
+            color: Default,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Bold,
+            color: Green,
+        },
+    }
+};
+
 impl StyledToken {
     pub fn new(token: String, style: Style) -> StyledToken {
         return StyledToken { token, style };

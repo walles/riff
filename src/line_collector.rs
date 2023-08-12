@@ -1,5 +1,7 @@
 use crate::commit_line::format_commit_line;
 use crate::io::ErrorKind;
+use crate::refiner::to_highlighted_tokens;
+use crate::token_collector::{render, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME};
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
@@ -303,21 +305,43 @@ impl LineCollector {
     }
 
     pub fn consume_plusminus_header(&mut self, line: &str) {
-        self.consume_plain_linepart(BOLD);
-
-        if let Some(last_tab_index) = line.rfind('\t') {
-            self.consume_plain_linepart(&line[..last_tab_index]);
-
-            // When I ran plain "diff" (no git involved), this trailing part
-            // contained very precise file timestamps. I don't think those
-            // provide much value, so let's faint them out.
-            self.consume_plain_linepart(FAINT);
-            self.consume_plain_linepart(&line[last_tab_index..]);
-        } else {
-            self.consume_plain_linepart(line);
+        if let Some(old_name) = line.strip_prefix("--- ") {
+            self.old_text.clear();
+            self.old_text.push_str(old_name);
+            return;
         }
 
-        self.consume_plain_line(NORMAL);
+        if let Some(new_name) = line.strip_prefix("+++ ") {
+            self.new_text.clear();
+            self.new_text.push_str(new_name);
+        } else {
+            // We got --- not followed by +++, WTF?
+            self.old_text.clear();
+            return;
+        }
+
+        let (old_tokens, new_tokens, _, _) = to_highlighted_tokens(&self.old_text, &self.new_text);
+        self.old_text.clear();
+        self.new_text.clear();
+
+        let old_filename = render(&LINE_STYLE_OLD_FILENAME, old_tokens);
+        let new_filename = render(&LINE_STYLE_NEW_FILENAME, new_tokens);
+        self.consume_plain_line(&old_filename);
+        self.consume_plain_line(&new_filename);
+
+        /* FIXME: Take this into account:
+               if let Some(last_tab_index) = line.rfind('\t') {
+                   self.consume_plain_linepart(&line[..last_tab_index]);
+
+                   // When I ran plain "diff" (no git involved), this trailing part
+                   // contained very precise file timestamps. I don't think those
+                   // provide much value, so let's faint them out.
+                   self.consume_plain_linepart(FAINT);
+                   self.consume_plain_linepart(&line[last_tab_index..]);
+               } else {
+                   self.consume_plain_linepart(line);
+               }
+        */
     }
 
     fn consume_hunk_header(&mut self, line: &str) {

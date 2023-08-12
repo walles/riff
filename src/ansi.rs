@@ -8,7 +8,7 @@ pub enum Color {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Weight {
     Normal,
-    _Bold,
+    Bold,
     Faint,
 }
 
@@ -52,7 +52,7 @@ impl AnsiStyle {
         if self.weight != before.weight {
             match self.weight {
                 Weight::Normal => return_me.push_str("\x1b[22m"),
-                Weight::_Bold => return_me.push_str("\x1b[1m"),
+                Weight::Bold => return_me.push_str("\x1b[1m"),
                 Weight::Faint => return_me.push_str("\x1b[2m"),
             }
         }
