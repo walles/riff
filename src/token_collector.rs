@@ -129,7 +129,7 @@ impl StyledToken {
 }
 
 #[must_use]
-fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
+fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
     let mut rendered = String::new();
 
     let mut current_style = AnsiStyle {
@@ -176,23 +176,21 @@ fn render_row(line_style: &LineStyle, row: &mut [StyledToken]) -> String {
 /// Render all the tokens into a (most of the time multiline) string
 #[must_use]
 pub fn render(line_style: &LineStyle, tokens: Vec<StyledToken>) -> String {
-    let mut current_row: Vec<StyledToken> = Vec::new();
     let mut rendered = String::new();
 
-    for token in tokens {
+    let mut current_row_start = 0;
+    for (i, token) in tokens.iter().enumerate() {
         if token.token == "\n" {
-            let rendered_row = &render_row(line_style, &mut current_row);
+            let rendered_row = &render_row(line_style, &tokens[current_row_start..i]);
             rendered.push_str(rendered_row);
             rendered.push('\n');
-            current_row.clear();
+            current_row_start = i + 1;
             continue;
         }
-
-        current_row.push(token.clone());
     }
 
-    if !current_row.is_empty() {
-        let rendered_row = &render_row(line_style, &mut current_row);
+    if current_row_start < tokens.len() {
+        let rendered_row = &render_row(line_style, &tokens[current_row_start..]);
         rendered.push_str(rendered_row);
     }
 
