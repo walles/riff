@@ -2,7 +2,7 @@ use crate::commit_line::format_commit_line;
 use crate::io::ErrorKind;
 use crate::refiner::to_highlighted_tokens;
 use crate::token_collector::{
-    lowlight_after_first_tab, render, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
+    lowlight_timestamps, render, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
 };
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
@@ -327,8 +327,8 @@ impl LineCollector {
         self.old_text.clear();
         self.new_text.clear();
 
-        lowlight_after_first_tab(&mut old_tokens);
-        lowlight_after_first_tab(&mut new_tokens);
+        lowlight_timestamps(&mut old_tokens);
+        lowlight_timestamps(&mut new_tokens);
 
         let old_filename = render(&LINE_STYLE_OLD_FILENAME, old_tokens);
         let new_filename = render(&LINE_STYLE_NEW_FILENAME, new_tokens);

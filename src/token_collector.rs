@@ -388,20 +388,39 @@ pub fn count_lines(tokens: &[StyledToken]) -> usize {
     return lines;
 }
 
-pub fn lowlight_after_first_tab(tokens: &mut [StyledToken]) {
-    let mut found_tab = false;
-    for token in tokens.iter_mut() {
-        if token.token == "\n" {
-            found_tab = false;
-            continue;
+// File timestamps are found after either a tab character or a double space
+pub fn lowlight_timestamps(row: &mut [StyledToken]) {
+    #[derive(PartialEq)]
+    enum State {
+        Initial,
+        FoundOneSpace,
+        InTimestamp,
+    }
+    let mut state = State::Initial;
+    for token in row.iter_mut() {
+        match state {
+            State::Initial => {
+                if token.token == "\t" {
+                    state = State::InTimestamp;
+                } else if token.token == " " {
+                    state = State::FoundOneSpace;
+                }
+            }
+            State::FoundOneSpace => {
+                if token.token == " " {
+                    state = State::InTimestamp;
+                } else {
+                    state = State::Initial;
+                }
+            }
+            State::InTimestamp => {
+                // Intentionally left blank, no way out of this state
+            }
         }
 
-        if token.token == "\t" {
-            found_tab = true;
-        }
-
-        if found_tab {
+        if state == State::InTimestamp {
             token.style = Style::Lowlighted;
+            continue;
         }
     }
 }
