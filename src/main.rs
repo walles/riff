@@ -72,7 +72,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
 
     // Read input line by line, using from_utf8_lossy() to convert lines into
     // strings while handling invalid UTF-8 without crashing
-    let mut line_bytes: Vec<u8> = Vec::new();
+    let mut line: Vec<u8> = Vec::new();
     let mut buf: [u8; 16384] = [0; 16384];
     loop {
         let result = input.read(&mut buf);
@@ -83,9 +83,9 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
         let read_count = result.unwrap();
         if read_count == 0 {
             // End of stream
-            if !line_bytes.is_empty() {
+            if !line.is_empty() {
                 // Stuff found on the last line without a trailing newline
-                line_collector.consume_line(&String::from_utf8_lossy(&line_bytes));
+                line_collector.consume_line(&line);
             }
             break;
         }
@@ -98,13 +98,13 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             }
             if byte != b'\n' {
                 // Line contents, store and continue
-                line_bytes.push(byte);
+                line.push(byte);
                 continue;
             }
 
             // Line finished, consume it!
-            line_collector.consume_line(&String::from_utf8_lossy(&line_bytes));
-            line_bytes.clear();
+            line_collector.consume_line(&line);
+            line.clear();
             continue;
         }
     }

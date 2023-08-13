@@ -69,27 +69,28 @@ impl AnsiStyle {
     }
 }
 
-pub fn without_ansi_escape_codes(input: &str) -> String {
+pub fn without_ansi_escape_codes(input: &[u8]) -> Vec<u8> {
     enum State {
         Normal,
         Escape,
         EscapeBracket,
     }
 
-    let mut return_me = String::with_capacity(input.len());
+    let mut return_me = Vec::with_capacity(input.len());
     let mut state = State::Normal;
 
-    for char in input.chars() {
+    for byte in input {
+        let byte = byte.to_owned();
         match state {
             State::Normal => {
-                if char == '\x1b' {
+                if byte == b'\x1b' {
                     state = State::Escape;
                 } else {
-                    return_me.push(char);
+                    return_me.push(byte);
                 }
             }
             State::Escape => {
-                if char == '[' {
+                if byte == b'[' {
                     state = State::EscapeBracket;
                 } else {
                     // Not an ANSI sequence
@@ -97,12 +98,12 @@ pub fn without_ansi_escape_codes(input: &str) -> String {
 
                     // Push the characters that we thought were the escape
                     // sequence's opening
-                    return_me.push('\x1b');
-                    return_me.push(char);
+                    return_me.push(b'\x1b');
+                    return_me.push(byte);
                 }
             }
             State::EscapeBracket => {
-                if !char.is_ascii_digit() && char != ';' {
+                if !byte.is_ascii_digit() && byte != b';' {
                     // Neither digit nor semicolon, this marks the end of the sequence
                     state = State::Normal;
                 }
@@ -122,16 +123,16 @@ mod tests {
 
     #[test]
     fn test_non_sgr() {
-        assert_eq!(without_ansi_escape_codes("hel\x1b[0Klo"), "hello");
+        assert_eq!(without_ansi_escape_codes(b"hel\x1b[0Klo"), b"hello");
     }
 
     #[test]
     fn test_sgr() {
-        assert_eq!(without_ansi_escape_codes("hel\x1b[33mlo"), "hello");
+        assert_eq!(without_ansi_escape_codes(b"hel\x1b[33mlo"), b"hello");
     }
 
     #[test]
     fn test_multi_sgr() {
-        assert_eq!(without_ansi_escape_codes("hel\x1b[33;34mlo"), "hello");
+        assert_eq!(without_ansi_escape_codes(b"hel\x1b[33;34mlo"), b"hello");
     }
 }

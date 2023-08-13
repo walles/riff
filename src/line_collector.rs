@@ -391,10 +391,11 @@ impl LineCollector {
     }
 
     /// The line parameter is expected *not* to end in a newline
-    pub fn consume_line(&mut self, line: &str) {
+    pub fn consume_line(&mut self, line: &[u8]) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
         let line = without_ansi_escape_codes(line);
+        let line = String::from_utf8_lossy(&line);
 
         if line.starts_with("diff") {
             self.diff_seen = true;
