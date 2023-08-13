@@ -69,24 +69,26 @@ impl AnsiStyle {
     }
 }
 
-pub fn without_ansi_escape_codes(input: &[u8]) -> Vec<u8> {
+// Modifies the input so that all ANSI escape codes are removed
+pub fn remove_ansi_escape_codes(line: &mut Vec<u8>) {
     enum State {
         Normal,
         Escape,
         EscapeBracket,
     }
 
-    let mut return_me = Vec::with_capacity(input.len());
     let mut state = State::Normal;
+    let mut next_index_without_ansi = 0usize;
 
-    for byte in input {
-        let byte = byte.to_owned();
+    for index in 0..line.len() {
+        let byte = line[index];
         match state {
             State::Normal => {
                 if byte == b'\x1b' {
                     state = State::Escape;
                 } else {
-                    return_me.push(byte);
+                    line[next_index_without_ansi] = byte;
+                    next_index_without_ansi += 1;
                 }
             }
             State::Escape => {
@@ -98,8 +100,10 @@ pub fn without_ansi_escape_codes(input: &[u8]) -> Vec<u8> {
 
                     // Push the characters that we thought were the escape
                     // sequence's opening
-                    return_me.push(b'\x1b');
-                    return_me.push(byte);
+                    line[next_index_without_ansi] = b'\x1b';
+                    next_index_without_ansi += 1;
+                    line[next_index_without_ansi] = byte;
+                    next_index_without_ansi += 1;
                 }
             }
             State::EscapeBracket => {
@@ -111,7 +115,7 @@ pub fn without_ansi_escape_codes(input: &[u8]) -> Vec<u8> {
         }
     }
 
-    return return_me;
+    line.truncate(next_index_without_ansi);
 }
 
 #[cfg(test)]
@@ -123,16 +127,22 @@ mod tests {
 
     #[test]
     fn test_non_sgr() {
-        assert_eq!(without_ansi_escape_codes(b"hel\x1b[0Klo"), b"hello");
+        let mut line = b"hel\x1b[0Klo".to_vec();
+        remove_ansi_escape_codes(&mut line);
+        assert_eq!(line, b"hello");
     }
 
     #[test]
     fn test_sgr() {
-        assert_eq!(without_ansi_escape_codes(b"hel\x1b[33mlo"), b"hello");
+        let mut line = b"hel\x1b[33mlo".to_vec();
+        remove_ansi_escape_codes(&mut line);
+        assert_eq!(line, b"hello");
     }
 
     #[test]
     fn test_multi_sgr() {
-        assert_eq!(without_ansi_escape_codes(b"hel\x1b[33;34mlo"), b"hello");
+        let mut line = b"hel\x1b[33;34mlo".to_vec();
+        remove_ansi_escape_codes(&mut line);
+        assert_eq!(line, b"hello");
     }
 }
