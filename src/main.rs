@@ -73,14 +73,15 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
     // Read input line by line, using from_utf8_lossy() to convert lines into
     // strings while handling invalid UTF-8 without crashing
     let mut line_bytes: Vec<u8> = Vec::new();
-    let mut buf: [u8; 1] = [0];
+    let mut buf: [u8; 16384] = [0; 16384];
     loop {
         let result = input.read(&mut buf);
         if result.is_err() {
             panic!("Error reading input stream: {:?}", result.err().unwrap());
         }
 
-        if result.unwrap() == 0 {
+        let read_count = result.unwrap();
+        if read_count == 0 {
             // End of stream
             if !line_bytes.is_empty() {
                 // Stuff found on the last line without a trailing newline
@@ -89,21 +90,23 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             break;
         }
 
-        let single_byte = buf[0];
-        if single_byte as char == '\r' {
-            // MS-DOS file, LF coming up, just ignore this
-            continue;
-        }
-        if single_byte as char != '\n' {
-            // Line contents, store and continue
-            line_bytes.push(single_byte);
-            continue;
-        }
+        for byte in buf.iter().take(read_count) {
+            let byte = *byte;
+            if byte == b'\r' {
+                // MS-DOS file, LF coming up, just ignore this
+                continue;
+            }
+            if byte != b'\n' {
+                // Line contents, store and continue
+                line_bytes.push(byte);
+                continue;
+            }
 
-        // Line finished, consume it!
-        line_collector.consume_line(&String::from_utf8_lossy(&line_bytes));
-        line_bytes.clear();
-        continue;
+            // Line finished, consume it!
+            line_collector.consume_line(&String::from_utf8_lossy(&line_bytes));
+            line_bytes.clear();
+            continue;
+        }
     }
 }
 
