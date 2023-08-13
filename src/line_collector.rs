@@ -1,3 +1,4 @@
+use crate::ansi::without_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
 use crate::io::ErrorKind;
 use crate::refiner::to_highlighted_tokens;
@@ -389,55 +390,11 @@ impl LineCollector {
         self.consume_plain_line(NORMAL);
     }
 
-    fn without_ansi_escape_codes(input: &str) -> String {
-        enum State {
-            Normal,
-            Escape,
-            EscapeBracket,
-        }
-
-        let mut return_me = String::with_capacity(input.len());
-        let mut state = State::Normal;
-
-        for char in input.chars() {
-            match state {
-                State::Normal => {
-                    if char == '\x1b' {
-                        state = State::Escape;
-                    } else {
-                        return_me.push(char);
-                    }
-                }
-                State::Escape => {
-                    if char == '[' {
-                        state = State::EscapeBracket;
-                    } else {
-                        // Not an ANSI sequence
-                        state = State::Normal;
-
-                        // Push the characters that we thought were the escape
-                        // sequence's opening
-                        return_me.push('\x1b');
-                        return_me.push(char);
-                    }
-                }
-                State::EscapeBracket => {
-                    if !char.is_ascii_digit() && char != ';' {
-                        // Neither digit nor semicolon, this marks the end of the sequence
-                        state = State::Normal;
-                    }
-                }
-            }
-        }
-
-        return return_me;
-    }
-
     /// The line parameter is expected *not* to end in a newline
     pub fn consume_line(&mut self, line: &str) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
-        let line = LineCollector::without_ansi_escape_codes(line);
+        let line = without_ansi_escape_codes(line);
 
         if line.starts_with("diff") {
             self.diff_seen = true;
@@ -504,37 +461,5 @@ impl LineCollector {
         }
 
         self.consume_plain_line(&line);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[cfg(test)]
-    use pretty_assertions::assert_eq;
-
-    #[test]
-    fn test_non_sgr() {
-        assert_eq!(
-            LineCollector::without_ansi_escape_codes("hel\x1b[0Klo"),
-            "hello"
-        );
-    }
-
-    #[test]
-    fn test_sgr() {
-        assert_eq!(
-            LineCollector::without_ansi_escape_codes("hel\x1b[33mlo"),
-            "hello"
-        );
-    }
-
-    #[test]
-    fn test_multi_sgr() {
-        assert_eq!(
-            LineCollector::without_ansi_escape_codes("hel\x1b[33;34mlo"),
-            "hello"
-        );
     }
 }
