@@ -388,14 +388,15 @@ pub fn count_lines(tokens: &[StyledToken]) -> usize {
     return lines;
 }
 
-// File timestamps are found after either a tab character or a double space
-pub fn lowlight_timestamps(row: &mut [StyledToken]) {
+/// File timestamps are found after either a tab character or a double space
+pub fn lowlight_timestamp(row: &mut [StyledToken]) {
     #[derive(PartialEq)]
     enum State {
         Initial,
         FoundOneSpace,
         InTimestamp,
     }
+
     let mut state = State::Initial;
     for token in row.iter_mut() {
         match state {
@@ -422,6 +423,21 @@ pub fn lowlight_timestamps(row: &mut [StyledToken]) {
             token.style = Style::Lowlighted;
             continue;
         }
+    }
+}
+
+/// Unhighlight leading 'a/' or 'b/' in git diff file names.
+///
+/// They are just placeholders that do not indicate any changes introduced by
+/// the user.
+pub fn unhighlight_git_prefix(row: &mut [StyledToken]) {
+    if row.len() < 2 {
+        return;
+    }
+
+    if (row[0].token == "a" || row[0].token == "b") && row[1].token == "/" {
+        row[0].style = Style::Plain;
+        row[1].style = Style::Plain;
     }
 }
 

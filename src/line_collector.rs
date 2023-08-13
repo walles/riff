@@ -2,7 +2,8 @@ use crate::commit_line::format_commit_line;
 use crate::io::ErrorKind;
 use crate::refiner::to_highlighted_tokens;
 use crate::token_collector::{
-    lowlight_timestamps, render, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
+    lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,
+    LINE_STYLE_OLD_FILENAME,
 };
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
@@ -314,6 +315,17 @@ impl LineCollector {
         }
 
         if let Some(new_name) = line.strip_prefix("+++ ") {
+            if self.old_text.is_empty() {
+                // This happens when files are removed since "--- /dev/null"
+                // gets special treatment in STATIC_HEADER_PREFIXES.
+
+                self.new_text.clear();
+                self.consume_plain_linepart(BOLD);
+                self.consume_plain_linepart(line);
+                self.consume_plain_line(NORMAL);
+                return;
+            }
+
             self.new_text.clear();
             self.new_text.push_str(new_name);
         } else {
@@ -327,8 +339,10 @@ impl LineCollector {
         self.old_text.clear();
         self.new_text.clear();
 
-        lowlight_timestamps(&mut old_tokens);
-        lowlight_timestamps(&mut new_tokens);
+        lowlight_timestamp(&mut old_tokens);
+        unhighlight_git_prefix(&mut old_tokens);
+        lowlight_timestamp(&mut new_tokens);
+        unhighlight_git_prefix(&mut new_tokens);
 
         let old_filename = render(&LINE_STYLE_OLD_FILENAME, old_tokens);
         let new_filename = render(&LINE_STYLE_NEW_FILENAME, new_tokens);
