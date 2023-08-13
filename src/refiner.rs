@@ -1,15 +1,7 @@
+use crate::constants::*;
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
-use crate::token_collector::{
-    bridge_consecutive_highlighted_tokens, count_lines, highlight_nonleading_tabs,
-    highlight_trailing_whitespace, render, unhighlight_noisy_rows, LINE_STYLE_ADDS_ONLY,
-    LINE_STYLE_OLD_FAINT,
-};
-use crate::token_collector::{LINE_STYLE_NEW, LINE_STYLE_OLD};
+use crate::token_collector::*;
 use crate::tokenizer;
-use crate::{
-    constants::*,
-    token_collector::{Style, StyledToken},
-};
 use diffus::{
     edit::{self, collection},
     Diffable,

@@ -4,14 +4,13 @@ use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
 use crate::ansi::Weight;
 use crate::ansi::ANSI_STYLE_NORMAL;
-use crate::token_collector::Style::Highlighted;
-use crate::token_collector::Style::Plain;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Style {
     Plain,
     Highlighted,
     Error,
+    Lowlighted,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -186,12 +185,17 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
     // Render tokens
     for token in row {
         let new_style = match token.style {
-            Plain => line_style.plain_style,
-            Highlighted => line_style.highlighted_style,
+            Style::Plain => line_style.plain_style,
+            Style::Highlighted => line_style.highlighted_style,
             Style::Error => AnsiStyle {
                 inverse: true,
                 weight: Weight::Normal,
                 color: Red,
+            },
+            Style::Lowlighted => AnsiStyle {
+                inverse: false,
+                weight: Weight::Faint,
+                color: Default,
             },
         };
 
@@ -246,7 +250,7 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
 
         // Unhighlight the current row
         for token in row.iter_mut() {
-            token.style = Plain;
+            token.style = Style::Plain;
         }
         return true;
     }
@@ -268,7 +272,7 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
             continue;
         }
 
-        if token.style == Highlighted {
+        if token.style == Style::Highlighted {
             highlighted_tokens_count += 1;
         }
     }
@@ -326,7 +330,7 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     for token in tokens.iter_mut() {
         match found_state {
             FoundState::Nothing => {
-                if token.style == Highlighted {
+                if token.style == Style::Highlighted {
                     // Found "Monkey"
                     found_state = FoundState::HighlightedWord;
                 }
@@ -336,7 +340,7 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
                 if token.token.len() == 1 {
                     // Found "Monkey " (note trailing space)
                     found_state = FoundState::WordSpace;
-                } else if token.style == Highlighted {
+                } else if token.style == Style::Highlighted {
                     found_state = FoundState::HighlightedWord;
                 } else {
                     found_state = FoundState::Nothing;
@@ -344,10 +348,10 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
             }
 
             FoundState::WordSpace => {
-                if token.style == Highlighted {
+                if token.style == Style::Highlighted {
                     // Found "Monkey Dance"
                     if let Some(whitespace) = previous_token {
-                        whitespace.style = Highlighted;
+                        whitespace.style = Style::Highlighted;
                     }
 
                     found_state = FoundState::HighlightedWord;
@@ -382,6 +386,24 @@ pub fn count_lines(tokens: &[StyledToken]) -> usize {
     }
 
     return lines;
+}
+
+pub fn lowlight_after_first_tab(tokens: &mut [StyledToken]) {
+    let mut found_tab = false;
+    for token in tokens.iter_mut() {
+        if token.token == "\n" {
+            found_tab = false;
+            continue;
+        }
+
+        if token.token == "\t" {
+            found_tab = true;
+        }
+
+        if found_tab {
+            token.style = Style::Lowlighted;
+        }
+    }
 }
 
 #[cfg(test)]
