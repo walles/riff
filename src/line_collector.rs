@@ -28,8 +28,6 @@ lazy_static! {
         ("similarity index ", FAINT),
         ("new file mode ", FAINT),
         ("deleted file mode ", FAINT),
-        ("--- /dev/null", FAINT),
-        ("+++ /dev/null", FAINT),
     ];
 
     /// This is the `\ No newline at end of file` string. But since it can come
@@ -316,21 +314,46 @@ impl LineCollector {
 
         if let Some(new_name) = line.strip_prefix("+++ ") {
             if self.old_text.is_empty() {
-                // This happens when files are removed since "--- /dev/null"
-                // gets special treatment in STATIC_HEADER_PREFIXES.
-
-                self.new_text.clear();
-                self.consume_plain_linepart(BOLD);
-                self.consume_plain_linepart(line);
-                self.consume_plain_line(NORMAL);
+                // We got +++ not preceded by ---, WTF?
                 return;
             }
 
             self.new_text.clear();
             self.new_text.push_str(new_name);
         } else {
-            // We got --- not followed by +++, WTF?
+            panic!("Got a plusminus header that doesn't start with --- or +++");
+        }
+
+        if self.old_text == "/dev/null" {
+            let new_name = self.new_text.clone();
             self.old_text.clear();
+            self.new_text.clear();
+
+            self.consume_plain_linepart(FAINT);
+            self.consume_plain_linepart("--- /dev/null");
+            self.consume_plain_line(NORMAL);
+
+            self.consume_plain_linepart(BOLD);
+            self.consume_plain_linepart("+++ ");
+            self.consume_plain_linepart(&new_name);
+            self.consume_plain_line(NORMAL);
+            return;
+        }
+
+        if self.new_text == "/dev/null" {
+            let old_name = self.old_text.clone();
+            self.old_text.clear();
+            self.new_text.clear();
+
+            self.consume_plain_linepart(BOLD);
+            self.consume_plain_linepart("--- ");
+            self.consume_plain_linepart(&old_name);
+            self.consume_plain_line(NORMAL);
+
+            self.consume_plain_linepart(FAINT);
+            self.consume_plain_linepart("+++ /dev/null");
+            self.consume_plain_line(NORMAL);
+
             return;
         }
 
@@ -348,20 +371,6 @@ impl LineCollector {
         let new_filename = render(&LINE_STYLE_NEW_FILENAME, new_tokens);
         self.consume_plain_line(&old_filename);
         self.consume_plain_line(&new_filename);
-
-        /* FIXME: Take this into account:
-               if let Some(last_tab_index) = line.rfind('\t') {
-                   self.consume_plain_linepart(&line[..last_tab_index]);
-
-                   // When I ran plain "diff" (no git involved), this trailing part
-                   // contained very precise file timestamps. I don't think those
-                   // provide much value, so let's faint them out.
-                   self.consume_plain_linepart(FAINT);
-                   self.consume_plain_linepart(&line[last_tab_index..]);
-               } else {
-                   self.consume_plain_linepart(line);
-               }
-        */
     }
 
     fn consume_hunk_header(&mut self, line: &str) {
