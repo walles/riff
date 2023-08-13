@@ -411,10 +411,10 @@ impl LineCollector {
     }
 
     /// The line parameter is expected *not* to end in a newline
-    pub fn consume_line(&mut self, line: String) {
+    pub fn consume_line(&mut self, line: &str) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
-        let line = LineCollector::without_ansi_escape_codes(&line);
+        let line = LineCollector::without_ansi_escape_codes(line);
 
         if line.starts_with("diff") {
             self.diff_seen = true;
