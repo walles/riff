@@ -84,7 +84,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             // End of stream
             if !line_bytes.is_empty() {
                 // Stuff found on the last line without a trailing newline
-                line_collector.consume_line(String::from_utf8_lossy(&line_bytes).to_string());
+                line_collector.consume_line(&String::from_utf8_lossy(&line_bytes));
             }
             break;
         }
@@ -101,7 +101,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
         }
 
         // Line finished, consume it!
-        line_collector.consume_line(String::from_utf8_lossy(&line_bytes).to_string());
+        line_collector.consume_line(&String::from_utf8_lossy(&line_bytes));
         line_bytes.clear();
         continue;
     }

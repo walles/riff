@@ -1,5 +1,10 @@
 use crate::commit_line::format_commit_line;
 use crate::io::ErrorKind;
+use crate::refiner::to_highlighted_tokens;
+use crate::token_collector::{
+    lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,
+    LINE_STYLE_OLD_FILENAME,
+};
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
@@ -23,8 +28,6 @@ lazy_static! {
         ("similarity index ", FAINT),
         ("new file mode ", FAINT),
         ("deleted file mode ", FAINT),
-        ("--- /dev/null", FAINT),
-        ("+++ /dev/null", FAINT),
     ];
 
     /// This is the `\ No newline at end of file` string. But since it can come
@@ -303,21 +306,71 @@ impl LineCollector {
     }
 
     pub fn consume_plusminus_header(&mut self, line: &str) {
-        self.consume_plain_linepart(BOLD);
-
-        if let Some(last_tab_index) = line.rfind('\t') {
-            self.consume_plain_linepart(&line[..last_tab_index]);
-
-            // When I ran plain "diff" (no git involved), this trailing part
-            // contained very precise file timestamps. I don't think those
-            // provide much value, so let's faint them out.
-            self.consume_plain_linepart(FAINT);
-            self.consume_plain_linepart(&line[last_tab_index..]);
-        } else {
-            self.consume_plain_linepart(line);
+        if let Some(old_name) = line.strip_prefix("--- ") {
+            self.old_text.clear();
+            self.old_text.push_str(old_name);
+            return;
         }
 
-        self.consume_plain_line(NORMAL);
+        if let Some(new_name) = line.strip_prefix("+++ ") {
+            if self.old_text.is_empty() {
+                // We got +++ not preceded by ---, WTF?
+                return;
+            }
+
+            self.new_text.clear();
+            self.new_text.push_str(new_name);
+        } else {
+            panic!("Got a plusminus header that doesn't start with --- or +++");
+        }
+
+        if self.old_text == "/dev/null" {
+            let new_name = self.new_text.clone();
+            self.old_text.clear();
+            self.new_text.clear();
+
+            self.consume_plain_linepart(FAINT);
+            self.consume_plain_linepart("--- /dev/null");
+            self.consume_plain_line(NORMAL);
+
+            self.consume_plain_linepart(BOLD);
+            self.consume_plain_linepart("+++ ");
+            self.consume_plain_linepart(&new_name);
+            self.consume_plain_line(NORMAL);
+            return;
+        }
+
+        if self.new_text == "/dev/null" {
+            let old_name = self.old_text.clone();
+            self.old_text.clear();
+            self.new_text.clear();
+
+            self.consume_plain_linepart(BOLD);
+            self.consume_plain_linepart("--- ");
+            self.consume_plain_linepart(&old_name);
+            self.consume_plain_line(NORMAL);
+
+            self.consume_plain_linepart(FAINT);
+            self.consume_plain_linepart("+++ /dev/null");
+            self.consume_plain_line(NORMAL);
+
+            return;
+        }
+
+        let (mut old_tokens, mut new_tokens, _, _) =
+            to_highlighted_tokens(&self.old_text, &self.new_text);
+        self.old_text.clear();
+        self.new_text.clear();
+
+        lowlight_timestamp(&mut old_tokens);
+        unhighlight_git_prefix(&mut old_tokens);
+        lowlight_timestamp(&mut new_tokens);
+        unhighlight_git_prefix(&mut new_tokens);
+
+        let old_filename = render(&LINE_STYLE_OLD_FILENAME, old_tokens);
+        let new_filename = render(&LINE_STYLE_NEW_FILENAME, new_tokens);
+        self.consume_plain_line(&old_filename);
+        self.consume_plain_line(&new_filename);
     }
 
     fn consume_hunk_header(&mut self, line: &str) {
@@ -381,10 +434,10 @@ impl LineCollector {
     }
 
     /// The line parameter is expected *not* to end in a newline
-    pub fn consume_line(&mut self, line: String) {
+    pub fn consume_line(&mut self, line: &str) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
-        let line = LineCollector::without_ansi_escape_codes(&line);
+        let line = LineCollector::without_ansi_escape_codes(line);
 
         if line.starts_with("diff") {
             self.diff_seen = true;

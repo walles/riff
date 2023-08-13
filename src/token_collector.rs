@@ -2,14 +2,15 @@ use crate::ansi::AnsiStyle;
 use crate::ansi::Color::Default;
 use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
-use crate::token_collector::Style::Highlighted;
-use crate::token_collector::Style::Plain;
+use crate::ansi::Weight;
+use crate::ansi::ANSI_STYLE_NORMAL;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Style {
     Plain,
     Highlighted,
     Error,
+    Lowlighted,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -31,17 +32,17 @@ pub const LINE_STYLE_OLD: LineStyle = {
         prefix: "-",
         prefix_style: AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Red,
         },
         plain_style: AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Red,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
-            faint: false,
+            weight: Weight::Normal,
             color: Red,
         },
     }
@@ -52,17 +53,17 @@ pub const LINE_STYLE_OLD_FAINT: LineStyle = {
         prefix: "-",
         prefix_style: AnsiStyle {
             inverse: false,
-            faint: true,
+            weight: Weight::Faint,
             color: Red,
         },
         plain_style: AnsiStyle {
             inverse: false,
-            faint: true,
+            weight: Weight::Faint,
             color: Red,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
-            faint: true,
+            weight: Weight::Faint,
             color: Red,
         },
     }
@@ -73,17 +74,17 @@ pub const LINE_STYLE_NEW: LineStyle = {
         prefix: "+",
         prefix_style: AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Green,
         },
         plain_style: AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Green,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
-            faint: false,
+            weight: Weight::Normal,
             color: Green,
         },
     }
@@ -94,17 +95,59 @@ pub const LINE_STYLE_ADDS_ONLY: LineStyle = {
         prefix: "+",
         prefix_style: AnsiStyle {
             inverse: false,
-            faint: true,
+            weight: Weight::Faint,
             color: Green,
         },
         plain_style: AnsiStyle {
             inverse: false,
-            faint: false,
+            weight: Weight::Normal,
             color: Default,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
-            faint: false,
+            weight: Weight::Normal,
+            color: Green,
+        },
+    }
+};
+
+pub const LINE_STYLE_OLD_FILENAME: LineStyle = {
+    LineStyle {
+        prefix: "--- ",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Bold,
+            color: Default,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Bold,
+            color: Default,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Bold,
+            color: Red,
+        },
+    }
+};
+
+pub const LINE_STYLE_NEW_FILENAME: LineStyle = {
+    LineStyle {
+        prefix: "+++ ",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Bold,
+            color: Default,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Bold,
+            color: Default,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Bold,
             color: Green,
         },
     }
@@ -132,11 +175,7 @@ impl StyledToken {
 fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
     let mut rendered = String::new();
 
-    let mut current_style = AnsiStyle {
-        inverse: false,
-        faint: false,
-        color: Default,
-    };
+    let mut current_style = ANSI_STYLE_NORMAL;
 
     // Render prefix
     rendered.push_str(&line_style.prefix_style.from(&current_style));
@@ -146,12 +185,17 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
     // Render tokens
     for token in row {
         let new_style = match token.style {
-            Plain => line_style.plain_style,
-            Highlighted => line_style.highlighted_style,
+            Style::Plain => line_style.plain_style,
+            Style::Highlighted => line_style.highlighted_style,
             Style::Error => AnsiStyle {
                 inverse: true,
-                faint: false,
+                weight: Weight::Normal,
                 color: Red,
+            },
+            Style::Lowlighted => AnsiStyle {
+                inverse: false,
+                weight: Weight::Faint,
+                color: Default,
             },
         };
 
@@ -161,14 +205,7 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
     }
 
     // Reset formatting at the end of the line
-    rendered.push_str(
-        &AnsiStyle {
-            inverse: false,
-            faint: false,
-            color: Default,
-        }
-        .from(&current_style),
-    );
+    rendered.push_str(&ANSI_STYLE_NORMAL.from(&current_style));
 
     return rendered;
 }
@@ -213,7 +250,7 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
 
         // Unhighlight the current row
         for token in row.iter_mut() {
-            token.style = Plain;
+            token.style = Style::Plain;
         }
         return true;
     }
@@ -235,7 +272,7 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
             continue;
         }
 
-        if token.style == Highlighted {
+        if token.style == Style::Highlighted {
             highlighted_tokens_count += 1;
         }
     }
@@ -293,7 +330,7 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     for token in tokens.iter_mut() {
         match found_state {
             FoundState::Nothing => {
-                if token.style == Highlighted {
+                if token.style == Style::Highlighted {
                     // Found "Monkey"
                     found_state = FoundState::HighlightedWord;
                 }
@@ -303,7 +340,7 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
                 if token.token.len() == 1 {
                     // Found "Monkey " (note trailing space)
                     found_state = FoundState::WordSpace;
-                } else if token.style == Highlighted {
+                } else if token.style == Style::Highlighted {
                     found_state = FoundState::HighlightedWord;
                 } else {
                     found_state = FoundState::Nothing;
@@ -311,10 +348,10 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
             }
 
             FoundState::WordSpace => {
-                if token.style == Highlighted {
+                if token.style == Style::Highlighted {
                     // Found "Monkey Dance"
                     if let Some(whitespace) = previous_token {
-                        whitespace.style = Highlighted;
+                        whitespace.style = Style::Highlighted;
                     }
 
                     found_state = FoundState::HighlightedWord;
@@ -349,6 +386,59 @@ pub fn count_lines(tokens: &[StyledToken]) -> usize {
     }
 
     return lines;
+}
+
+/// File timestamps are found after either a tab character or a double space
+pub fn lowlight_timestamp(row: &mut [StyledToken]) {
+    #[derive(PartialEq)]
+    enum State {
+        Initial,
+        FoundOneSpace,
+        InTimestamp,
+    }
+
+    let mut state = State::Initial;
+    for token in row.iter_mut() {
+        match state {
+            State::Initial => {
+                if token.token == "\t" {
+                    state = State::InTimestamp;
+                } else if token.token == " " {
+                    state = State::FoundOneSpace;
+                }
+            }
+            State::FoundOneSpace => {
+                if token.token == " " {
+                    state = State::InTimestamp;
+                } else {
+                    state = State::Initial;
+                }
+            }
+            State::InTimestamp => {
+                // Intentionally left blank, no way out of this state
+            }
+        }
+
+        if state == State::InTimestamp {
+            token.style = Style::Lowlighted;
+            continue;
+        }
+    }
+}
+
+/// Unhighlight leading 'a/' or 'b/' in git diff file names.
+///
+/// They are just placeholders that do not indicate any changes introduced by
+/// the user.
+pub fn unhighlight_git_prefix(row: &mut [StyledToken]) {
+    if row.len() < 2 {
+        return;
+    }
+
+    if (row[0].token == "a" || row[0].token == "b") && row[1].token == "/" {
+        row[0].style = Style::Plain;
+        row[1].style = Style::Plain;
+    }
 }
 
 #[cfg(test)]

@@ -1,15 +1,7 @@
+use crate::constants::*;
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
-use crate::token_collector::{
-    bridge_consecutive_highlighted_tokens, count_lines, highlight_nonleading_tabs,
-    highlight_trailing_whitespace, render, unhighlight_noisy_rows, LINE_STYLE_ADDS_ONLY,
-    LINE_STYLE_OLD_FAINT,
-};
-use crate::token_collector::{LINE_STYLE_NEW, LINE_STYLE_OLD};
+use crate::token_collector::*;
 use crate::tokenizer;
-use crate::{
-    constants::*,
-    token_collector::{Style, StyledToken},
-};
 use diffus::{
     edit::{self, collection},
     Diffable,
@@ -90,6 +82,29 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
         return format_simple(old_text, new_text);
     }
 
+    let (old_tokens, new_tokens, old_highlights, new_unhighlighted) =
+        to_highlighted_tokens(old_text, new_text);
+
+    let highlighted_old_text;
+    let highlighted_new_text;
+    if old_highlights || new_unhighlighted || count_lines(&old_tokens) != count_lines(&new_tokens) {
+        highlighted_old_text = render(&LINE_STYLE_OLD, old_tokens);
+        highlighted_new_text = render(&LINE_STYLE_NEW, new_tokens);
+    } else {
+        highlighted_old_text = render(&LINE_STYLE_OLD_FAINT, old_tokens);
+        highlighted_new_text = render(&LINE_STYLE_ADDS_ONLY, new_tokens);
+    }
+
+    return to_lines(&highlighted_old_text, &highlighted_new_text);
+}
+
+/// Returns two vectors for old and new sections. The first bool is true if
+/// there were any highlights found in the old text. The second bool is true if
+/// any highlights were removed for readability in the new text.
+pub fn to_highlighted_tokens(
+    old_text: &str,
+    new_text: &str,
+) -> (Vec<StyledToken>, Vec<StyledToken>, bool, bool) {
     // Find diffs between adds and removals
     let mut old_tokens = Vec::new();
     let mut new_tokens = Vec::new();
@@ -152,17 +167,7 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     highlight_trailing_whitespace(&mut new_tokens);
     highlight_nonleading_tabs(&mut new_tokens);
 
-    let highlighted_old_text;
-    let highlighted_new_text;
-    if old_highlights || new_unhighlighted || count_lines(&old_tokens) != count_lines(&new_tokens) {
-        highlighted_old_text = render(&LINE_STYLE_OLD, old_tokens);
-        highlighted_new_text = render(&LINE_STYLE_NEW, new_tokens);
-    } else {
-        highlighted_old_text = render(&LINE_STYLE_OLD_FAINT, old_tokens);
-        highlighted_new_text = render(&LINE_STYLE_ADDS_ONLY, new_tokens);
-    }
-
-    return to_lines(&highlighted_old_text, &highlighted_new_text);
+    return (old_tokens, new_tokens, old_highlights, new_unhighlighted);
 }
 
 #[must_use]
