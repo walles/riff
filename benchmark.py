@@ -102,7 +102,7 @@ def gather_binaries():
     # Just do the three last releases
     rust_tags = list(sorted(rust_tags, key=natural_keys))[-3:]
 
-    # Make sure we binaries for older versions
+    # Build binaries we need
     with tempfile.TemporaryDirectory(prefix="riff-benchmark") as clonedir:
         subprocess.run(["git", "clone", "-b", "master", ".", clonedir], check=True)
 
@@ -150,13 +150,13 @@ def print_timings(binary: str, testdata_filename: str):
 
     # Do some warmup runs
     for _ in range(WARMUP_RUNS):
-        with open(testdata_filename) as testdata:
+        with open(testdata_filename, encoding="utf-8") as testdata:
             subprocess.check_call(binary, stdin=testdata, stdout=subprocess.DEVNULL)
 
     # Do the actual benchmarking runs
     deltas = []
     for _ in range(ITERATIONS):
-        with open(testdata_filename) as testdata:
+        with open(testdata_filename, encoding="utf-8") as testdata:
             t0 = time.time()
             subprocess.check_call(binary, stdin=testdata, stdout=subprocess.DEVNULL)
             t1 = time.time()
@@ -190,7 +190,9 @@ def time_binaries():
         # Do riff-current last: https://stackoverflow.com/a/20320940/473672
         binaries.sort(key=lambda s: s.endswith("riff-current"))
 
-        for binary in binaries:
+        # 5 = three versions back, plus the most recent commit and any
+        # non-commited changes
+        for binary in binaries[-5:]:
             print_timings(binary, testdata.name)
         print_timings("/bin/cat", testdata.name)
 
