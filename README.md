@@ -39,7 +39,7 @@ riff file1.txt file2.txt
 ## With [Homebrew](https://brew.sh)
 
 ```
-brew install walles/johan/riffdiff
+brew install riff
 ```
 
 ## From [the Rust Crate](https://crates.io/crates/riffdiff)
