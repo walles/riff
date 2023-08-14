@@ -1,0 +1,31 @@
+[1m--- [7m[31mbefore[27m[39m.txt[2m	2023-08-14 18:46:25.000000000 +0200[0m
+[1m+++ [7m[32mafter[27m[39m.txt[2m	2023-08-14 18:47:42.000000000 +0200[0m
+[36m@@ -1,15 +1,16 @@[0m
+[31m-Hit the ground running pull in ten extra bodies to help roll the tortoise. Ramp[0m
+[31m-up. Parallel path. Performance review we need to crystallize a plan.[0m
+[31m-Incentivization hammer out, nor old boys club, and cta, yet we need to think big[0m
+[31m-start small and scale fast to energize our clients. High turnaround rate drive[0m
+[31m-awareness to increase engagement turn the ship.[0m
+[32m+Hit the ground running pull in ten extra bodies to help roll the[0m
+[32m+tortoise. Ramp up. Parallel path. Performance review we need to[0m
+[32m+crystallize a plan. Incentivization hammer out, nor old boys club,[0m
+[32m+and cta, yet we need to think big start small and scale fast to[0m
+[32m+energize our clients. High turnaround rate drive awareness to[0m
+[32m+increase engagement turn the ship.[0m
+
+ ---
+
+[31m-That is a good problem to have crank this out ultimate measure of success[0m
+[31m-re-inventing the wheel, nor the horse is out of the barn, for copy and paste[0m
+[31m-from stack overflow. Incentivization work flows. Knowledge process outsourcing.[0m
+[31m-Shotgun approach radical candor, nor ensure to follow requirements when[0m
+[31m-developing solutions, nor if you're not hurting you're not winning, and we're[0m
+[31m-starting to formalize flexible opinions around our foundations this is not the[0m
+[31m-hill i want to die on, or value prop.[0m
+[32m+[7m    [27mThat is a good problem to have crank this out ultimate measure of success[0m
+[32m+[7m    [27mre-inventing the wheel, nor the horse is out of the barn, for copy and paste[0m
+[32m+[7m    [27mfrom stack overflow. Incentivization work flows. Knowledge process[0m
+[32m+[7m   [27m outsourcing. Shotgun approach radical candor, nor ensure to follow[0m
+[32m+[7m   [27m requirements when developing solutions, nor if you're not hurting you're not[0m
+[32m+[7m   [27m winning, and we're starting to formalize flexible opinions around our[0m
+[32m+[7m   [27m foundations this is not the hill i want to die on, or value prop.[0m
