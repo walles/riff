@@ -129,7 +129,7 @@ If you want to test the release script without actually releasing anything, do:
 # TODO future
 
 - Detect moved blocks and use a number as a prefix for both the add
-  and the remove part of the move. Hightlight any changes just like
+  and the remove part of the move. Highlight any changes just like
   for other changes.
 
 # DONE
