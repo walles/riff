@@ -308,12 +308,13 @@ pub fn highlight_nonleading_tabs(tokens: &mut [StyledToken]) {
             continue;
         }
 
-        if !leading && token.token == "\t" {
-            token.style = Style::Error;
-            continue;
+        if token.token != "\t" {
+            leading = false;
         }
 
-        leading = false;
+        if token.token == "\t" && !leading {
+            token.style = Style::Error;
+        }
     }
 }
 
@@ -450,6 +451,31 @@ mod tests {
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_highlight_nonleading_tabs() {
+        let mut tokens = vec![
+            StyledToken::new("\t".to_string(), Style::Plain),
+            StyledToken::new("\t".to_string(), Style::Plain),
+            StyledToken::new("one".to_string(), Style::Plain),
+            StyledToken::new("\n".to_string(), Style::Plain),
+            StyledToken::new("two".to_string(), Style::Plain),
+            StyledToken::new("\t".to_string(), Style::Plain),
+        ];
+        highlight_nonleading_tabs(&mut tokens);
+
+        assert_eq!(
+            tokens,
+            vec![
+                StyledToken::new("\t".to_string(), Style::Plain),
+                StyledToken::new("\t".to_string(), Style::Plain),
+                StyledToken::new("one".to_string(), Style::Plain),
+                StyledToken::new("\n".to_string(), Style::Plain),
+                StyledToken::new("two".to_string(), Style::Plain),
+                StyledToken::new("\t".to_string(), Style::Error),
+            ]
+        );
+    }
 
     #[test]
     fn test_basic() {
