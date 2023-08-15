@@ -14,3 +14,10 @@ jobs:
         with:
           token: ${{secrets.JOHAN_GITHUB_API_TOKEN}}
           formula: riff
+  publish-to-cargo:
+    name: Publishing to Cargo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo publish --token ${{ secrets.CARGO_API_TOKEN }}

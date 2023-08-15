@@ -174,16 +174,14 @@ rustup target add x86_64-pc-windows-gnu
 cargo build --release --target=x86_64-pc-windows-gnu
 $LIVE && cp "target/x86_64-pc-windows-gnu/release/riff.exe" "riff-$NEW_VERSION_NUMBER-x86_64-windows.exe"
 
-# Mark new release on Github
+# Mark new release on Github. This implicitly triggers Homebrew deployment and
+# cargo publishing through deployment.yml.
 $LIVE && git push && git push --tags
 
 cat <<EOM
 
 ==
 EOM
-
-# Publish to https://crates.io/crates/riffdiff
-$LIVE && cargo publish
 
 $LIVE && cat <<EOM
 Now, create a new release on GitHub:
@@ -200,13 +198,6 @@ fi
 
 $LIVE && echo
 $LIVE && echo 'After uploading that file, press "Publish release".'
-$LIVE && echo
-
-$LIVE && read -r -p "Press ENTER when done: "
-
-$LIVE && echo
-$LIVE && echo "Now, make a PR to bump the Homebrew packaged version to $NEW_VERSION_NUMBER:"
-$LIVE && echo '  https://github.com/walles/homebrew-johan/blob/main/Formula/riff.rb'
 $LIVE && echo
 
 $LIVE && read -r -p "Press ENTER when done: "
