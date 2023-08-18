@@ -126,7 +126,7 @@ pub const LINE_STYLE_OLD_FILENAME: LineStyle = {
         },
         highlighted_style: AnsiStyle {
             inverse: true,
-            weight: Weight::Bold,
+            weight: Weight::Normal,
             color: Red,
         },
     }
@@ -147,7 +147,7 @@ pub const LINE_STYLE_NEW_FILENAME: LineStyle = {
         },
         highlighted_style: AnsiStyle {
             inverse: true,
-            weight: Weight::Bold,
+            weight: Weight::Normal,
             color: Green,
         },
     }
