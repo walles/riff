@@ -104,15 +104,6 @@ If you want to test the release script without actually releasing anything, do:
 - Render ESC characters in the diff as Unicode ␛
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
   executed from inside of the `$PATH`
-- Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
-  How should we visualize the reformatting of the No-newline-at-eof code?
-- Do `git show 0f5dd84` and think about how to visualize one line
-  changing to itself with a comma at the end plus a bunch of entirely
-  new lines. Think of a constant array getting one or more extra
-  members.
-- Do `git show -b 77c8f77` and think about what rule we should use to
-  highlight the leading spaces of the `+ refined` and `+ page` lines
-  at the end of the file.
 - Do `git show 57f27da` and think about what rule we should use to get
   the REVERSE vs reversed() lines highlighted.
 - Add test for never changing the number of lines in the input, that
@@ -211,3 +202,12 @@ If you want to test the release script without actually releasing anything, do:
 - Bound how-much-to-highlight restriction by number of characters highlighted
   rather than by number of tokens highlighted
 - Get ourselves some kind of benchmark suite / example(s)
+- Do `git show 5e0a1b2b13528f40299e78e3bfa590d9f96637af` and scroll to the end.
+  How should we visualize the reformatting of the No-newline-at-eof code?
+- Do `git show 0f5dd84` and think about how to visualize one line
+  changing to itself with a comma at the end plus a bunch of entirely
+  new lines. Think of a constant array getting one or more extra
+  members.
+- Do `git show -b 77c8f77` and think about what rule we should use to
+  highlight the leading spaces of the `+ refined` and `+ page` lines
+  at the end of the file.
