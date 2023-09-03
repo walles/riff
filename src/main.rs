@@ -71,11 +71,11 @@ const GIT_VERSION: &str = git_version!(cargo_prefix = "");
 #[derive(Parser)]
 struct Options {
     /// First file to compare
-    #[arg(group = "files")]
+    #[arg(requires("file2"))]
     file1: Option<String>,
 
     /// Second file to compare
-    #[arg(requires("file1"))]
+    #[arg()]
     file2: Option<String>,
 
     /// Ignore changes in amount of whitespace
@@ -354,15 +354,6 @@ fn main() {
             options.no_pager,
         );
         return;
-    }
-
-    if options.ignore_space_change {
-        eprintln!(
-            "ERROR: -b is only supported when diffing two named paths (\"riff -b a.txt b.txt\")"
-        );
-        eprintln!();
-        print_help(&mut io::stderr());
-        exit(1);
     }
 
     if io::stdin().is_terminal() {
