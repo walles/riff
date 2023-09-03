@@ -9,6 +9,7 @@
 extern crate lazy_static;
 
 use backtrace::Backtrace;
+use clap::Parser;
 use git_version::git_version;
 use line_collector::LineCollector;
 use std::io::{self, IsTerminal};
@@ -66,6 +67,28 @@ const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 //
 // Ref: https://github.com/walles/riff/issues/26#issuecomment-1120294897
 const GIT_VERSION: &str = git_version!(cargo_prefix = "");
+
+#[derive(Parser)]
+struct Options {
+    /// First file to compare
+    #[arg(group = "files")]
+    file1: Option<String>,
+
+    /// Second file to compare
+    #[arg(group = "files")]
+    file2: Option<String>,
+
+    // Ignore changes in amount of whitespace
+    #[arg(short('b'))]
+    ignore_space_change: bool,
+
+    //Don't page the result
+    #[arg(long)]
+    no_pager: bool,
+
+    #[arg(long)]
+    please_panic: bool,
+}
 
 fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
     let mut line_collector = LineCollector::new(output);
@@ -151,21 +174,6 @@ fn try_pager(input: &mut dyn io::Read, pager_name: &str) -> bool {
             return false;
         }
     }
-}
-
-/// If `option` is found in `argv`, all instances of `option` will be removed
-/// from `argv`.
-///
-/// Returns `true` if `option` was found and consumed, false otherwise.
-#[must_use]
-fn consume(option: &str, argv: &mut Vec<String>) -> bool {
-    if !argv.contains(&option.to_string()) {
-        // Not found
-        return false;
-    }
-
-    argv.retain(|x| x != option);
-    return true;
 }
 
 fn print_help(output: &mut dyn io::Write) {
@@ -331,49 +339,27 @@ fn main() {
         panic_handler(panic_info);
     }));
 
-    let mut args: Vec<String> = env::args().collect();
-    if consume("--help", &mut args) || consume("-h", &mut args) {
-        print_help(&mut io::stdout());
-        return;
-    }
+    let options = Options::parse();
 
-    if consume("--version", &mut args) {
-        println!("riff {GIT_VERSION}");
-        println!();
-        println!("Source code available at <https://github.com/walles/riff>.");
-        return;
-    }
-
-    let ignore_space_change = consume("-b", &mut args);
-
-    if consume("--please-panic", &mut args) {
+    if options.please_panic {
         panic!("Panicking on purpose");
     }
 
-    let no_pager = consume("--no-pager", &mut args);
-
-    if args.len() == 3 {
+    if let (Some(file1), Some(file2)) = (options.file1, options.file2) {
         // "riff file1 file2"
         exec_diff_highlight(
-            args.get(1).unwrap(),
-            args.get(2).unwrap(),
-            ignore_space_change,
-            no_pager,
+            &file1,
+            &file2,
+            options.ignore_space_change,
+            options.no_pager,
         );
         return;
     }
 
-    if ignore_space_change {
+    if options.ignore_space_change {
         eprintln!(
             "ERROR: -b is only supported when diffing two named paths (\"riff -b a.txt b.txt\")"
         );
-        eprintln!();
-        print_help(&mut io::stderr());
-        exit(1);
-    }
-
-    if args.len() != 1 {
-        eprintln!("ERROR: Unknown command line: {args:?}");
         eprintln!();
         print_help(&mut io::stderr());
         exit(1);
@@ -386,7 +372,7 @@ fn main() {
         exit(1);
     }
 
-    highlight_stream(&mut io::stdin().lock(), no_pager);
+    highlight_stream(&mut io::stdin().lock(), options.no_pager);
 }
 
 #[cfg(test)]
