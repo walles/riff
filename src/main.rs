@@ -75,18 +75,18 @@ struct Options {
     file1: Option<String>,
 
     /// Second file to compare
-    #[arg(group = "files")]
+    #[arg(requires("file1"))]
     file2: Option<String>,
 
-    // Ignore changes in amount of whitespace
-    #[arg(short('b'))]
+    /// Ignore changes in amount of whitespace
+    #[arg(short('b'), requires("file1"))]
     ignore_space_change: bool,
 
-    //Don't page the result
+    /// Don't page the result
     #[arg(long)]
     no_pager: bool,
 
-    #[arg(long)]
+    #[arg(long, hide(true))]
     please_panic: bool,
 }
 
