@@ -42,6 +42,12 @@ riff file1.txt file2.txt
 brew install riff
 ```
 
+## With [Archlinux User Repository (AUR)](https://aur.archlinux.org/packages/riffdiff)
+
+```
+paru -S riffdiff
+```
+
 ## From [the Rust Crate](https://crates.io/crates/riffdiff)
 
 ```
