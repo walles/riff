@@ -9,6 +9,7 @@
 extern crate lazy_static;
 
 use backtrace::Backtrace;
+use clap::CommandFactory;
 use clap::Parser;
 use git_version::git_version;
 use line_collector::LineCollector;
@@ -28,13 +29,8 @@ mod refiner;
 mod token_collector;
 mod tokenizer;
 
-const HELP_TEXT: &str = r#"
-Usage:
-  diff ... | riff
-  riff [-b] [--no-pager] <file1> <file2>
-  riff [-b] [--no-pager] <directory1> <directory2>
-
-Colors diff output, highlighting the changed parts of every line.
+const HELP_TEXT_FOOTER: &str = r#"Installing riff in the $PATH:
+    sudo cp riff /usr/local/bin
 
 Git integration:
     git config --global pager.diff riff
@@ -42,15 +38,6 @@ Git integration:
     git config --global pager.log riff
     git config --global interactive.diffFilter riff
 
-Options:
-    -b:         Ignore changes in amount of whitespace
-    --no-pager: Don't page the result
-
-    --help:     Print this text
-    --version:  Print version number
-"#;
-
-const HELP_TEXT_FOOTER: &str = r#"
 Report issues at <https://github.com/walles/riff>.
 "#;
 
@@ -69,6 +56,7 @@ const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 const GIT_VERSION: &str = git_version!(cargo_prefix = "");
 
 #[derive(Parser)]
+#[command(version = GIT_VERSION, name = "riff", about = "Colors diff output, highlighting the changed parts of every line.", after_help = HELP_TEXT_FOOTER)]
 struct Options {
     /// First file to compare
     #[arg(requires("file2"))]
@@ -174,25 +162,6 @@ fn try_pager(input: &mut dyn io::Read, pager_name: &str) -> bool {
             return false;
         }
     }
-}
-
-fn print_help(output: &mut dyn io::Write) {
-    output.write_all(HELP_TEXT.trim().as_bytes()).unwrap();
-    output.write_all(b"\n").unwrap();
-    output.write_all(b"\n").unwrap();
-
-    output
-        .write_all(b"Installing riff in the $PATH:\n")
-        .unwrap();
-    output
-        .write_all(b"    sudo cp riff /usr/local/bin\n")
-        .unwrap();
-    output.write_all(b"\n").unwrap();
-
-    output
-        .write_all(HELP_TEXT_FOOTER.trim().as_bytes())
-        .unwrap();
-    output.write_all(b"\n").unwrap();
 }
 
 fn panic_handler(panic_info: &panic::PanicInfo) {
@@ -359,7 +328,10 @@ fn main() {
     if io::stdin().is_terminal() {
         eprintln!("ERROR: Expected input from a pipe");
         eprintln!();
-        print_help(&mut io::stderr());
+
+        // Print help to stderr
+        Options::command().write_help(&mut io::stderr()).unwrap();
+
         exit(1);
     }
 
