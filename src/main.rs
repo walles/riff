@@ -30,13 +30,13 @@ mod token_collector;
 mod tokenizer;
 
 const HELP_TEXT_FOOTER: &str = r#"Installing riff in the $PATH:
-    sudo cp riff /usr/local/bin
+  sudo cp riff /usr/local/bin
 
 Git integration:
-    git config --global pager.diff riff
-    git config --global pager.show riff
-    git config --global pager.log riff
-    git config --global interactive.diffFilter riff
+  git config --global pager.diff riff
+  git config --global pager.show riff
+  git config --global pager.log riff
+  git config --global interactive.diffFilter riff
 
 Report issues at <https://github.com/walles/riff>.
 "#;
@@ -56,7 +56,17 @@ const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 const GIT_VERSION: &str = git_version!(cargo_prefix = "");
 
 #[derive(Parser)]
-#[command(version = GIT_VERSION, name = "riff", about = "Colors diff output, highlighting the changed parts of every line.", after_help = HELP_TEXT_FOOTER)]
+#[command(
+    version = GIT_VERSION,
+    name = "riff",
+    about = "Colors diff output, highlighting the changed parts of every line.",
+    after_help = HELP_TEXT_FOOTER,
+    override_usage = r#"
+  diff ... | riff [--no-pager]
+  riff [-b] [--no-pager] <FILE1> <FILE2>
+  riff [-b] [--no-pager] <directory1> <directory2>"#
+)]
+
 struct Options {
     /// First file to compare
     #[arg(requires("file2"))]
