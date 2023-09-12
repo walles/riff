@@ -63,21 +63,20 @@ const GIT_VERSION: &str = git_version!(cargo_prefix = "");
     after_help = HELP_TEXT_FOOTER,
     override_usage = r#"
   diff ... | riff [--no-pager]
-  riff [-b] [--no-pager] <FILE1> <FILE2>
-  riff [-b] [--no-pager] <directory1> <directory2>"#
+  riff [-b] [--no-pager] <C1> <C2>"#
 )]
 
 struct Options {
-    /// First file to compare
-    #[arg(requires("file2"))]
-    file1: Option<String>,
+    /// First file or directory to compare
+    #[arg(requires("c2"))]
+    c1: Option<String>,
 
-    /// Second file to compare
+    /// Second file or directory to compare
     #[arg()]
-    file2: Option<String>,
+    c2: Option<String>,
 
     /// Ignore changes in amount of whitespace
-    #[arg(short('b'), requires("file1"))]
+    #[arg(short('b'), requires("c1"))]
     ignore_space_change: bool,
 
     /// Don't page the result
@@ -324,7 +323,7 @@ fn main() {
         panic!("Panicking on purpose");
     }
 
-    if let (Some(file1), Some(file2)) = (options.file1, options.file2) {
+    if let (Some(file1), Some(file2)) = (options.c1, options.c2) {
         // "riff file1 file2"
         exec_diff_highlight(
             &file1,
