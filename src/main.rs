@@ -15,7 +15,7 @@ use git_version::git_version;
 use line_collector::LineCollector;
 use std::io::{self, IsTerminal};
 use std::panic;
-use std::path;
+use std::path::{self, PathBuf};
 use std::process::exit;
 use std::process::{Command, Stdio};
 use std::str;
@@ -63,7 +63,8 @@ const GIT_VERSION: &str = git_version!(cargo_prefix = "");
     after_help = HELP_TEXT_FOOTER,
     override_usage = r#"
   diff ... | riff [--no-pager]
-  riff [-b] [--no-pager] <C1> <C2>"#
+  riff [-b] [--no-pager] <C1> <C2>
+  riff [-b] [--no-pager] --file <FILE>"#
 )]
 
 struct Options {
@@ -74,6 +75,10 @@ struct Options {
     /// Second file or directory to compare
     #[arg()]
     c2: Option<String>,
+
+    /// Read diff or patch file
+    #[arg(long, short, conflicts_with_all = ["c1", "c2"])]
+    file: Option<PathBuf>,
 
     /// Ignore changes in amount of whitespace
     #[arg(short('b'), requires("c1"))]
@@ -331,6 +336,24 @@ fn main() {
             options.ignore_space_change,
             options.no_pager,
         );
+        return;
+    }
+
+    if let Some(diff_path) = options.file {
+        // riff -f file
+        if diff_path.is_dir() {
+            eprintln!("ERROR: --file cannot be a directory");
+            exit(1)
+        }
+
+        let mut diff_file = match File::open(diff_path.clone()) {
+            Ok(f) => f,
+            Err(e) => {
+                eprintln!("ERROR: Can't open {}: {}", diff_path.to_string_lossy(), e);
+                exit(1);
+            }
+        };
+        highlight_stream(&mut diff_file, options.no_pager);
         return;
     }
 
