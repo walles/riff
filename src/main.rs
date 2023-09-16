@@ -346,10 +346,10 @@ fn main() {
             exit(1)
         }
 
-        let mut diff_file = match File::open(diff_path) {
+        let mut diff_file = match File::open(diff_path.clone()) {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("ERROR: Can't read file: {}", e);
+                eprintln!("ERROR: Can't open {}: {}", diff_path.to_string_lossy(), e);
                 exit(1);
             }
         };
