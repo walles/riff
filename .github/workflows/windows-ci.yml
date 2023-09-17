@@ -9,13 +9,11 @@ jobs:
   validate:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - uses: Swatinem/rust-cache@v2
 
-      # Copied from here:
-      # <https://docs.travis-ci.com/user/languages/rust/#default-build-script>
-      #
-      # FIXME: Replace "build" with "test" once it passes.
+      # FIXME: Replace "build" with "test" once it passes on Windows.
       - run: cargo build --workspace
