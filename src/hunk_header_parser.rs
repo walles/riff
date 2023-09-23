@@ -50,8 +50,8 @@ impl<'a> HunkHeader<'a> {
             new_line_numbers: (0..=0),
             title: None,
         };
-        header.old_line_numbers = old_line_numbers[1].parse::<usize>().ok()?
-            ..=old_line_numbers[0].parse::<usize>().ok()?;
+        header.old_line_numbers = old_line_numbers[0].parse::<usize>().ok()?
+            ..=old_line_numbers[1].parse::<usize>().ok()?;
 
         // Parse the new line count
         let new_line_numbers = new_line_counts_part
@@ -61,8 +61,8 @@ impl<'a> HunkHeader<'a> {
         if new_line_numbers.len() != 2 {
             return None;
         }
-        header.new_line_numbers = new_line_numbers[1].parse::<usize>().ok()?
-            ..=new_line_numbers[0].parse::<usize>().ok()?;
+        header.new_line_numbers = new_line_numbers[0].parse::<usize>().ok()?
+            ..=new_line_numbers[1].parse::<usize>().ok()?;
 
         // Grab the title if there is one
         header.title = title_part;

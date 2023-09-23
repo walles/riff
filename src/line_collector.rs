@@ -385,19 +385,23 @@ impl LineCollector {
 
     fn consume_hunk_header(&mut self, header: &HunkHeader) {
         self.consume_plain_linepart(HUNK_HEADER);
-        self.consume_plain_linepart(FAINT);
-        self.consume_plain_linepart(&format!(
-            "@@ -{},{} +{},{} @@",
-            header.old_start_line_number,
-            header.old_end_line_number,
-            header.new_start_line_number,
-            header.new_end_line_number,
-        ));
 
+        let numbers = format!(
+            "@@ -{},{} +{},{} @@",
+            header.old_line_numbers.start(),
+            header.old_line_numbers.end(),
+            header.new_line_numbers.start(),
+            header.new_line_numbers.end(),
+        );
         if let Some(title) = header.title {
+            // Highlight the function name
+            self.consume_plain_linepart(FAINT);
+            self.consume_plain_linepart(&numbers);
             self.consume_plain_linepart(" ");
             self.consume_plain_linepart(BOLD);
             self.consume_plain_linepart(title);
+        } else {
+            self.consume_plain_linepart(&numbers);
         }
 
         self.consume_plain_line(NORMAL);
