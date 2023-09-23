@@ -1,6 +1,6 @@
 use crate::ansi::remove_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
-use crate::hunk_header_parser::HunkHeader;
+use crate::hunk_header::HunkHeader;
 use crate::io::ErrorKind;
 use crate::refiner::to_highlighted_tokens;
 use crate::token_collector::{
@@ -15,8 +15,6 @@ use std::thread::{self, JoinHandle};
 
 use crate::{constants::*, refiner};
 use threadpool::ThreadPool;
-
-const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
 lazy_static! {
     static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> = vec![
@@ -384,24 +382,7 @@ impl LineCollector {
     }
 
     fn consume_hunk_header(&mut self, header: &HunkHeader) {
-        self.consume_plain_linepart(HUNK_HEADER);
-
-        let numbers = format!(
-            "@@ -{},{} +{},{} @@",
-            header.old_start, header.old_linecount, header.new_start, header.new_linecount,
-        );
-        if let Some(title) = header.title {
-            // Highlight the function name
-            self.consume_plain_linepart(FAINT);
-            self.consume_plain_linepart(&numbers);
-            self.consume_plain_linepart(" ");
-            self.consume_plain_linepart(BOLD);
-            self.consume_plain_linepart(title);
-        } else {
-            self.consume_plain_linepart(&numbers);
-        }
-
-        self.consume_plain_line(NORMAL);
+        self.consume_plain_line(&header.render());
     }
 
     /// The line parameter is expected *not* to end in a newline

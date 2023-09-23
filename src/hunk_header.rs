@@ -1,3 +1,5 @@
+use crate::constants::*;
+
 /// Result of parsing a hunk header: <https://en.wikipedia.org/wiki/Diff#Unified_format>
 ///
 /// Example hunk header: `@@ -1,2 +1,2 @@ Initial commit`
@@ -14,6 +16,8 @@ pub(crate) struct HunkHeader<'a> {
 
     pub title: Option<&'a str>,
 }
+
+const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
 impl<'a> HunkHeader<'a> {
     /// Parse a hunk header from a line of text.
@@ -75,6 +79,33 @@ impl<'a> HunkHeader<'a> {
             new_linecount,
             title,
         })
+    }
+
+    /// Render into an ANSI highlighted string
+    pub fn render(&self) -> String {
+        let old_linecount = if self.old_linecount == 1 {
+            self.old_start.to_string()
+        } else {
+            format!("{},{}", self.old_start, self.old_linecount)
+        };
+        let new_linecount = if self.new_linecount == 1 {
+            self.new_start.to_string()
+        } else {
+            format!("{},{}", self.new_start, self.new_linecount)
+        };
+
+        if let Some(title) = self.title {
+            // Highlight the title if we have one
+            return format!(
+                "{HUNK_HEADER}{FAINT}@@ -{} +{} @@ {BOLD}{}{NORMAL}",
+                old_linecount, new_linecount, title
+            );
+        }
+
+        return format!(
+            "{HUNK_HEADER}@@ -{} +{} @@{NORMAL}",
+            old_linecount, new_linecount
+        );
     }
 }
 
