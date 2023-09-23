@@ -117,4 +117,18 @@ mod tests {
             HunkHeader::parse("@@ -1,2 +1,2 @@ Hello  there")
         );
     }
+
+    #[test]
+    fn test_hunk_header_with_default_linecounts() {
+        assert_eq!(
+            Some(HunkHeader {
+                old_start: 5,
+                old_linecount: 1,
+                new_start: 6,
+                new_linecount: 1,
+                title: None,
+            }),
+            HunkHeader::parse("@@ -5 +6 @@")
+        );
+    }
 }
