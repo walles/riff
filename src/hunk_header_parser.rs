@@ -12,8 +12,56 @@ impl<'a> HunkHeader<'a> {
     /// Parse a hunk header from a line of text.
     ///
     /// Returns `None` if the line is not a valid hunk header.
-    pub fn parse(_line: &'a str) -> Option<Self> {
-        return None;
+    pub fn parse(line: &'a str) -> Option<Self> {
+        let mut parts = line.splitn(5, ' ');
+        let mut header = Self {
+            old_line_count: 0,
+            new_line_count: 0,
+            title: None,
+        };
+
+        if parts.next()? != "@@" {
+            return None;
+        }
+
+        // Example: "-1,2"
+        let old_line_counts_part = parts.next()?;
+
+        // Example: "+1,2"
+        let new_line_counts_part = parts.next()?;
+
+        // Skip the "@@" part
+        let _at_at_part = parts.next()?;
+
+        // Example: "Initial commit"
+        let title_part = parts.next();
+
+        // Parse the old line count
+        let old_line_counts = old_line_counts_part
+            .trim_start_matches('-')
+            .split(',')
+            .collect::<Vec<_>>();
+        if old_line_counts.len() != 2 {
+            return None;
+        }
+        header.old_line_count = 1 + old_line_counts[1].parse::<usize>().ok()?
+            - old_line_counts[0].parse::<usize>().ok()?;
+
+        // Parse the new line count
+        let new_line_counts = new_line_counts_part
+            .trim_start_matches('+')
+            .split(',')
+            .collect::<Vec<_>>();
+        if new_line_counts.len() != 2 {
+            return None;
+        }
+        header.new_line_count = 1 + new_line_counts[1].parse::<usize>().ok()?
+            - new_line_counts[0].parse::<usize>().ok()?;
+
+        // Grab the title if there is one
+        header.title = title_part;
+
+        Some(header)
     }
 }
 
