@@ -1,6 +1,4 @@
-use std::ops::RangeInclusive;
-
-/// Result of parsing a hunk header.
+/// Result of parsing a hunk header: <https://en.wikipedia.org/wiki/Diff#Unified_format>
 ///
 /// Example hunk header: `@@ -1,2 +1,2 @@ Initial commit`
 ///
@@ -8,8 +6,12 @@ use std::ops::RangeInclusive;
 /// making the line counts 2 for both.
 #[derive(Debug, PartialEq)]
 pub(crate) struct HunkHeader<'a> {
-    pub old_line_numbers: RangeInclusive<usize>,
-    pub new_line_numbers: RangeInclusive<usize>,
+    pub old_start: usize,
+    pub old_linecount: usize,
+
+    pub new_start: usize,
+    pub new_linecount: usize,
+
     pub title: Option<&'a str>,
 }
 
@@ -45,14 +47,6 @@ impl<'a> HunkHeader<'a> {
             return None;
         }
 
-        let mut header = Self {
-            old_line_numbers: (0..=0),
-            new_line_numbers: (0..=0),
-            title: None,
-        };
-        header.old_line_numbers = old_line_numbers[0].parse::<usize>().ok()?
-            ..=old_line_numbers[1].parse::<usize>().ok()?;
-
         // Parse the new line count
         let new_line_numbers = new_line_counts_part
             .trim_start_matches('+')
@@ -61,13 +55,14 @@ impl<'a> HunkHeader<'a> {
         if new_line_numbers.len() != 2 {
             return None;
         }
-        header.new_line_numbers = new_line_numbers[0].parse::<usize>().ok()?
-            ..=new_line_numbers[1].parse::<usize>().ok()?;
 
-        // Grab the title if there is one
-        header.title = title_part;
-
-        Some(header)
+        Some(HunkHeader {
+            old_start: old_line_numbers[0].parse::<usize>().ok()?,
+            old_linecount: old_line_numbers[1].parse::<usize>().ok()?,
+            new_start: new_line_numbers[0].parse::<usize>().ok()?,
+            new_linecount: new_line_numbers[1].parse::<usize>().ok()?,
+            title: title_part,
+        })
     }
 }
 
@@ -85,8 +80,10 @@ mod tests {
     fn test_simple_hunk_header() {
         assert_eq!(
             Some(HunkHeader {
-                old_line_numbers: (1..=2),
-                new_line_numbers: (1..=2),
+                old_start: 1,
+                old_linecount: 2,
+                new_start: 1,
+                new_linecount: 2,
                 title: None,
             }),
             HunkHeader::parse("@@ -1,2 +1,2 @@")
@@ -97,8 +94,10 @@ mod tests {
     fn test_hunk_header_with_title() {
         assert_eq!(
             Some(HunkHeader {
-                old_line_numbers: (1..=2),
-                new_line_numbers: (1..=2),
+                old_start: 1,
+                old_linecount: 2,
+                new_start: 1,
+                new_linecount: 2,
                 title: Some("Hello there"),
             }),
             HunkHeader::parse("@@ -1,2 +1,2 @@ Hello there")
@@ -109,8 +108,10 @@ mod tests {
     fn test_hunk_header_with_spaced_title() {
         assert_eq!(
             Some(HunkHeader {
-                old_line_numbers: (1..=2),
-                new_line_numbers: (1..=2),
+                old_start: 1,
+                old_linecount: 2,
+                new_start: 1,
+                new_linecount: 2,
                 title: Some("Hello  there"),
             }),
             HunkHeader::parse("@@ -1,2 +1,2 @@ Hello  there")

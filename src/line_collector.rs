@@ -388,10 +388,7 @@ impl LineCollector {
 
         let numbers = format!(
             "@@ -{},{} +{},{} @@",
-            header.old_line_numbers.start(),
-            header.old_line_numbers.end(),
-            header.new_line_numbers.start(),
-            header.new_line_numbers.end(),
+            header.old_start, header.old_linecount, header.new_start, header.new_linecount,
         );
         if let Some(title) = header.title {
             // Highlight the function name
