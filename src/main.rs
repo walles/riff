@@ -24,6 +24,7 @@ use std::{env, fs::File};
 mod ansi;
 mod commit_line;
 mod constants;
+mod hunk_header_parser;
 mod line_collector;
 mod refiner;
 mod token_collector;
