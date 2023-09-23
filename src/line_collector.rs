@@ -1,5 +1,6 @@
 use crate::ansi::remove_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
+use crate::hunk_header_parser::HunkHeader;
 use crate::io::ErrorKind;
 use crate::refiner::to_highlighted_tokens;
 use crate::token_collector::{
@@ -382,17 +383,21 @@ impl LineCollector {
         self.consume_plain_line(&new_filename);
     }
 
-    fn consume_hunk_header(&mut self, line: &str) {
+    fn consume_hunk_header(&mut self, header: &HunkHeader) {
         self.consume_plain_linepart(HUNK_HEADER);
+        self.consume_plain_linepart(FAINT);
+        self.consume_plain_linepart(&format!(
+            "@@ -{},{} +{},{} @@",
+            header.old_start_line_number,
+            header.old_end_line_number,
+            header.new_start_line_number,
+            header.new_end_line_number,
+        ));
 
-        if let Some(second_atat_index) = line.find(" @@ ") {
-            // Highlight the function name
-            self.consume_plain_linepart(FAINT);
-            self.consume_plain_linepart(&line[..(second_atat_index + 4)]);
+        if let Some(title) = header.title {
+            self.consume_plain_linepart(" ");
             self.consume_plain_linepart(BOLD);
-            self.consume_plain_linepart(&line[(second_atat_index + 4)..]);
-        } else {
-            self.consume_plain_linepart(line);
+            self.consume_plain_linepart(title);
         }
 
         self.consume_plain_line(NORMAL);
@@ -426,8 +431,8 @@ impl LineCollector {
             return;
         }
 
-        if line.starts_with("@@ ") {
-            self.consume_hunk_header(&line);
+        if let Some(hunk_header) = HunkHeader::parse(&line) {
+            self.consume_hunk_header(&hunk_header);
             return;
         }
 

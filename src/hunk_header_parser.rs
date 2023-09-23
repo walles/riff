@@ -1,8 +1,11 @@
 /// Result of parsing a hunk header.
 ///
 /// Example hunk header: `@@ -1,2 +1,2 @@ Initial commit`
+///
+/// This would mean "old line numbers are 1-2, and new line numbers are 1-2",
+/// making the line counts 2 for both.
 #[derive(Debug, PartialEq)]
-struct HunkHeader<'a> {
+pub(crate) struct HunkHeader<'a> {
     pub old_line_count: usize,
     pub new_line_count: usize,
     pub title: Option<&'a str>,
