@@ -381,10 +381,6 @@ impl LineCollector {
         self.consume_plain_line(&new_filename);
     }
 
-    fn consume_hunk_header(&mut self, header: &HunkHeader) {
-        self.consume_plain_line(&header.render());
-    }
-
     /// The line parameter is expected *not* to end in a newline
     pub fn consume_line(&mut self, line: &mut Vec<u8>) {
         // Strip out incoming ANSI formatting. This enables us to highlight
@@ -414,7 +410,7 @@ impl LineCollector {
         }
 
         if let Some(hunk_header) = HunkHeader::parse(&line) {
-            self.consume_hunk_header(&hunk_header);
+            self.consume_plain_line(&hunk_header.render());
             return;
         }
 
