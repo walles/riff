@@ -26,42 +26,54 @@ impl<'a> HunkHeader<'a> {
             return None;
         }
 
-        // Example: "-1,2"
+        // Example: "-1,2", or just "-55"
         let old_line_counts_part = parts.next()?;
 
-        // Example: "+1,2"
+        // Example: "+1,2", or just "+55"
         let new_line_counts_part = parts.next()?;
 
         // Skip the "@@" part
         let _at_at_part = parts.next()?;
 
         // Example: "Initial commit"
-        let title_part = parts.next();
+        let title = parts.next();
 
         // Parse the old line count
         let old_line_numbers = old_line_counts_part
             .trim_start_matches('-')
             .split(',')
             .collect::<Vec<_>>();
-        if old_line_numbers.len() != 2 {
+        if old_line_numbers.is_empty() || old_line_numbers.len() > 2 {
             return None;
         }
+        let old_start = old_line_numbers[0].parse::<usize>().ok()?;
+        let old_linecount = if old_line_numbers.len() == 2 {
+            old_line_numbers[1].parse::<usize>().ok()?
+        } else {
+            1
+        };
 
         // Parse the new line count
         let new_line_numbers = new_line_counts_part
             .trim_start_matches('+')
             .split(',')
             .collect::<Vec<_>>();
-        if new_line_numbers.len() != 2 {
+        if new_line_numbers.is_empty() || new_line_numbers.len() > 2 {
             return None;
         }
+        let new_start = new_line_numbers[0].parse::<usize>().ok()?;
+        let new_linecount = if new_line_numbers.len() == 2 {
+            new_line_numbers[1].parse::<usize>().ok()?
+        } else {
+            1
+        };
 
         Some(HunkHeader {
-            old_start: old_line_numbers[0].parse::<usize>().ok()?,
-            old_linecount: old_line_numbers[1].parse::<usize>().ok()?,
-            new_start: new_line_numbers[0].parse::<usize>().ok()?,
-            new_linecount: new_line_numbers[1].parse::<usize>().ok()?,
-            title: title_part,
+            old_start,
+            old_linecount,
+            new_start,
+            new_linecount,
+            title,
         })
     }
 }
