@@ -147,12 +147,20 @@ The diff lines blocks will also be enqueued for printing, but the actual diffing
 will happen in background threads.
 */
 pub struct LineCollector {
+    /// The old text of a diff, if any. Includes `-` lines only.
     old_text: String,
-    new_text: String,
-    plain_text: String,
-    diff_seen: bool,
-    consumer_thread: Option<JoinHandle<()>>,
 
+    /// The new text of a diff, if any. Includes `+` lines only.
+    new_text: String,
+
+    /// Headers and stuff that we just want printed, not part of a diff
+    plain_text: String,
+
+    /// Set to true when we see the first diff line. The second diff line and
+    /// onwards will come with highlighted backgrounds, based on this value.
+    diff_seen: bool,
+
+    consumer_thread: Option<JoinHandle<()>>,
     diffing_threads: ThreadPool,
 
     // FIXME: I'd rather have had a SyncSender of some trait here. That would
