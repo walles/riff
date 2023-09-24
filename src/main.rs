@@ -24,6 +24,7 @@ use std::{env, fs::File};
 mod ansi;
 mod commit_line;
 mod constants;
+mod hunk_header;
 mod line_collector;
 mod refiner;
 mod token_collector;
@@ -372,7 +373,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use crate::constants::*;
+    use crate::{constants::*, hunk_header::HUNK_HEADER};
 
     use super::*;
     use std::{fs, path::PathBuf};
@@ -386,10 +387,13 @@ mod tests {
 
     #[test]
     fn test_trailing_newline_context() {
-        let mut input = "+bepa\n apa\n\\ No newline at end of file\n".as_bytes();
+        let mut input = "@@ -1,1 +1,2 @@\n+bepa\n apa\n\\ No newline at end of file\n".as_bytes();
 
         let expected = format!(
-            "{}\n{}\n{}\\ No newline at end of file{}\n",
+            "{}{}{}\n{}\n{}\n{}\\ No newline at end of file{}\n",
+            HUNK_HEADER,
+            "@@ -1,1 +1,2 @@",
+            NORMAL,
             new("+bepa"),
             " apa",
             NO_EOF_NEWLINE_COLOR,

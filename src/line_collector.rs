@@ -1,5 +1,6 @@
 use crate::ansi::remove_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
+use crate::hunk_header::HunkHeader;
 use crate::io::ErrorKind;
 use crate::refiner::to_highlighted_tokens;
 use crate::token_collector::{
@@ -14,8 +15,6 @@ use std::thread::{self, JoinHandle};
 
 use crate::{constants::*, refiner};
 use threadpool::ThreadPool;
-
-const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
 lazy_static! {
     static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> = vec![
@@ -147,12 +146,26 @@ The diff lines blocks will also be enqueued for printing, but the actual diffing
 will happen in background threads.
 */
 pub struct LineCollector {
-    old_text: String,
-    new_text: String,
-    plain_text: String,
-    diff_seen: bool,
-    consumer_thread: Option<JoinHandle<()>>,
+    /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
+    expected_old_lines: usize,
 
+    /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
+    expected_new_lines: usize,
+
+    /// The old text of a diff, if any. Includes `-` lines only.
+    old_text: String,
+
+    /// The new text of a diff, if any. Includes `+` lines only.
+    new_text: String,
+
+    /// Headers and stuff that we just want printed, not part of a diff
+    plain_text: String,
+
+    /// Set to true when we see the first diff line. The second diff line and
+    /// onwards will come with highlighted backgrounds, based on this value.
+    diff_seen: bool,
+
+    consumer_thread: Option<JoinHandle<()>>,
     diffing_threads: ThreadPool,
 
     // FIXME: I'd rather have had a SyncSender of some trait here. That would
@@ -218,6 +231,8 @@ impl LineCollector {
             .unwrap();
 
         return LineCollector {
+            expected_old_lines: 0,
+            expected_new_lines: 0,
             old_text: String::from(""),
             new_text: String::from(""),
             plain_text: String::from(""),
@@ -374,28 +389,68 @@ impl LineCollector {
         self.consume_plain_line(&new_filename);
     }
 
-    fn consume_hunk_header(&mut self, line: &str) {
-        self.consume_plain_linepart(HUNK_HEADER);
-
-        if let Some(second_atat_index) = line.find(" @@ ") {
-            // Highlight the function name
-            self.consume_plain_linepart(FAINT);
-            self.consume_plain_linepart(&line[..(second_atat_index + 4)]);
-            self.consume_plain_linepart(BOLD);
-            self.consume_plain_linepart(&line[(second_atat_index + 4)..]);
-        } else {
-            self.consume_plain_linepart(line);
-        }
-
-        self.consume_plain_line(NORMAL);
-    }
-
     /// The line parameter is expected *not* to end in a newline
     pub fn consume_line(&mut self, line: &mut Vec<u8>) {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
         remove_ansi_escape_codes(line);
         let line = String::from_utf8_lossy(line);
+
+        if line.starts_with('\\') {
+            {
+                // Store the "\ No newline at end of file" string however it is
+                // phrased in this particular diff.
+                //
+                // Note that this must be done before consuming it below so we
+                // know it's set before the consumer decides it wants to emit a
+                // copy. Otherwise we get a race condition and we don't want
+                // that.
+                //
+                // We do it in a block to release the lock as soon as possible.
+                let mut no_eof_newline_marker = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+                *no_eof_newline_marker = Some(line.to_string());
+            }
+
+            // Consume the marker *after* we just updated our
+            // no_eof_newline_marker above. In the other order we'd have a race
+            // condition.
+            self.consume_no_eof_newline_marker(&line);
+
+            return;
+        }
+
+        if self.expected_old_lines + self.expected_new_lines > 0 {
+            if line.starts_with('-') {
+                self.expected_old_lines -= 1;
+                self.consume_old_line(&line);
+                return;
+            }
+
+            if line.starts_with('+') {
+                self.expected_new_lines -= 1;
+                self.consume_new_line(&line);
+                return;
+            }
+
+            if !line.is_empty() && !line.starts_with(' ') {
+                panic!(
+                    "Unexpected non-empty line, should have started with a single space: <{}>",
+                    line
+                );
+            }
+
+            self.expected_old_lines -= 1;
+            self.expected_new_lines -= 1;
+            self.consume_plain_line(&line);
+            return;
+        }
+
+        if let Some(hunk_header) = HunkHeader::parse(&line) {
+            self.expected_new_lines = hunk_header.new_linecount;
+            self.expected_old_lines = hunk_header.old_linecount;
+            self.consume_plain_line(&hunk_header.render());
+            return;
+        }
 
         if line.starts_with("diff") {
             self.diff_seen = true;
@@ -418,46 +473,8 @@ impl LineCollector {
             return;
         }
 
-        if line.starts_with("@@ ") {
-            self.consume_hunk_header(&line);
-            return;
-        }
-
         if line.is_empty() {
             self.consume_plain_line("");
-            return;
-        }
-
-        if line.starts_with('-') {
-            self.consume_old_line(&line);
-            return;
-        }
-
-        if line.starts_with('+') {
-            self.consume_new_line(&line);
-            return;
-        }
-
-        if line.starts_with('\\') {
-            {
-                // Store the "\ No newline at end of file" string however it is
-                // phrased in this particular diff.
-                //
-                // Note that this must be done before consuming it below so we
-                // know it's set before the consumer decides it wants to emit a
-                // copy. Otherwise we get a race condition and we don't want
-                // that.
-                //
-                // We do it in a block to release the lock as soon as possible.
-                let mut no_eof_newline_marker = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
-                *no_eof_newline_marker = Some(line.to_string());
-            }
-
-            // Consume the marker *after* we just updated our
-            // no_eof_newline_marker above. In the other order we'd have a race
-            // condition.
-            self.consume_no_eof_newline_marker(&line);
-
             return;
         }
 
