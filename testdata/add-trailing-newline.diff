@@ -1,3 +1,6 @@
+--- before.txt	2023-09-24 15:58:26
++++ after.txt	2023-09-24 15:58:02
+@@ -1 +1 @@
 -apor
 \ No newline at end of file
 +apor
