@@ -432,9 +432,9 @@ impl LineCollector {
                 return;
             }
 
-            if !line.starts_with(' ') {
+            if !line.is_empty() && !line.starts_with(' ') {
                 panic!(
-                    "Unexpected line, should have started with a single space: <{}>",
+                    "Unexpected non-empty line, should have started with a single space: <{}>",
                     line
                 );
             }
