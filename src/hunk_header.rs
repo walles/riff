@@ -83,29 +83,20 @@ impl<'a> HunkHeader<'a> {
 
     /// Render into an ANSI highlighted string
     pub fn render(&self) -> String {
-        let old_linecount = if self.old_linecount == 1 {
-            self.old_start.to_string()
-        } else {
-            format!("{},{}", self.old_start, self.old_linecount)
-        };
-        let new_linecount = if self.new_linecount == 1 {
-            self.new_start.to_string()
-        } else {
-            format!("{},{}", self.new_start, self.new_linecount)
-        };
+        let numbers = format!(
+            "-{},{} +{},{}",
+            self.old_start, self.old_linecount, self.new_start, self.new_linecount
+        );
 
         if let Some(title) = self.title {
             // Highlight the title if we have one
             return format!(
-                "{HUNK_HEADER}{FAINT}@@ -{} +{} @@ {BOLD}{}{NORMAL}",
-                old_linecount, new_linecount, title
+                "{HUNK_HEADER}{FAINT}@@ {} @@ {BOLD}{}{NORMAL}",
+                numbers, title
             );
         }
 
-        return format!(
-            "{HUNK_HEADER}@@ -{} +{} @@{NORMAL}",
-            old_linecount, new_linecount
-        );
+        return format!("{HUNK_HEADER}@@ {} @@{NORMAL}", numbers);
     }
 }
 
