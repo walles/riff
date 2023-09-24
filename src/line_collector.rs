@@ -323,7 +323,7 @@ impl LineCollector {
 
     /// Returns an error message on failure
     #[must_use]
-    pub fn consume_plusminus_header(&mut self, line: &str) -> Option<String> {
+    pub fn consume_plusminus_header(&mut self, line: &str) -> Option<&str> {
         if let Some(old_name) = line.strip_prefix("--- ") {
             self.old_text.clear();
             self.old_text.push_str(old_name);
@@ -339,7 +339,7 @@ impl LineCollector {
             self.new_text.clear();
             self.new_text.push_str(new_name);
         } else {
-            return Some("Got a plusminus header that doesn't start with --- or +++".to_owned());
+            return Some("Got a plusminus header that doesn't start with --- or +++");
         }
 
         if self.old_text == "/dev/null" {
@@ -397,7 +397,7 @@ impl LineCollector {
     ///
     /// Returns an error message on trouble.
     #[must_use]
-    pub fn consume_line(&mut self, line: &mut Vec<u8>) -> Option<String> {
+    pub fn consume_line(&mut self, line: &mut Vec<u8>) -> Option<&str> {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
         remove_ansi_escape_codes(line);
@@ -440,9 +440,7 @@ impl LineCollector {
             }
 
             if !line.is_empty() && !line.starts_with(' ') {
-                return Some(
-                    "Unexpected non-empty line, should have started with a single space".to_owned(),
-                );
+                return Some("Non-empty line should have started with ' ', '-' or '+'");
             }
 
             self.expected_old_lines -= 1;

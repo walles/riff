@@ -114,10 +114,11 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
                 // Stuff found on the last line without a trailing newline
                 if let Some(error_message) = line_collector.consume_line(&mut line) {
                     eprintln!(
-                        "ERROR on line {}: {}\nERROR: {}",
+                        "ERROR on line {}: {}\n         Line {}: {}",
+                        line_number,
+                        error_message,
                         line_number,
                         String::from_utf8_lossy(&line),
-                        error_message,
                     );
                     exit(1);
                 }
@@ -140,10 +141,11 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             // Line finished, consume it!
             if let Some(error_message) = line_collector.consume_line(&mut line) {
                 eprintln!(
-                    "ERROR on line {}: {}\nERROR: {}",
+                    "ERROR on line {}: {}\n         Line {}: {}",
+                    line_number,
+                    error_message,
                     line_number,
                     String::from_utf8_lossy(&line),
-                    error_message,
                 );
                 exit(1);
             }
