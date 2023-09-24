@@ -396,6 +396,29 @@ impl LineCollector {
         remove_ansi_escape_codes(line);
         let line = String::from_utf8_lossy(line);
 
+        if line.starts_with('\\') {
+            {
+                // Store the "\ No newline at end of file" string however it is
+                // phrased in this particular diff.
+                //
+                // Note that this must be done before consuming it below so we
+                // know it's set before the consumer decides it wants to emit a
+                // copy. Otherwise we get a race condition and we don't want
+                // that.
+                //
+                // We do it in a block to release the lock as soon as possible.
+                let mut no_eof_newline_marker = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+                *no_eof_newline_marker = Some(line.to_string());
+            }
+
+            // Consume the marker *after* we just updated our
+            // no_eof_newline_marker above. In the other order we'd have a race
+            // condition.
+            self.consume_no_eof_newline_marker(&line);
+
+            return;
+        }
+
         if self.expected_old_lines + self.expected_new_lines > 0 {
             if line.starts_with('-') {
                 self.expected_old_lines -= 1;
@@ -452,29 +475,6 @@ impl LineCollector {
 
         if line.is_empty() {
             self.consume_plain_line("");
-            return;
-        }
-
-        if line.starts_with('\\') {
-            {
-                // Store the "\ No newline at end of file" string however it is
-                // phrased in this particular diff.
-                //
-                // Note that this must be done before consuming it below so we
-                // know it's set before the consumer decides it wants to emit a
-                // copy. Otherwise we get a race condition and we don't want
-                // that.
-                //
-                // We do it in a block to release the lock as soon as possible.
-                let mut no_eof_newline_marker = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
-                *no_eof_newline_marker = Some(line.to_string());
-            }
-
-            // Consume the marker *after* we just updated our
-            // no_eof_newline_marker above. In the other order we'd have a race
-            // condition.
-            self.consume_no_eof_newline_marker(&line);
-
             return;
         }
 
