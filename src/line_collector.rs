@@ -146,6 +146,12 @@ The diff lines blocks will also be enqueued for printing, but the actual diffing
 will happen in background threads.
 */
 pub struct LineCollector {
+    /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
+    expected_old_lines: usize,
+
+    /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
+    expected_new_lines: usize,
+
     /// The old text of a diff, if any. Includes `-` lines only.
     old_text: String,
 
@@ -225,6 +231,8 @@ impl LineCollector {
             .unwrap();
 
         return LineCollector {
+            expected_old_lines: 0,
+            expected_new_lines: 0,
             old_text: String::from(""),
             new_text: String::from(""),
             plain_text: String::from(""),
@@ -388,6 +396,38 @@ impl LineCollector {
         remove_ansi_escape_codes(line);
         let line = String::from_utf8_lossy(line);
 
+        if self.expected_old_lines + self.expected_new_lines > 0 {
+            if line.starts_with('-') {
+                self.expected_old_lines -= 1;
+                self.consume_old_line(&line);
+                return;
+            }
+
+            if line.starts_with('+') {
+                self.expected_new_lines -= 1;
+                self.consume_new_line(&line);
+                return;
+            }
+
+            if !line.starts_with(' ') {
+                panic!(
+                    "Unexpected line, should have started with a single space: <{}>",
+                    line
+                );
+            }
+
+            self.expected_old_lines -= 1;
+            self.expected_new_lines -= 1;
+            self.consume_plain_line(&line);
+        }
+
+        if let Some(hunk_header) = HunkHeader::parse(&line) {
+            self.expected_new_lines = hunk_header.new_linecount;
+            self.expected_old_lines = hunk_header.old_linecount;
+            self.consume_plain_line(&hunk_header.render());
+            return;
+        }
+
         if line.starts_with("diff") {
             self.diff_seen = true;
         }
@@ -409,23 +449,8 @@ impl LineCollector {
             return;
         }
 
-        if let Some(hunk_header) = HunkHeader::parse(&line) {
-            self.consume_plain_line(&hunk_header.render());
-            return;
-        }
-
         if line.is_empty() {
             self.consume_plain_line("");
-            return;
-        }
-
-        if line.starts_with('-') {
-            self.consume_old_line(&line);
-            return;
-        }
-
-        if line.starts_with('+') {
-            self.consume_new_line(&line);
             return;
         }
 
@@ -452,6 +477,6 @@ impl LineCollector {
             return;
         }
 
-        self.consume_plain_line(&line);
+        panic!("Unexpected line: <{}>", line);
     }
 }
