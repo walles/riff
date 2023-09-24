@@ -478,6 +478,6 @@ impl LineCollector {
             return;
         }
 
-        panic!("Unexpected line: <{}>", line);
+        self.consume_plain_line(&line);
     }
 }
