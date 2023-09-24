@@ -93,6 +93,26 @@ struct Options {
     please_panic: bool,
 }
 
+/// Consume the line
+///
+/// If that fails, print an error message and exit with an error code.
+fn consume_line_or_exit(
+    line_collector: &mut LineCollector,
+    line_number: usize,
+    line: &mut Vec<u8>,
+) {
+    if let Some(error_message) = line_collector.consume_line(line) {
+        eprintln!(
+            "ERROR on line {}: {}\n         Line {}: {}",
+            line_number,
+            error_message,
+            line_number,
+            String::from_utf8_lossy(line),
+        );
+        exit(1);
+    }
+}
+
 fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
     let mut line_collector = LineCollector::new(output);
 
@@ -112,16 +132,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             // End of stream
             if !line.is_empty() {
                 // Stuff found on the last line without a trailing newline
-                if let Some(error_message) = line_collector.consume_line(&mut line) {
-                    eprintln!(
-                        "ERROR on line {}: {}\n         Line {}: {}",
-                        line_number,
-                        error_message,
-                        line_number,
-                        String::from_utf8_lossy(&line),
-                    );
-                    exit(1);
-                }
+                consume_line_or_exit(&mut line_collector, line_number, &mut line);
             }
             break;
         }
@@ -139,16 +150,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             }
 
             // Line finished, consume it!
-            if let Some(error_message) = line_collector.consume_line(&mut line) {
-                eprintln!(
-                    "ERROR on line {}: {}\n         Line {}: {}",
-                    line_number,
-                    error_message,
-                    line_number,
-                    String::from_utf8_lossy(&line),
-                );
-                exit(1);
-            }
+            consume_line_or_exit(&mut line_collector, line_number, &mut line);
             line.clear();
             line_number += 1;
             continue;
