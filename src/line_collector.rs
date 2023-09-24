@@ -419,6 +419,7 @@ impl LineCollector {
             self.expected_old_lines -= 1;
             self.expected_new_lines -= 1;
             self.consume_plain_line(&line);
+            return;
         }
 
         if let Some(hunk_header) = HunkHeader::parse(&line) {

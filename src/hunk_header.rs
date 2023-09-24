@@ -17,7 +17,7 @@ pub(crate) struct HunkHeader<'a> {
     pub title: Option<&'a str>,
 }
 
-const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
+pub(crate) const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
 impl<'a> HunkHeader<'a> {
     /// Parse a hunk header from a line of text.
