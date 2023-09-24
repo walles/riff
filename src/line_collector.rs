@@ -321,23 +321,25 @@ impl LineCollector {
         ))
     }
 
-    pub fn consume_plusminus_header(&mut self, line: &str) {
+    /// Returns an error message on failure
+    #[must_use]
+    pub fn consume_plusminus_header(&mut self, line: &str) -> Option<String> {
         if let Some(old_name) = line.strip_prefix("--- ") {
             self.old_text.clear();
             self.old_text.push_str(old_name);
-            return;
+            return None;
         }
 
         if let Some(new_name) = line.strip_prefix("+++ ") {
             if self.old_text.is_empty() {
                 // We got +++ not preceded by ---, WTF?
-                return;
+                return None;
             }
 
             self.new_text.clear();
             self.new_text.push_str(new_name);
         } else {
-            panic!("Got a plusminus header that doesn't start with --- or +++");
+            return Some("Got a plusminus header that doesn't start with --- or +++".to_owned());
         }
 
         if self.old_text == "/dev/null" {
@@ -353,7 +355,7 @@ impl LineCollector {
             self.consume_plain_linepart("+++ ");
             self.consume_plain_linepart(&new_name);
             self.consume_plain_line(NORMAL);
-            return;
+            return None;
         }
 
         if self.new_text == "/dev/null" {
@@ -370,7 +372,7 @@ impl LineCollector {
             self.consume_plain_linepart("+++ /dev/null");
             self.consume_plain_line(NORMAL);
 
-            return;
+            return None;
         }
 
         let (mut old_tokens, mut new_tokens, _, _) =
@@ -387,10 +389,15 @@ impl LineCollector {
         let new_filename = render(&LINE_STYLE_NEW_FILENAME, new_tokens);
         self.consume_plain_line(&old_filename);
         self.consume_plain_line(&new_filename);
+
+        return None;
     }
 
     /// The line parameter is expected *not* to end in a newline
-    pub fn consume_line(&mut self, line: &mut Vec<u8>) {
+    ///
+    /// Returns an error message on trouble.
+    #[must_use]
+    pub fn consume_line(&mut self, line: &mut Vec<u8>) -> Option<String> {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
         remove_ansi_escape_codes(line);
@@ -416,40 +423,39 @@ impl LineCollector {
             // condition.
             self.consume_no_eof_newline_marker(&line);
 
-            return;
+            return None;
         }
 
         if self.expected_old_lines + self.expected_new_lines > 0 {
             if line.starts_with('-') {
                 self.expected_old_lines -= 1;
                 self.consume_old_line(&line);
-                return;
+                return None;
             }
 
             if line.starts_with('+') {
                 self.expected_new_lines -= 1;
                 self.consume_new_line(&line);
-                return;
+                return None;
             }
 
             if !line.is_empty() && !line.starts_with(' ') {
-                panic!(
-                    "Unexpected non-empty line, should have started with a single space: <{}>",
-                    line
+                return Some(
+                    "Unexpected non-empty line, should have started with a single space".to_owned(),
                 );
             }
 
             self.expected_old_lines -= 1;
             self.expected_new_lines -= 1;
             self.consume_plain_line(&line);
-            return;
+            return None;
         }
 
         if let Some(hunk_header) = HunkHeader::parse(&line) {
             self.expected_new_lines = hunk_header.new_linecount;
             self.expected_old_lines = hunk_header.old_linecount;
             self.consume_plain_line(&hunk_header.render());
-            return;
+            return None;
         }
 
         if line.starts_with("diff") {
@@ -460,24 +466,24 @@ impl LineCollector {
             self.consume_plain_linepart(fixed_highlight);
             self.consume_plain_linepart(&line);
             self.consume_plain_line(NORMAL); // consume_plain_line() will add a linefeed to the output
-            return;
+            return None;
         }
 
         if line.starts_with("commit") {
             self.consume_plain_line(&format_commit_line(&line, self.diff_seen));
-            return;
+            return None;
         }
 
         if line.starts_with("--- ") || line.starts_with("+++ ") {
-            self.consume_plusminus_header(&line);
-            return;
+            return self.consume_plusminus_header(&line);
         }
 
         if line.is_empty() {
             self.consume_plain_line("");
-            return;
+            return None;
         }
 
         self.consume_plain_line(&line);
+        return None;
     }
 }

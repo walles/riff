@@ -100,6 +100,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
     // strings while handling invalid UTF-8 without crashing
     let mut line: Vec<u8> = Vec::new();
     let mut buf: [u8; 16384] = [0; 16384];
+    let mut line_number = 1usize;
     loop {
         let result = input.read(&mut buf);
         if result.is_err() {
@@ -111,7 +112,15 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             // End of stream
             if !line.is_empty() {
                 // Stuff found on the last line without a trailing newline
-                line_collector.consume_line(&mut line);
+                if let Some(error_message) = line_collector.consume_line(&mut line) {
+                    eprintln!(
+                        "ERROR on line {}: {}\nERROR: {}",
+                        line_number,
+                        String::from_utf8_lossy(&line),
+                        error_message,
+                    );
+                    exit(1);
+                }
             }
             break;
         }
@@ -129,8 +138,17 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             }
 
             // Line finished, consume it!
-            line_collector.consume_line(&mut line);
+            if let Some(error_message) = line_collector.consume_line(&mut line) {
+                eprintln!(
+                    "ERROR on line {}: {}\nERROR: {}",
+                    line_number,
+                    String::from_utf8_lossy(&line),
+                    error_message,
+                );
+                exit(1);
+            }
             line.clear();
+            line_number += 1;
             continue;
         }
     }
