@@ -82,7 +82,7 @@ struct Options {
     file: Option<PathBuf>,
 
     /// Ignore changes in amount of whitespace
-    #[arg(short('b'), requires("c1"))]
+    #[arg(short('b'))]
     ignore_space_change: bool,
 
     /// Don't page the result

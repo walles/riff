@@ -65,5 +65,8 @@ cargo run --quiet -- "$0" "$0" | wc -l | xargs echo | grep -E "^0$" >/dev/null
 # Test case for https://github.com/walles/riff/issues/29
 bash -c 'cargo run -- <(echo hej) <(echo nej)' >/dev/null
 
+# Test case for https://github.com/walles/riff/issues/54
+bash -c 'echo hej | cargo run -- -b' >/dev/null
+
 echo
 echo "All tests passed!"
