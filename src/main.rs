@@ -64,21 +64,21 @@ const GIT_VERSION: &str = git_version!(cargo_prefix = "");
     after_help = HELP_TEXT_FOOTER,
     override_usage = r#"
   diff ... | riff [--no-pager]
-  riff [-b] [--no-pager] <C1> <C2>
+  riff [-b] [--no-pager] <X1> <X2>
   riff [-b] [--no-pager] --file <FILE>"#
 )]
 
 struct Options {
     /// First file or directory to compare
-    #[arg(requires("c2"))]
-    c1: Option<String>,
+    #[arg(requires("x2"))]
+    x1: Option<String>,
 
     /// Second file or directory to compare
     #[arg()]
-    c2: Option<String>,
+    x2: Option<String>,
 
     /// Read diff or patch file
-    #[arg(long, short, conflicts_with_all = ["c1", "c2"])]
+    #[arg(long, short, conflicts_with_all = ["x1", "x2"])]
     file: Option<PathBuf>,
 
     /// Ignore changes in amount of whitespace
@@ -351,7 +351,7 @@ fn main() {
         panic!("Panicking on purpose");
     }
 
-    if let (Some(file1), Some(file2)) = (options.c1, options.c2) {
+    if let (Some(file1), Some(file2)) = (options.x1, options.x2) {
         // "riff file1 file2"
         exec_diff_highlight(
             &file1,
