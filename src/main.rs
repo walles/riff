@@ -242,6 +242,10 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool) {
         // doesn't exist.
     }
 
+    if try_pager(input, "moar-pager") {
+        return;
+    }
+
     if try_pager(input, "moar") {
         return;
     }
