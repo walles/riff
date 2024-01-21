@@ -398,7 +398,7 @@ mod tests {
     use crate::{constants::*, hunk_header::HUNK_HEADER};
 
     use super::*;
-    use std::{fs, path::PathBuf};
+    use std::{collections::HashSet, fs, path::PathBuf};
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
@@ -461,10 +461,16 @@ mod tests {
 
         // Find all .riff-output example files
         let mut riff_output_files: Vec<PathBuf> = vec![];
+        let mut diff_files: HashSet<PathBuf> = HashSet::new();
         for riff_output in fs::read_dir(&testdata_path).unwrap() {
             let riff_output = riff_output.unwrap();
             let riff_output = riff_output.path();
             if !riff_output.is_file() {
+                continue;
+            }
+
+            if riff_output.extension().unwrap() == "diff" {
+                diff_files.insert(riff_output);
                 continue;
             }
 
@@ -494,6 +500,9 @@ mod tests {
             }
             if !riff_input_file.is_file() {
                 panic!("No riff input file found for {:?}", riff_output_file);
+            }
+            if riff_input_file.extension().unwrap() == "diff" {
+                diff_files.remove(&riff_input_file);
             }
 
             println!(
@@ -534,6 +543,8 @@ mod tests {
             assert_eq!(failing_example_actual, failing_example_expected);
         }
 
-        // FIXME: Look for and error on not-covered .diff files
+        if !diff_files.is_empty() {
+            panic!("Some .diff files were never verified: {:?}", diff_files);
+        }
     }
 }
