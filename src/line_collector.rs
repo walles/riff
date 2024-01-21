@@ -393,7 +393,7 @@ impl LineCollector {
         return None;
     }
 
-    /// The line parameter is expected *not* to end in a newline
+    /// The line parameter is expected *not* to end in a newline.
     ///
     /// Returns an error message on trouble.
     #[must_use]

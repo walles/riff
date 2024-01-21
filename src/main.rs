@@ -113,6 +113,8 @@ fn consume_line_or_exit(
     }
 }
 
+/// Read `diff` output from `input` and write highlighted output to `output`.
+/// The actual highlighting is done using a `LineCollector`.
 fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
     let mut line_collector = LineCollector::new(output);
 
@@ -221,6 +223,7 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
     eprintln!("{CRASH_FOOTER}");
 }
 
+/// Highlight the given stream, paging if stdout is a terminal
 fn highlight_stream(input: &mut dyn io::Read, no_pager: bool) {
     if !io::stdout().is_terminal() {
         // We're being piped, just do stdin -> stdout
@@ -281,6 +284,7 @@ fn ensure_listable(path: &path::Path) {
     }
 }
 
+/// Run the `diff` binary on the two paths and highlight the output
 fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool, no_pager: bool) {
     let path1 = path::Path::new(path1);
     let path2 = path::Path::new(path2);
