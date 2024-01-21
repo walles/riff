@@ -459,52 +459,58 @@ mod tests {
         }
         assert!(testdata_path.is_dir());
 
-        // Find all .diff example files
-        let mut diff_example_files: Vec<PathBuf> = vec![];
-        for diff in fs::read_dir(&testdata_path).unwrap() {
-            let diff = diff.unwrap();
-            let diff = diff.path();
-            if !diff.is_file() {
+        // Find all .riff-output example files
+        let mut riff_output_files: Vec<PathBuf> = vec![];
+        for riff_output in fs::read_dir(&testdata_path).unwrap() {
+            let riff_output = riff_output.unwrap();
+            let riff_output = riff_output.path();
+            if !riff_output.is_file() {
                 continue;
             }
 
-            if diff.extension().unwrap() != "diff" {
+            if riff_output.extension().unwrap() != "riff-output" {
                 continue;
             }
 
-            diff_example_files.push(diff);
+            riff_output_files.push(riff_output);
         }
-        diff_example_files.sort();
+        riff_output_files.sort();
 
-        // Iterate over all the example files
+        // Iterate over all the example output files
         let mut failing_example: Option<String> = None;
         let mut failing_example_expected = vec![];
         let mut failing_example_actual = vec![];
-        for diff in diff_example_files {
-            let diff = diff.as_path();
-            if !diff.is_file() {
-                continue;
+        for riff_output_file in riff_output_files {
+            let without_riff_output_extension =
+                riff_output_file.file_stem().unwrap().to_str().unwrap();
+
+            // Find the corresponding .diff file...
+            let mut riff_input_file =
+                testdata_path.join(format!("{}.diff", without_riff_output_extension));
+            // ... or just the corresponding whatever file.
+            if !riff_input_file.is_file() {
+                // Used by the conflict-markers*.txt.riff-output files
+                riff_input_file = testdata_path.join(without_riff_output_extension);
+            }
+            if !riff_input_file.is_file() {
+                panic!("No riff input file found for {:?}", riff_output_file);
             }
 
-            if diff.extension().unwrap() != "diff" {
-                continue;
-            }
-
-            println!("Evaluating example file <{}>...", diff.to_str().unwrap());
+            println!(
+                "Evaluating example file <{}>...",
+                riff_input_file.to_str().unwrap()
+            );
 
             // Run highlighting on the file into a memory buffer
             let file = tempfile::NamedTempFile::new().unwrap();
-            highlight_diff(&mut fs::File::open(diff).unwrap(), file.reopen().unwrap());
+            highlight_diff(
+                &mut fs::File::open(&riff_input_file).unwrap(),
+                file.reopen().unwrap(),
+            );
             let actual_result = fs::read_to_string(file.path()).unwrap();
 
             // Load the corresponding .riff-output file into a string
-            let basename = diff.file_stem().unwrap().to_str().unwrap();
-            let expected_path = format!(
-                "{}/{}.riff-output",
-                testdata_path.to_str().unwrap(),
-                basename
-            );
-            let expected_result = fs::read_to_string(expected_path).unwrap();
+            let expected_result = fs::read_to_string(riff_output_file).unwrap();
 
             // Assert that the highlighting output matches the contents of .riff-output
             let actual_lines: Vec<String> = actual_result.split('\n').map(str::to_string).collect();
@@ -513,7 +519,7 @@ mod tests {
 
             if actual_lines != expected_lines {
                 if failing_example.is_none() {
-                    failing_example = Some(diff.to_str().unwrap().to_string());
+                    failing_example = Some(riff_input_file.to_str().unwrap().to_string());
                     failing_example_actual = actual_lines;
                     failing_example_expected = expected_lines;
                 }
@@ -527,5 +533,7 @@ mod tests {
             println!("Example: {}", failing_example.unwrap());
             assert_eq!(failing_example_actual, failing_example_expected);
         }
+
+        // FIXME: Look for and error on not-covered .diff files
     }
 }
