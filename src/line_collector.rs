@@ -211,29 +211,6 @@ impl LineCollector {
         self.plain_text.push_str(linepart);
     }
 
-    fn consume_no_eof_newline_marker(&mut self, no_eof_newline_marker: &str) {
-        if !self.new_text.is_empty() {
-            // New section comes after old, so if we get in here it's a new
-            // section that doesn't end in a newline. Remove its trailing
-            // newline.
-            assert!(self.new_text.pop().unwrap() == '\n');
-            return;
-        }
-
-        if !self.old_text.is_empty() {
-            // Old text doesn't end in a newline, remove its trailing newline
-            assert!(self.old_text.pop().unwrap() == '\n');
-            return;
-        }
-
-        // It's a piece of unchanged text that doesn't end in a newline, just
-        // consume the colorized marker as plain text
-        self.consume_plain_line(&format!(
-            "{}{}{}",
-            NO_EOF_NEWLINE_COLOR, no_eof_newline_marker, NORMAL
-        ))
-    }
-
     /// The line parameter is expected *not* to end in a newline.
     ///
     /// Returns an error message on trouble.
@@ -253,18 +230,9 @@ impl LineCollector {
                 // know it's set before the consumer decides it wants to emit a
                 // copy. Otherwise we get a race condition and we don't want
                 // that.
-                //
-                // We do it in a block to release the lock as soon as possible.
                 let mut no_eof_newline_marker = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
                 *no_eof_newline_marker = Some(line.to_string());
             }
-
-            // Consume the marker *after* we just updated our
-            // no_eof_newline_marker above. In the other order we'd have a race
-            // condition.
-            self.consume_no_eof_newline_marker(&line);
-
-            return None;
         }
 
         if let Some(lines_highlighter) = self.lines_highlighter.as_mut() {
@@ -308,6 +276,12 @@ impl LineCollector {
         {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
+            return None;
+        }
+
+        if line.starts_with("\\") {
+            // "\ No newline at end of file"
+            self.consume_plain_line(&format!("{}{}{}", NO_EOF_NEWLINE_COLOR, line, NORMAL));
             return None;
         }
 

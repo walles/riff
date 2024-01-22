@@ -66,6 +66,25 @@ impl<'a> LinesHighlighter for HunkLinesHighlighter<'a> {
             return Ok(());
         }
 
+        // "\ No newline at end of file"
+        if line.starts_with('\\') {
+            if !self.new_text.is_empty() {
+                // New section comes after old, so if we get in here it's a new
+                // section that doesn't end in a newline. Remove its trailing
+                // newline.
+                assert!(self.new_text.pop().unwrap() == '\n');
+                return Ok(());
+            }
+
+            if !self.old_text.is_empty() {
+                // Old text doesn't end in a newline, remove its trailing newline
+                assert!(self.old_text.pop().unwrap() == '\n');
+                return Ok(());
+            }
+
+            return Err("Got '\\ No newline at end of file' without any preceding text");
+        }
+
         self.expected_old_lines = 0;
         self.expected_new_lines = 0;
         return Err("Hunk line must start with '-' or '+'");
