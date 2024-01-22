@@ -104,7 +104,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
     }
 
     fn get_highlighted_if_done(&mut self, thread_pool: &ThreadPool) -> Option<StringFuture> {
-        if self.expected_new_lines + self.expected_old_lines == 0 {
+        if self.expected_new_lines + self.expected_old_lines > 0 {
             return None;
         }
 
