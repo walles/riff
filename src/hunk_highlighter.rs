@@ -70,6 +70,8 @@ impl LinesHighlighter for HunkLinesHighlighter {
         }
 
         if line.starts_with(' ') {
+            self.expected_old_lines -= 1;
+            self.expected_new_lines -= 1;
             self.initial_context.push_str(line);
             self.initial_context.push('\n');
             return Ok(());
