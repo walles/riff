@@ -23,6 +23,7 @@ use std::{env, fs::File};
 
 mod ansi;
 mod commit_line;
+mod conflict_highlighter;
 mod constants;
 mod hunk_header;
 mod hunk_highlighter;

@@ -1,6 +1,7 @@
 use crate::ansi::remove_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
 use crate::hunk_header::HunkHeader;
+use crate::hunk_highlighter::{self, HunkLinesHighlighter};
 use crate::io::ErrorKind;
 use crate::refiner::to_highlighted_tokens;
 use crate::token_collector::{
@@ -69,6 +70,7 @@ pub(crate) trait LinesHighlighter {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
+    #[must_use]
     fn from_line(line: &str) -> Option<Self>
     where
         Self: Sized;
@@ -77,11 +79,13 @@ pub(crate) trait LinesHighlighter {
     ///
     /// In case this call returns an error, this whole object will be invalid.
     /// afterwards.
-    fn consume_line(&mut self, line: &str) -> Result<(), String>;
+    #[must_use]
+    fn consume_line(&mut self, line: &str) -> Result<(), &str>;
 
     /// If we're done, return the highlighted result.
     ///
     /// After this call has returned a result, this whole object will be invalid.
+    #[must_use]
     fn get_highlighted_if_done(&mut self) -> Option<StringFuture>;
 }
 
@@ -98,17 +102,7 @@ The diff lines blocks will also be enqueued for printing, but the actual diffing
 will happen in background threads.
 */
 pub struct LineCollector {
-    /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
-    expected_old_lines: usize,
-
-    /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
-    expected_new_lines: usize,
-
-    /// The old text of a diff, if any. Includes `-` lines only.
-    old_text: String,
-
-    /// The new text of a diff, if any. Includes `+` lines only.
-    new_text: String,
+    lines_highlighter: Option<Box<dyn LinesHighlighter>>,
 
     /// Headers and stuff that we just want printed, not part of a diff
     plain_text: String,
@@ -124,14 +118,18 @@ pub struct LineCollector {
     // enable us to have two separate result implementations, one which just
     // returns a string and another that does a background computation first.
     // But I failed to figure out how when I tried, more Googling needed!
+    //
+    // FIXME: Rename this to `print_queue_putter`
     queue_putter: SyncSender<StringFuture>,
 }
 
 impl Drop for LineCollector {
     fn drop(&mut self) {
-        // Flush any outstanding lines. This can be done in any order, at most
-        // one of them is going to do anything anyway.
-        self.drain_oldnew();
+        if self.lines_highlighter.is_some() {
+            // FIXME: Log some warning here about the input file being truncated
+        }
+
+        // Flush outstanding lines
         self.drain_plain();
 
         // Tell the consumer thread to drain and quit. Sending an empty string
@@ -183,10 +181,7 @@ impl LineCollector {
             .unwrap();
 
         return LineCollector {
-            expected_old_lines: 0,
-            expected_new_lines: 0,
-            old_text: String::from(""),
-            new_text: String::from(""),
+            lines_highlighter: None,
             plain_text: String::from(""),
             diff_seen: false,
 
@@ -194,23 +189,6 @@ impl LineCollector {
             diffing_threads: ThreadPool::new(num_cpus::get()),
             queue_putter,
         };
-    }
-
-    fn drain_oldnew(&mut self) {
-        if self.old_text.is_empty() && self.new_text.is_empty() {
-            return;
-        }
-
-        self.queue_putter
-            .send(StringFuture::from_oldnew(
-                self.old_text.clone(),
-                self.new_text.clone(),
-                &self.diffing_threads,
-            ))
-            .unwrap();
-
-        self.old_text.clear();
-        self.new_text.clear();
     }
 
     fn drain_plain(&mut self) {
@@ -227,27 +205,15 @@ impl LineCollector {
     }
 
     fn consume_plain_line(&mut self, line: &str) {
-        self.drain_oldnew();
+        assert!(self.lines_highlighter.is_none());
         self.plain_text.push_str(line);
         self.plain_text.push('\n');
     }
 
     /// Like consume_plain_line(), but without outputting any trailing linefeed.
     fn consume_plain_linepart(&mut self, linepart: &str) {
-        self.drain_oldnew();
+        assert!(self.lines_highlighter.is_none());
         self.plain_text.push_str(linepart);
-    }
-
-    fn consume_old_line(&mut self, line: &str) {
-        self.drain_plain();
-        self.old_text.push_str(&line[1..]);
-        self.old_text.push('\n');
-    }
-
-    fn consume_new_line(&mut self, line: &str) {
-        self.drain_plain();
-        self.new_text.push_str(&line[1..]);
-        self.new_text.push('\n');
     }
 
     fn consume_no_eof_newline_marker(&mut self, no_eof_newline_marker: &str) {
@@ -378,33 +344,23 @@ impl LineCollector {
             return None;
         }
 
-        if self.expected_old_lines + self.expected_new_lines > 0 {
-            if line.starts_with('-') {
-                self.expected_old_lines -= 1;
-                self.consume_old_line(&line);
+        if let Some(lines_highlighter) = self.lines_highlighter.as_mut() {
+            if let Err(error) = lines_highlighter.consume_line(&line) {
+                self.lines_highlighter = None;
+                return Some(&error);
+            }
+
+            if let Some(highlighted) = lines_highlighter.get_highlighted_if_done() {
+                self.lines_highlighter = None;
+
+                self.queue_putter.send(highlighted).unwrap();
                 return None;
             }
-
-            if line.starts_with('+') {
-                self.expected_new_lines -= 1;
-                self.consume_new_line(&line);
-                return None;
-            }
-
-            if !line.is_empty() && !line.starts_with(' ') {
-                return Some("Non-empty line should have started with ' ', '-' or '+'");
-            }
-
-            self.expected_old_lines -= 1;
-            self.expected_new_lines -= 1;
-            self.consume_plain_line(&line);
-            return None;
         }
 
-        if let Some(hunk_header) = HunkHeader::parse(&line) {
-            self.expected_new_lines = hunk_header.new_linecount;
-            self.expected_old_lines = hunk_header.old_linecount;
-            self.consume_plain_line(&hunk_header.render());
+        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line) {
+            self.drain_plain();
+            self.lines_highlighter = Some(Box::new(hunk_highlighter));
             return None;
         }
 
