@@ -96,29 +96,29 @@ struct Options {
     please_panic: bool,
 }
 
-/// Consume the line
-///
-/// If that fails, print an error message and exit with an error code.
-fn consume_line_or_exit(
-    line_collector: &mut LineCollector,
-    line_number: usize,
-    line: &mut Vec<u8>,
-) {
-    if let Err(error_message) = line_collector.consume_line(line) {
-        eprintln!(
-            "ERROR on line {}: {}\n         Line {}: {}",
-            line_number,
-            error_message,
-            line_number,
-            String::from_utf8_lossy(line),
-        );
+fn format_error(message: String, line_number: usize, line: &[u8]) -> Result<(), String> {
+    return Err(format!(
+        "ERROR on line {}: {}\n         Line {}: {}",
+        line_number,
+        message,
+        line_number,
+        String::from_utf8_lossy(line),
+    ));
+}
+
+fn highlight_diff_or_exit<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
+    if let Err(message) = highlight_diff(input, output) {
+        eprintln!("{}", message);
         exit(1);
     }
 }
 
 /// Read `diff` output from `input` and write highlighted output to `output`.
 /// The actual highlighting is done using a `LineCollector`.
-fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
+fn highlight_diff<W: io::Write + Send + 'static>(
+    input: &mut dyn io::Read,
+    output: W,
+) -> Result<(), String> {
     let mut line_collector = LineCollector::new(output);
 
     // Read input line by line, using from_utf8_lossy() to convert lines into
@@ -137,7 +137,9 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             // End of stream
             if !line.is_empty() {
                 // Stuff found on the last line without a trailing newline
-                consume_line_or_exit(&mut line_collector, line_number, &mut line);
+                if let Err(message) = line_collector.consume_line(&mut line) {
+                    return format_error(message, line_number, &line);
+                }
             }
             break;
         }
@@ -155,12 +157,16 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             }
 
             // Line finished, consume it!
-            consume_line_or_exit(&mut line_collector, line_number, &mut line);
+            if let Err(message) = line_collector.consume_line(&mut line) {
+                return format_error(message, line_number, &line);
+            }
             line.clear();
             line_number += 1;
             continue;
         }
     }
+
+    return Ok(());
 }
 
 /// Try paging using the named pager (`$PATH` will be searched).
@@ -192,7 +198,7 @@ fn try_pager(input: &mut dyn io::Read, pager_name: &str) -> bool {
         Ok(mut pager) => {
             let pager_stdin = pager.stdin.unwrap();
             pager.stdin = None;
-            highlight_diff(input, pager_stdin);
+            highlight_diff_or_exit(input, pager_stdin);
 
             // FIXME: Report pager exit status if non-zero, together with
             // contents of pager stderr as well if possible.
@@ -230,12 +236,12 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
 fn highlight_stream(input: &mut dyn io::Read, no_pager: bool) {
     if !io::stdout().is_terminal() {
         // We're being piped, just do stdin -> stdout
-        highlight_diff(input, io::stdout());
+        highlight_diff_or_exit(input, io::stdout());
         return;
     }
 
     if no_pager {
-        highlight_diff(input, io::stdout());
+        highlight_diff_or_exit(input, io::stdout());
         return;
     }
 
@@ -257,7 +263,7 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool) {
     }
 
     // No pager found, wth?
-    highlight_diff(input, io::stdout());
+    highlight_diff_or_exit(input, io::stdout());
 }
 
 pub fn type_string(path: &path::Path) -> &str {
@@ -430,7 +436,9 @@ mod tests {
         );
 
         let file = tempfile::NamedTempFile::new().unwrap();
-        highlight_diff(&mut input, file.reopen().unwrap());
+        if let Err(error) = highlight_diff(&mut input, file.reopen().unwrap()) {
+            panic!("{}", error);
+        }
         let actual = fs::read_to_string(file.path()).unwrap();
         // collect()ing into line vectors inside of this assert() statement
         // splits test failure output into lines, making it easier to digest.
@@ -519,10 +527,13 @@ mod tests {
 
             // Run highlighting on the file into a memory buffer
             let file = tempfile::NamedTempFile::new().unwrap();
-            highlight_diff(
+            if let Err(error) = highlight_diff(
                 &mut fs::File::open(&riff_input_file).unwrap(),
                 file.reopen().unwrap(),
-            );
+            ) {
+                panic!("{:?}\n{}", riff_input_file, error);
+            }
+
             let actual_result = fs::read_to_string(file.path()).unwrap();
 
             // Load the corresponding .riff-output file into a string
