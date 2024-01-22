@@ -136,6 +136,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
 mod tests {
     use super::*;
 
+    /// Based on `testdata/adds-only.diff`
     #[test]
     fn test_happy_path() {
         let thread_pool = ThreadPool::new(1);
@@ -149,10 +150,21 @@ mod tests {
         assert!(test_me
             .consume_line("+Hello, my first name is Johan")
             .is_ok());
+        assert!(test_me.get_highlighted_if_done(&thread_pool).is_none());
+
+        assert!(test_me.consume_line(" I like pie.").is_ok());
         let mut future_result = test_me.get_highlighted_if_done(&thread_pool).unwrap();
         let result = future_result.get();
 
         // FIXME: Verify against the right result
-        assert_eq!(result, concat!("apa", "bepa", "cepa"));
+        assert_eq!(
+            result,
+            concat!(
+                "@@ -1,2 +1,2 @@\n",
+                "-Hello, my name is Johan\n",
+                "+Hello, my first name is Johan\n",
+                " I like pie.",
+            )
+        );
     }
 }
