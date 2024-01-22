@@ -75,7 +75,7 @@ pub(crate) trait LinesHighlighter<'a> {
     /// In case this call returns an error, this whole object will be invalid.
     /// afterwards.
     #[must_use]
-    fn consume_line(&mut self, line: &str) -> Result<(), &str>;
+    fn consume_line(&mut self, line: &str) -> Result<(), String>;
 
     /// If we're done, return the highlighted result.
     ///
@@ -215,7 +215,7 @@ impl LineCollector {
     ///
     /// Returns an error message on trouble.
     #[must_use]
-    pub fn consume_line(&mut self, line: &mut Vec<u8>) -> Result<(), &str> {
+    pub fn consume_line(&mut self, line: &mut Vec<u8>) -> Result<(), String> {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
         remove_ansi_escape_codes(line);
@@ -238,7 +238,7 @@ impl LineCollector {
         if let Some(lines_highlighter) = self.lines_highlighter.as_mut() {
             if let Err(error) = lines_highlighter.consume_line(&line) {
                 self.lines_highlighter = None;
-                return Err(&error);
+                return Err(error.to_owned());
             }
 
             if let Some(highlighted) = lines_highlighter.get_highlighted_if_done() {

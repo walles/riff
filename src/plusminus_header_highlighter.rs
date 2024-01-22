@@ -36,17 +36,17 @@ impl<'a> LinesHighlighter<'a> for PlusMinusHeaderHighlighter {
         return Some(highlighter);
     }
 
-    fn consume_line(&mut self, line: &str) -> Result<(), &str> {
+    fn consume_line(&mut self, line: &str) -> Result<(), String> {
         assert!(!self.done);
 
         if let Some(old_name) = line.strip_prefix("--- ") {
             if !self.new_name.is_empty() {
                 self.done = true;
-                return Err("Got --- after +++");
+                return Err("Got --- after +++".to_string());
             }
             if !self.old_name.is_empty() {
                 self.done = true;
-                return Err("Got --- twice");
+                return Err("Got --- twice".to_string());
             }
 
             self.old_name.push_str(old_name);
@@ -56,18 +56,18 @@ impl<'a> LinesHighlighter<'a> for PlusMinusHeaderHighlighter {
         if let Some(new_name) = line.strip_prefix("+++ ") {
             if self.old_name.is_empty() {
                 self.done = true;
-                return Err("Got only +++ without ---");
+                return Err("Got only +++ without ---".to_string());
             }
             if !self.new_name.is_empty() {
                 self.done = true;
-                return Err("Got +++ twice");
+                return Err("Got +++ twice".to_string());
             }
             self.new_name.push_str(new_name);
             return Ok(());
         }
 
         self.done = true;
-        return Err("Got neither --- nor +++");
+        return Err("Got neither --- nor +++".to_string());
     }
 
     fn get_highlighted_if_done(&mut self) -> Option<StringFuture> {

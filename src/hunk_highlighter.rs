@@ -47,7 +47,7 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
         return None;
     }
 
-    fn consume_line(&mut self, line: &str) -> Result<(), &str> {
+    fn consume_line(&mut self, line: &str) -> Result<(), String> {
         if self.expected_old_lines + self.expected_new_lines == 0 {
             panic!("No more lines expected")
         }
@@ -82,12 +82,14 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
                 return Ok(());
             }
 
-            return Err("Got '\\ No newline at end of file' without any preceding text");
+            return Err(
+                "Got '\\ No newline at end of file' without any preceding text".to_string(),
+            );
         }
 
         self.expected_old_lines = 0;
         self.expected_new_lines = 0;
-        return Err("Hunk line must start with '-' or '+'");
+        return Err("Hunk line must start with '-' or '+'".to_string());
     }
 
     fn get_highlighted_if_done(&mut self) -> Option<StringFuture> {
