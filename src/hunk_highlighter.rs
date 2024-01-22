@@ -6,7 +6,7 @@ use crate::string_future::StringFuture;
 
 pub(crate) struct HunkLinesHighlighter<'a> {
     // This will have to be rendered at the top of our returned result.
-    hunk_header: HunkHeader<'a>,
+    hunk_header: HunkHeader,
 
     /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
     expected_old_lines: usize,
@@ -24,7 +24,7 @@ pub(crate) struct HunkLinesHighlighter<'a> {
 }
 
 impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
-    fn from_line(line: &'a str, thread_pool: &'a ThreadPool) -> Option<Self>
+    fn from_line(line: &str, thread_pool: &'a mut ThreadPool) -> Option<Self>
     where
         Self: Sized,
     {
