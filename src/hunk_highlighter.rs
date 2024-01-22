@@ -131,3 +131,28 @@ impl LinesHighlighter for HunkLinesHighlighter {
         ));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_happy_path() {
+        let thread_pool = ThreadPool::new(1);
+
+        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@").unwrap();
+        assert!(test_me.get_highlighted_if_done(&thread_pool).is_none());
+
+        assert!(test_me.consume_line("-Hello, my name is Johan").is_ok());
+        assert!(test_me.get_highlighted_if_done(&thread_pool).is_none());
+
+        assert!(test_me
+            .consume_line("+Hello, my first name is Johan")
+            .is_ok());
+        let mut future_result = test_me.get_highlighted_if_done(&thread_pool).unwrap();
+        let result = future_result.get();
+
+        // FIXME: Verify against the right result
+        assert_eq!(result, concat!("apa", "bepa", "cepa"));
+    }
+}
