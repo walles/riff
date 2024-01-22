@@ -30,8 +30,10 @@ impl LinesHighlighter for PlusMinusHeaderHighlighter {
             done: false,
         };
 
-        // FIXME: Check for errors and handle them
-        highlighter.consume_line(line);
+        if highlighter.consume_line(line).is_err() {
+            // FIXME: Log this error?
+            return None;
+        }
 
         return Some(highlighter);
     }
