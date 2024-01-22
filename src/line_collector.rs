@@ -146,6 +146,25 @@ impl StringFuture {
     }
 }
 
+/// Consume some lines, return some highlighted text
+trait LinesHighlighter: Sized {
+    /// Create a new LinesHighlighter from a line of input.
+    ///
+    /// Returns None if this line doesn't start a new LinesHighlighter.
+    fn from_line(line: &str) -> Option<Self>;
+
+    /// Consume one line of input.
+    ///
+    /// In case this call returns an error, this whole object will be invalid.
+    /// afterwards.
+    fn consume_line(&mut self, line: &str) -> Result<(), String>;
+
+    /// If we're done, return the highlighted result.
+    ///
+    /// After this call has returned a result, this whole object will be invalid.
+    fn get_highlighted_if_done(&mut self) -> Option<StringFuture>;
+}
+
 /**
 The way this thing works from the outside is that you initialize it with an
 output stream, you pass it one line of input at a time, and it writes
