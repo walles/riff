@@ -23,8 +23,8 @@ pub(crate) struct HunkLinesHighlighter<'a> {
     thread_pool: &'a ThreadPool,
 }
 
-impl<'a> LinesHighlighter for HunkLinesHighlighter<'a> {
-    fn from_line(line: &str, thread_pool: &ThreadPool) -> Option<Self>
+impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
+    fn from_line(line: &'a str, thread_pool: &'a ThreadPool) -> Option<Self>
     where
         Self: Sized,
     {

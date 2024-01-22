@@ -61,12 +61,12 @@ fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
 }
 
 /// Consume some lines, return some highlighted text
-pub(crate) trait LinesHighlighter {
+pub(crate) trait LinesHighlighter<'a> {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
     #[must_use]
-    fn from_line(line: &str, thread_pool: &ThreadPool) -> Option<Self>
+    fn from_line(line: &'a str, thread_pool: &'a ThreadPool) -> Option<Self>
     where
         Self: Sized;
 
@@ -97,7 +97,7 @@ The diff lines blocks will also be enqueued for printing, but the actual diffing
 will happen in background threads.
 */
 pub struct LineCollector {
-    lines_highlighter: Option<Box<dyn LinesHighlighter>>,
+    lines_highlighter: Option<Box<dyn for<'a> LinesHighlighter<'a>>>,
 
     /// Headers and stuff that we just want printed, not part of a diff
     plain_text: String,
