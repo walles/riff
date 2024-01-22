@@ -2,11 +2,7 @@ use crate::ansi::remove_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
 use crate::hunk_highlighter::HunkLinesHighlighter;
 use crate::io::ErrorKind;
-use crate::refiner::to_highlighted_tokens;
-use crate::token_collector::{
-    lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,
-    LINE_STYLE_OLD_FILENAME,
-};
+use crate::plusminus_header_highlighter::PlusMinusHeaderHighlighter;
 use std::io::{self, BufWriter, Write};
 use std::process::exit;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
@@ -238,78 +234,6 @@ impl LineCollector {
         ))
     }
 
-    /// Returns an error message on failure
-    #[must_use]
-    pub fn consume_plusminus_header(&mut self, line: &str) -> Option<&str> {
-        if let Some(old_name) = line.strip_prefix("--- ") {
-            self.old_text.clear();
-            self.old_text.push_str(old_name);
-            return None;
-        }
-
-        if let Some(new_name) = line.strip_prefix("+++ ") {
-            if self.old_text.is_empty() {
-                // We got +++ not preceded by ---, WTF?
-                return None;
-            }
-
-            self.new_text.clear();
-            self.new_text.push_str(new_name);
-        } else {
-            return Some("Got a plusminus header that doesn't start with --- or +++");
-        }
-
-        if self.old_text == "/dev/null" {
-            let new_name = self.new_text.clone();
-            self.old_text.clear();
-            self.new_text.clear();
-
-            self.consume_plain_linepart(FAINT);
-            self.consume_plain_linepart("--- /dev/null");
-            self.consume_plain_line(NORMAL);
-
-            self.consume_plain_linepart(BOLD);
-            self.consume_plain_linepart("+++ ");
-            self.consume_plain_linepart(&new_name);
-            self.consume_plain_line(NORMAL);
-            return None;
-        }
-
-        if self.new_text == "/dev/null" {
-            let old_name = self.old_text.clone();
-            self.old_text.clear();
-            self.new_text.clear();
-
-            self.consume_plain_linepart(BOLD);
-            self.consume_plain_linepart("--- ");
-            self.consume_plain_linepart(&old_name);
-            self.consume_plain_line(NORMAL);
-
-            self.consume_plain_linepart(FAINT);
-            self.consume_plain_linepart("+++ /dev/null");
-            self.consume_plain_line(NORMAL);
-
-            return None;
-        }
-
-        let (mut old_tokens, mut new_tokens, _, _) =
-            to_highlighted_tokens(&self.old_text, &self.new_text);
-        self.old_text.clear();
-        self.new_text.clear();
-
-        lowlight_timestamp(&mut old_tokens);
-        unhighlight_git_prefix(&mut old_tokens);
-        lowlight_timestamp(&mut new_tokens);
-        unhighlight_git_prefix(&mut new_tokens);
-
-        let old_filename = render(&LINE_STYLE_OLD_FILENAME, old_tokens);
-        let new_filename = render(&LINE_STYLE_NEW_FILENAME, new_tokens);
-        self.consume_plain_line(&old_filename);
-        self.consume_plain_line(&new_filename);
-
-        return None;
-    }
-
     /// The line parameter is expected *not* to end in a newline.
     ///
     /// Returns an error message on trouble.
@@ -379,8 +303,12 @@ impl LineCollector {
             return None;
         }
 
-        if line.starts_with("--- ") || line.starts_with("+++ ") {
-            return self.consume_plusminus_header(&line);
+        if let Some(plusminus_header_highlighter) =
+            PlusMinusHeaderHighlighter::from_line(&line, &self.thread_pool)
+        {
+            self.drain_plain();
+            self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
+            return None;
         }
 
         if line.is_empty() {
