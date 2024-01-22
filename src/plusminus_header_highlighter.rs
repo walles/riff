@@ -15,8 +15,8 @@ pub(crate) struct PlusMinusHeaderHighlighter {
     new_name: String,
 }
 
-impl<'a> LinesHighlighter<'a> for PlusMinusHeaderHighlighter {
-    fn from_line(line: &str, _thread_pool: &'a ThreadPool) -> Option<Self>
+impl LinesHighlighter for PlusMinusHeaderHighlighter {
+    fn from_line(line: &str) -> Option<Self>
     where
         Self: Sized,
     {
@@ -70,7 +70,7 @@ impl<'a> LinesHighlighter<'a> for PlusMinusHeaderHighlighter {
         return Err("Got neither --- nor +++".to_string());
     }
 
-    fn get_highlighted_if_done(&mut self) -> Option<StringFuture> {
+    fn get_highlighted_if_done(&mut self, _thread_pool: &ThreadPool) -> Option<StringFuture> {
         if self.new_name.is_empty() || self.old_name.is_empty() {
             return None;
         }

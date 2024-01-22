@@ -1,4 +1,3 @@
-use crate::refiner;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 use threadpool::ThreadPool;
 

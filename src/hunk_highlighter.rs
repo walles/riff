@@ -5,7 +5,7 @@ use crate::line_collector::LinesHighlighter;
 use crate::refiner;
 use crate::string_future::StringFuture;
 
-pub(crate) struct HunkLinesHighlighter<'a> {
+pub(crate) struct HunkLinesHighlighter {
     // This will have to be rendered at the top of our returned result.
     hunk_header: HunkHeader,
 
@@ -20,12 +20,10 @@ pub(crate) struct HunkLinesHighlighter<'a> {
 
     /// The new text of a diff, if any. Includes `+` lines only.
     new_text: String,
-
-    thread_pool: &'a ThreadPool,
 }
 
-impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
-    fn from_line(line: &str, thread_pool: &'a ThreadPool) -> Option<Self>
+impl LinesHighlighter for HunkLinesHighlighter {
+    fn from_line(line: &str) -> Option<Self>
     where
         Self: Sized,
     {
@@ -41,7 +39,6 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
                 expected_new_lines,
                 old_text,
                 new_text,
-                thread_pool,
             });
         }
 
@@ -93,7 +90,7 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
         return Err("Hunk line must start with '-' or '+'".to_string());
     }
 
-    fn get_highlighted_if_done(&mut self) -> Option<StringFuture> {
+    fn get_highlighted_if_done(&mut self, thread_pool: &ThreadPool) -> Option<StringFuture> {
         if self.expected_new_lines + self.expected_old_lines == 0 {
             return None;
         }
@@ -114,7 +111,7 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
 
                 result
             },
-            self.thread_pool,
+            thread_pool,
         ));
     }
 }

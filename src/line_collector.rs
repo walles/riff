@@ -61,12 +61,12 @@ fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
 }
 
 /// Consume some lines, return some highlighted text
-pub(crate) trait LinesHighlighter<'a> {
+pub(crate) trait LinesHighlighter {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
     #[must_use]
-    fn from_line(line: &str, thread_pool: &'a ThreadPool) -> Option<Self>
+    fn from_line(line: &str) -> Option<Self>
     where
         Self: Sized;
 
@@ -81,7 +81,7 @@ pub(crate) trait LinesHighlighter<'a> {
     ///
     /// After this call has returned a result, this whole object will be invalid.
     #[must_use]
-    fn get_highlighted_if_done(&mut self) -> Option<StringFuture>;
+    fn get_highlighted_if_done(&mut self, thread_pool: &ThreadPool) -> Option<StringFuture>;
 }
 
 /**
@@ -97,7 +97,7 @@ The diff lines blocks will also be enqueued for printing, but the actual diffing
 will happen in background threads.
 */
 pub struct LineCollector {
-    lines_highlighter: Option<Box<dyn for<'a> LinesHighlighter<'a>>>,
+    lines_highlighter: Option<Box<dyn for<'a> LinesHighlighter>>,
 
     /// Headers and stuff that we just want printed, not part of a diff
     plain_text: String,
@@ -241,7 +241,8 @@ impl LineCollector {
                 return Err(error.to_owned());
             }
 
-            if let Some(highlighted) = lines_highlighter.get_highlighted_if_done() {
+            if let Some(highlighted) = lines_highlighter.get_highlighted_if_done(&self.thread_pool)
+            {
                 self.lines_highlighter = None;
 
                 self.print_queue_putter.send(highlighted).unwrap();
@@ -249,7 +250,7 @@ impl LineCollector {
             }
         }
 
-        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line, &self.thread_pool) {
+        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(());
@@ -271,9 +272,7 @@ impl LineCollector {
             return Ok(());
         }
 
-        if let Some(plusminus_header_highlighter) =
-            PlusMinusHeaderHighlighter::from_line(&line, &self.thread_pool)
-        {
+        if let Some(plusminus_header_highlighter) = PlusMinusHeaderHighlighter::from_line(&line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
             return Ok(());
