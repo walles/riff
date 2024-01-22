@@ -20,15 +20,31 @@ pub(crate) struct HunkLinesHighlighter<'a> {
     /// The new text of a diff, if any. Includes `+` lines only.
     new_text: String,
 
-    diffing_threads: &'a ThreadPool,
+    thread_pool: &'a ThreadPool,
 }
 
 impl<'a> LinesHighlighter for HunkLinesHighlighter<'a> {
-    fn from_line(line: &str) -> Option<Self>
+    fn from_line(line: &str, thread_pool: &ThreadPool) -> Option<Self>
     where
         Self: Sized,
     {
-        todo!()
+        if let Some(hunk_header) = HunkHeader::parse(line) {
+            let expected_old_lines = hunk_header.old_linecount;
+            let expected_new_lines = hunk_header.new_linecount;
+            let old_text = String::new();
+            let new_text = String::new();
+
+            return Some(HunkLinesHighlighter {
+                hunk_header,
+                expected_old_lines,
+                expected_new_lines,
+                old_text,
+                new_text,
+                thread_pool,
+            });
+        }
+
+        return None;
     }
 
     fn consume_line(&mut self, line: &str) -> Result<(), &str> {

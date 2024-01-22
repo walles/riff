@@ -1,7 +1,6 @@
 use crate::ansi::remove_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
-use crate::hunk_header::HunkHeader;
-use crate::hunk_highlighter::{self, HunkLinesHighlighter};
+use crate::hunk_highlighter::HunkLinesHighlighter;
 use crate::io::ErrorKind;
 use crate::refiner::to_highlighted_tokens;
 use crate::token_collector::{
@@ -71,7 +70,7 @@ pub(crate) trait LinesHighlighter {
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
     #[must_use]
-    fn from_line(line: &str) -> Option<Self>
+    fn from_line(line: &str, thread_pool: &ThreadPool) -> Option<Self>
     where
         Self: Sized;
 
@@ -112,21 +111,21 @@ pub struct LineCollector {
     diff_seen: bool,
 
     consumer_thread: Option<JoinHandle<()>>,
-    diffing_threads: ThreadPool,
+    thread_pool: ThreadPool,
 
     // FIXME: I'd rather have had a SyncSender of some trait here. That would
     // enable us to have two separate result implementations, one which just
     // returns a string and another that does a background computation first.
     // But I failed to figure out how when I tried, more Googling needed!
-    //
-    // FIXME: Rename this to `print_queue_putter`
-    queue_putter: SyncSender<StringFuture>,
+    print_queue_putter: SyncSender<StringFuture>,
 }
 
 impl Drop for LineCollector {
     fn drop(&mut self) {
         if self.lines_highlighter.is_some() {
-            // FIXME: Log some warning here about the input file being truncated
+            // FIXME: Log some warning here about the input file being
+            // truncated. Also maybe dump the in-progress lines here so the user
+            // can see them?
         }
 
         // Flush outstanding lines
@@ -134,7 +133,7 @@ impl Drop for LineCollector {
 
         // Tell the consumer thread to drain and quit. Sending an empty string
         // like this is the secret handshake for requesting a shutdown.
-        self.queue_putter
+        self.print_queue_putter
             .send(StringFuture::from_string("".to_string()))
             .unwrap();
 
@@ -186,8 +185,8 @@ impl LineCollector {
             diff_seen: false,
 
             consumer_thread: Some(consumer),
-            diffing_threads: ThreadPool::new(num_cpus::get()),
-            queue_putter,
+            thread_pool: ThreadPool::new(num_cpus::get()),
+            print_queue_putter: queue_putter,
         };
     }
 
@@ -197,7 +196,7 @@ impl LineCollector {
         }
 
         // Enqueue an already-resolved future
-        self.queue_putter
+        self.print_queue_putter
             .send(StringFuture::from_string(String::from(&self.plain_text)))
             .unwrap();
 
@@ -353,12 +352,12 @@ impl LineCollector {
             if let Some(highlighted) = lines_highlighter.get_highlighted_if_done() {
                 self.lines_highlighter = None;
 
-                self.queue_putter.send(highlighted).unwrap();
+                self.print_queue_putter.send(highlighted).unwrap();
                 return None;
             }
         }
 
-        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line) {
+        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line, &self.thread_pool) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(hunk_highlighter));
             return None;
