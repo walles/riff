@@ -1,7 +1,7 @@
 use threadpool::ThreadPool;
 
 use crate::line_collector::LinesHighlighter;
-use crate::line_collector::StringFuture;
+use crate::string_future::StringFuture;
 
 struct HunkLinesHighlighter<'a> {
     /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.

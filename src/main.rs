@@ -28,6 +28,7 @@ mod hunk_header;
 mod hunk_highlighter;
 mod line_collector;
 mod refiner;
+mod string_future;
 mod token_collector;
 mod tokenizer;
 
