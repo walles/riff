@@ -15,6 +15,9 @@ pub(crate) struct HunkLinesHighlighter {
     /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
     expected_new_lines: usize,
 
+    /// One or more context lines before the hunk.
+    initial_context: String,
+
     /// The old text of a diff, if any. Includes `-` lines only.
     old_text: String,
 
@@ -30,6 +33,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
         if let Some(hunk_header) = HunkHeader::parse(line) {
             let expected_old_lines = hunk_header.old_linecount;
             let expected_new_lines = hunk_header.new_linecount;
+            let initial_context = String::new();
             let old_text = String::new();
             let new_text = String::new();
 
@@ -37,6 +41,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
                 hunk_header,
                 expected_old_lines,
                 expected_new_lines,
+                initial_context,
                 old_text,
                 new_text,
             });
@@ -61,6 +66,12 @@ impl LinesHighlighter for HunkLinesHighlighter {
             self.expected_new_lines -= 1;
             self.new_text.push_str(&line[1..]);
             self.new_text.push('\n');
+            return Ok(());
+        }
+
+        if line.starts_with(' ') {
+            self.initial_context.push_str(line);
+            self.initial_context.push('\n');
             return Ok(());
         }
 
@@ -96,6 +107,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
         }
 
         let header = self.hunk_header.render();
+        let initial_context = self.initial_context.clone();
         let old = self.old_text.clone();
         let new = self.new_text.clone();
         return Some(StringFuture::from_function(
@@ -103,6 +115,8 @@ impl LinesHighlighter for HunkLinesHighlighter {
                 let mut result = String::new();
                 result.push_str(&header);
                 result.push('\n');
+
+                result.push_str(&initial_context);
 
                 for line in refiner::format(&old, &new) {
                     result.push_str(&line);
