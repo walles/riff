@@ -24,7 +24,7 @@ pub(crate) struct HunkLinesHighlighter<'a> {
 }
 
 impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
-    fn from_line(line: &str, thread_pool: &'a mut ThreadPool) -> Option<Self>
+    fn from_line(line: &str, thread_pool: &'a ThreadPool) -> Option<Self>
     where
         Self: Sized,
     {
@@ -93,6 +93,16 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
     }
 
     fn get_highlighted_if_done(&mut self) -> Option<StringFuture> {
-        todo!()
+        if self.expected_new_lines + self.expected_old_lines == 0 {
+            return None;
+        }
+
+        // FIXME: Don't forget the hunk header in the output here!
+
+        return Some(StringFuture::from_oldnew(
+            self.old_text.clone(),
+            self.new_text.clone(),
+            self.thread_pool,
+        ));
     }
 }

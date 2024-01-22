@@ -66,7 +66,7 @@ pub(crate) trait LinesHighlighter<'a> {
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
     #[must_use]
-    fn from_line(line: &str, thread_pool: &'a mut ThreadPool) -> Option<Self>
+    fn from_line(line: &str, thread_pool: &'a ThreadPool) -> Option<Self>
     where
         Self: Sized;
 
@@ -249,9 +249,7 @@ impl LineCollector {
             }
         }
 
-        if let Some(hunk_highlighter) =
-            HunkLinesHighlighter::from_line(&line, &mut self.thread_pool)
-        {
+        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line, &self.thread_pool) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(());
@@ -274,7 +272,7 @@ impl LineCollector {
         }
 
         if let Some(plusminus_header_highlighter) =
-            PlusMinusHeaderHighlighter::from_line(&line, &mut self.thread_pool)
+            PlusMinusHeaderHighlighter::from_line(&line, &self.thread_pool)
         {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
