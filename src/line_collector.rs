@@ -64,26 +64,13 @@ fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
     }
 }
 
-trait LinesHighlighter {
-    /// Consume one line of input.
-    ///
-    /// In case this call returns an error, this whole object will be invalid.
-    /// afterwards.
-    fn consume_line(&mut self, line: &str) -> Result<(), String>;
-
-    /// If we're done, return the highlighted result.
-    ///
-    /// After this call has returned a result, this whole object will be invalid.
-    fn get_highlighted_if_done(&mut self) -> Option<StringFuture>;
-}
-
 /**
 A StringFuture can perform diffing in a background thread.
 
 Doing get() on a future that isn't done yet will block until the result is
 available.
 */
-struct StringFuture {
+pub(crate) struct StringFuture {
     // This field is only valid if we're done with the result_receiver (next
     // field)
     result: String,
@@ -147,11 +134,13 @@ impl StringFuture {
 }
 
 /// Consume some lines, return some highlighted text
-trait LinesHighlighter: Sized {
+pub(crate) trait LinesHighlighter {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
-    fn from_line(line: &str) -> Option<Self>;
+    fn from_line(line: &str) -> Option<Self>
+    where
+        Self: Sized;
 
     /// Consume one line of input.
     ///
