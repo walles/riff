@@ -104,7 +104,7 @@ fn consume_line_or_exit(
     line_number: usize,
     line: &mut Vec<u8>,
 ) {
-    if let Some(error_message) = line_collector.consume_line(line) {
+    if let Err(error_message) = line_collector.consume_line(line) {
         eprintln!(
             "ERROR on line {}: {}\n         Line {}: {}",
             line_number,

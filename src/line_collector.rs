@@ -215,7 +215,7 @@ impl LineCollector {
     ///
     /// Returns an error message on trouble.
     #[must_use]
-    pub fn consume_line(&mut self, line: &mut Vec<u8>) -> Option<&str> {
+    pub fn consume_line(&mut self, line: &mut Vec<u8>) -> Result<(), &str> {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
         remove_ansi_escape_codes(line);
@@ -238,21 +238,21 @@ impl LineCollector {
         if let Some(lines_highlighter) = self.lines_highlighter.as_mut() {
             if let Err(error) = lines_highlighter.consume_line(&line) {
                 self.lines_highlighter = None;
-                return Some(&error);
+                return Err(&error);
             }
 
             if let Some(highlighted) = lines_highlighter.get_highlighted_if_done() {
                 self.lines_highlighter = None;
 
                 self.print_queue_putter.send(highlighted).unwrap();
-                return None;
+                return Ok(());
             }
         }
 
         if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line, &self.thread_pool) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(hunk_highlighter));
-            return None;
+            return Ok(());
         }
 
         if line.starts_with("diff") {
@@ -263,12 +263,12 @@ impl LineCollector {
             self.consume_plain_linepart(fixed_highlight);
             self.consume_plain_linepart(&line);
             self.consume_plain_line(NORMAL); // consume_plain_line() will add a linefeed to the output
-            return None;
+            return Ok(());
         }
 
         if line.starts_with("commit") {
             self.consume_plain_line(&format_commit_line(&line, self.diff_seen));
-            return None;
+            return Ok(());
         }
 
         if let Some(plusminus_header_highlighter) =
@@ -276,21 +276,21 @@ impl LineCollector {
         {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
-            return None;
+            return Ok(());
         }
 
         if line.starts_with("\\") {
             // "\ No newline at end of file"
             self.consume_plain_line(&format!("{}{}{}", NO_EOF_NEWLINE_COLOR, line, NORMAL));
-            return None;
+            return Ok(());
         }
 
         if line.is_empty() {
             self.consume_plain_line("");
-            return None;
+            return Ok(());
         }
 
         self.consume_plain_line(&line);
-        return None;
+        return Ok(());
     }
 }
