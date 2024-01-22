@@ -2,6 +2,7 @@ use threadpool::ThreadPool;
 
 use crate::hunk_header::HunkHeader;
 use crate::line_collector::LinesHighlighter;
+use crate::refiner;
 use crate::string_future::StringFuture;
 
 pub(crate) struct HunkLinesHighlighter<'a> {
@@ -97,11 +98,22 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter<'a> {
             return None;
         }
 
-        // FIXME: Don't forget the hunk header in the output here!
+        let header = self.hunk_header.render();
+        let old = self.old_text.clone();
+        let new = self.new_text.clone();
+        return Some(StringFuture::from_function(
+            move || {
+                let mut result = String::new();
+                result.push_str(&header);
+                result.push('\n');
 
-        return Some(StringFuture::from_oldnew(
-            self.old_text.clone(),
-            self.new_text.clone(),
+                for line in refiner::format(&old, &new) {
+                    result.push_str(&line);
+                    result.push('\n');
+                }
+
+                result
+            },
             self.thread_pool,
         ));
     }

@@ -27,10 +27,8 @@ impl StringFuture {
         };
     }
 
-    /// Call get() to get the result of this diff
-    pub fn from_oldnew(
-        old_text: String,
-        new_text: String,
+    pub fn from_function(
+        f: impl FnOnce() -> String + Send + 'static,
         thread_pool: &ThreadPool,
     ) -> StringFuture {
         // Create a String channel
@@ -38,11 +36,8 @@ impl StringFuture {
 
         // Start diffing in a thread
         thread_pool.execute(move || {
-            let mut result = String::new();
-            for line in refiner::format(&old_text, &new_text) {
-                result.push_str(&line);
-                result.push('\n');
-            }
+            // Call the function
+            let result = f();
 
             // Done, channel the result!
             sender.send(result).unwrap();
