@@ -60,13 +60,13 @@ impl PlusMinusHeaderHighlighter {
             highlighted.push_str(FAINT);
             highlighted.push_str("--- /dev/null");
             highlighted.push_str(NORMAL);
-            highlighted.push_str("\n");
+            highlighted.push('\n');
 
             highlighted.push_str(BOLD);
             highlighted.push_str("+++ ");
             highlighted.push_str(&self.new_name);
             highlighted.push_str(NORMAL);
-            highlighted.push_str("\n");
+            highlighted.push('\n');
 
             return highlighted;
         }
@@ -78,12 +78,12 @@ impl PlusMinusHeaderHighlighter {
             highlighted.push_str("--- ");
             highlighted.push_str(&self.old_name);
             highlighted.push_str(NORMAL);
-            highlighted.push_str("\n");
+            highlighted.push('\n');
 
             highlighted.push_str(FAINT);
             highlighted.push_str("+++ /dev/null");
             highlighted.push_str(NORMAL);
-            highlighted.push_str("\n");
+            highlighted.push('\n');
 
             return highlighted;
         }
@@ -101,9 +101,9 @@ impl PlusMinusHeaderHighlighter {
 
         let mut highlighted = String::new();
         highlighted.push_str(&old_filename);
-        highlighted.push_str("\n");
+        highlighted.push('\n');
         highlighted.push_str(&new_filename);
-        highlighted.push_str("\n");
+        highlighted.push('\n');
 
         return highlighted;
     }

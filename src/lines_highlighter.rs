@@ -38,10 +38,8 @@ pub(crate) trait LinesHighlighter<'a> {
     ///
     /// In case this call returns an error, this whole object will be invalid.
     /// afterwards.
-    #[must_use]
     fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String>;
 
     // No more lines available
-    #[must_use]
     fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String>;
 }

@@ -92,9 +92,9 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter {
             });
         }
 
-        if line.starts_with('-') {
+        if let Some(minus_line) = line.strip_prefix('-') {
             self.expected_old_lines -= 1;
-            self.old_text.push_str(&line[1..]);
+            self.old_text.push_str(minus_line);
             self.old_text.push('\n');
 
             return Ok(Response {
@@ -106,9 +106,9 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter {
             });
         }
 
-        if line.starts_with('+') {
+        if let Some(plus_line) = line.strip_prefix('+') {
             self.expected_new_lines -= 1;
-            self.new_text.push_str(&line[1..]);
+            self.new_text.push_str(plus_line);
             self.new_text.push('\n');
 
             return Ok(Response {

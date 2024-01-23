@@ -202,7 +202,6 @@ impl<'a> LineCollector<'a> {
     /// The line parameter is expected *not* to end in a newline.
     ///
     /// Returns an error message on trouble.
-    #[must_use]
     pub fn consume_line(&mut self, line: &mut Vec<u8>) -> Result<(), String> {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
@@ -277,7 +276,7 @@ impl<'a> LineCollector<'a> {
             return Ok(());
         }
 
-        if line.starts_with("\\") {
+        if line.starts_with('\\') {
             // "\ No newline at end of file"
             self.consume_plain_line(&format!("{}{}{}", NO_EOF_NEWLINE_COLOR, line, NORMAL));
             return Ok(());
