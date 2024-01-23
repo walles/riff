@@ -131,8 +131,14 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter {
 
             return_me.push(StringFuture::from_string(line.to_string() + "\n"));
 
+            let acceptance = if self.expected_old_lines + self.expected_new_lines == 0 {
+                LineAcceptance::AcceptedDone
+            } else {
+                LineAcceptance::AcceptedWantMore
+            };
+
             return Ok(Response {
-                line_accepted: LineAcceptance::AcceptedWantMore,
+                line_accepted: acceptance,
                 highlighted: return_me,
             });
         }
