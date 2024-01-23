@@ -34,3 +34,4 @@
 [32m+   reader := NewReaderFromStream(filename, stream)[0m
     return reader, nil
  }
+
