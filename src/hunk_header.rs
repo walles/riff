@@ -81,7 +81,7 @@ impl HunkHeader {
         })
     }
 
-    /// Render into an ANSI highlighted string
+    /// Render into an ANSI highlighted string, not ending in a newline.
     pub fn render(&self) -> String {
         let numbers = format!(
             "-{},{} +{},{}",

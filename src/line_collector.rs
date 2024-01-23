@@ -61,7 +61,7 @@ fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
 }
 
 /// Consume some lines, return some highlighted text
-pub(crate) trait LinesHighlighter {
+pub(crate) trait LinesHighlighter<'a> {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
@@ -72,16 +72,19 @@ pub(crate) trait LinesHighlighter {
 
     /// Consume one line of input.
     ///
+    /// May or may not return a highlighted string.
+    ///
     /// In case this call returns an error, this whole object will be invalid.
     /// afterwards.
     #[must_use]
-    fn consume_line(&mut self, line: &str) -> Result<(), String>;
+    fn consume_line(
+        &mut self,
+        line: &str,
+        thread_pool: &ThreadPool,
+    ) -> Result<Vec<StringFuture>, String>;
 
-    /// If we're done, return the highlighted result.
-    ///
-    /// After this call has returned a result, this whole object will be invalid.
     #[must_use]
-    fn get_highlighted_if_done(&mut self, thread_pool: &ThreadPool) -> Option<StringFuture>;
+    fn is_done(&self) -> bool;
 }
 
 /**
@@ -96,8 +99,8 @@ The not-diff-lines blocks will be enqueued for printing by the printing thread.
 The diff lines blocks will also be enqueued for printing, but the actual diffing
 will happen in background threads.
 */
-pub struct LineCollector {
-    lines_highlighter: Option<Box<dyn for<'a> LinesHighlighter>>,
+pub struct LineCollector<'a> {
+    lines_highlighter: Option<Box<dyn LinesHighlighter<'a>>>,
 
     /// Headers and stuff that we just want printed, not part of a diff
     plain_text: String,
@@ -116,7 +119,7 @@ pub struct LineCollector {
     print_queue_putter: SyncSender<StringFuture>,
 }
 
-impl Drop for LineCollector {
+impl<'a> Drop for LineCollector<'a> {
     fn drop(&mut self) {
         if self.lines_highlighter.is_some() {
             // FIXME: Log some warning here about the input file being
@@ -139,8 +142,8 @@ impl Drop for LineCollector {
     }
 }
 
-impl LineCollector {
-    pub fn new<W: io::Write + Send + 'static>(output: W) -> LineCollector {
+impl<'a> LineCollector<'a> {
+    pub fn new<W: io::Write + Send + 'static>(output: W) -> LineCollector<'a> {
         // This is how many entries we can look ahead. An "entry" in this case
         // being either a plain text section or an oldnew section.
         //
@@ -236,16 +239,19 @@ impl LineCollector {
         }
 
         if let Some(lines_highlighter) = self.lines_highlighter.as_mut() {
-            if let Err(error) = lines_highlighter.consume_line(&line) {
+            let result = lines_highlighter.consume_line(&line, &self.thread_pool);
+            if let Err(error) = result {
                 self.lines_highlighter = None;
-                return Err(error.to_owned());
+                return Err(error);
             }
 
-            if let Some(highlighted) = lines_highlighter.get_highlighted_if_done(&self.thread_pool)
-            {
-                self.lines_highlighter = None;
+            let highlights = result.unwrap();
+            for highlight in highlights {
+                self.print_queue_putter.send(highlight).unwrap();
+            }
 
-                self.print_queue_putter.send(highlighted).unwrap();
+            if lines_highlighter.is_done() {
+                self.lines_highlighter = None;
                 return Ok(());
             }
         }

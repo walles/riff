@@ -15,68 +15,50 @@ pub(crate) struct PlusMinusHeaderHighlighter {
     new_name: String,
 }
 
-impl LinesHighlighter for PlusMinusHeaderHighlighter {
+impl LinesHighlighter<'_> for PlusMinusHeaderHighlighter {
     fn from_line(line: &str) -> Option<Self>
     where
         Self: Sized,
     {
-        if !line.starts_with("--- ") && !line.starts_with("+++ ") {
+        if !line.starts_with("--- ") {
             return None;
         }
 
-        let mut highlighter = PlusMinusHeaderHighlighter {
-            old_name: String::new(),
+        let highlighter = PlusMinusHeaderHighlighter {
+            old_name: line.strip_prefix("--- ").unwrap().to_string(),
             new_name: String::new(),
             done: false,
         };
 
-        if highlighter.consume_line(line).is_err() {
-            // FIXME: Log this error?
-            return None;
-        }
-
         return Some(highlighter);
     }
 
-    fn consume_line(&mut self, line: &str) -> Result<(), String> {
+    fn consume_line(
+        &mut self,
+        line: &str,
+        _thread_pool: &ThreadPool,
+    ) -> Result<Vec<StringFuture>, String> {
         assert!(!self.done);
-
-        if let Some(old_name) = line.strip_prefix("--- ") {
-            if !self.new_name.is_empty() {
-                self.done = true;
-                return Err("Got --- after +++".to_string());
-            }
-            if !self.old_name.is_empty() {
-                self.done = true;
-                return Err("Got --- twice".to_string());
-            }
-
-            self.old_name.push_str(old_name);
-            return Ok(());
-        }
+        assert!(!self.old_name.is_empty());
+        assert!(self.new_name.is_empty());
 
         if let Some(new_name) = line.strip_prefix("+++ ") {
-            if self.old_name.is_empty() {
-                self.done = true;
-                return Err("Got only +++ without ---".to_string());
-            }
-            if !self.new_name.is_empty() {
-                self.done = true;
-                return Err("Got +++ twice".to_string());
-            }
             self.new_name.push_str(new_name);
-            return Ok(());
+            self.done = true;
+            return Ok(vec![StringFuture::from_string(self.highlighted())]);
         }
 
         self.done = true;
-        return Err("Got neither --- nor +++".to_string());
+        return Err("--- was not followed by +++".to_string());
     }
 
-    fn get_highlighted_if_done(&mut self, _thread_pool: &ThreadPool) -> Option<StringFuture> {
-        if self.new_name.is_empty() || self.old_name.is_empty() {
-            return None;
-        }
+    fn is_done(&self) -> bool {
+        return self.done;
+    }
+}
 
+impl PlusMinusHeaderHighlighter {
+    fn highlighted(&self) -> String {
         if self.old_name == "/dev/null" {
             let mut highlighted = String::new();
 
@@ -91,7 +73,7 @@ impl LinesHighlighter for PlusMinusHeaderHighlighter {
             highlighted.push_str(NORMAL);
             highlighted.push_str("\n");
 
-            return Some(StringFuture::from_string(highlighted));
+            return highlighted;
         }
 
         if self.new_name == "/dev/null" {
@@ -108,7 +90,7 @@ impl LinesHighlighter for PlusMinusHeaderHighlighter {
             highlighted.push_str(NORMAL);
             highlighted.push_str("\n");
 
-            return Some(StringFuture::from_string(highlighted));
+            return highlighted;
         }
 
         let (mut old_tokens, mut new_tokens, _, _) =
@@ -128,6 +110,6 @@ impl LinesHighlighter for PlusMinusHeaderHighlighter {
         highlighted.push_str(&new_filename);
         highlighted.push_str("\n");
 
-        return Some(StringFuture::from_string(highlighted));
+        return highlighted;
     }
 }
