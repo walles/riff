@@ -27,6 +27,7 @@ mod constants;
 mod hunk_header;
 mod hunk_highlighter;
 mod line_collector;
+mod lines_highlighter;
 mod plusminus_header_highlighter;
 mod refiner;
 mod string_future;

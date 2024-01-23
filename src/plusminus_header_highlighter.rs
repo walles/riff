@@ -1,7 +1,8 @@
 use threadpool::ThreadPool;
 
 use crate::constants::*;
-use crate::line_collector::LinesHighlighter;
+use crate::lines_highlighter::LineAcceptance;
+use crate::lines_highlighter::{LinesHighlighter, Response};
 use crate::refiner::to_highlighted_tokens;
 use crate::string_future::StringFuture;
 use crate::token_collector::{
@@ -10,7 +11,6 @@ use crate::token_collector::{
 };
 
 pub(crate) struct PlusMinusHeaderHighlighter {
-    done: bool,
     old_name: String,
     new_name: String,
 }
@@ -27,33 +27,28 @@ impl LinesHighlighter<'_> for PlusMinusHeaderHighlighter {
         let highlighter = PlusMinusHeaderHighlighter {
             old_name: line.strip_prefix("--- ").unwrap().to_string(),
             new_name: String::new(),
-            done: false,
         };
 
         return Some(highlighter);
     }
 
-    fn consume_line(
-        &mut self,
-        line: &str,
-        _thread_pool: &ThreadPool,
-    ) -> Result<Vec<StringFuture>, String> {
-        assert!(!self.done);
+    fn consume_line(&mut self, line: &str, _thread_pool: &ThreadPool) -> Result<Response, String> {
         assert!(!self.old_name.is_empty());
         assert!(self.new_name.is_empty());
 
         if let Some(new_name) = line.strip_prefix("+++ ") {
             self.new_name.push_str(new_name);
-            self.done = true;
-            return Ok(vec![StringFuture::from_string(self.highlighted())]);
+            return Ok(Response {
+                line_accepted: LineAcceptance::AcceptedDone,
+                highlighted: vec![StringFuture::from_string(self.highlighted())],
+            });
         }
 
-        self.done = true;
         return Err("--- was not followed by +++".to_string());
     }
 
-    fn is_done(&self) -> bool {
-        return self.done;
+    fn consume_eof(&mut self, _thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
+        return Err("Input ended early, --- should have been followed by +++".to_string());
     }
 }
 

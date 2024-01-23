@@ -2,9 +2,10 @@ use crate::ansi::remove_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
 use crate::hunk_highlighter::HunkLinesHighlighter;
 use crate::io::ErrorKind;
+use crate::lines_highlighter::{LineAcceptance, LinesHighlighter};
 use crate::plusminus_header_highlighter::PlusMinusHeaderHighlighter;
 use std::io::{self, BufWriter, Write};
-use std::process::exit;
+use std::process::{self, exit};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
@@ -60,33 +61,6 @@ fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
     }
 }
 
-/// Consume some lines, return some highlighted text
-pub(crate) trait LinesHighlighter<'a> {
-    /// Create a new LinesHighlighter from a line of input.
-    ///
-    /// Returns None if this line doesn't start a new LinesHighlighter.
-    #[must_use]
-    fn from_line(line: &str) -> Option<Self>
-    where
-        Self: Sized;
-
-    /// Consume one line of input.
-    ///
-    /// May or may not return a highlighted string.
-    ///
-    /// In case this call returns an error, this whole object will be invalid.
-    /// afterwards.
-    #[must_use]
-    fn consume_line(
-        &mut self,
-        line: &str,
-        thread_pool: &ThreadPool,
-    ) -> Result<Vec<StringFuture>, String>;
-
-    #[must_use]
-    fn is_done(&self) -> bool;
-}
-
 /**
 The way this thing works from the outside is that you initialize it with an
 output stream, you pass it one line of input at a time, and it writes
@@ -121,14 +95,25 @@ pub struct LineCollector<'a> {
 
 impl<'a> Drop for LineCollector<'a> {
     fn drop(&mut self) {
-        if self.lines_highlighter.is_some() {
-            // FIXME: Log some warning here about the input file being
-            // truncated. Also maybe dump the in-progress lines here so the user
-            // can see them?
-        }
-
         // Flush outstanding lines
         self.drain_plain();
+
+        if self.lines_highlighter.is_some() {
+            let result = self
+                .lines_highlighter
+                .as_mut()
+                .unwrap()
+                .consume_eof(&self.thread_pool);
+            if let Err(error) = result {
+                self.lines_highlighter = None;
+                eprintln!("ERROR at end of input: {}", error);
+                process::exit(1);
+            }
+
+            for highlight in result.unwrap() {
+                self.print_queue_putter.send(highlight).unwrap();
+            }
+        }
 
         // Tell the consumer thread to drain and quit. Sending an empty string
         // like this is the secret handshake for requesting a shutdown.
@@ -245,14 +230,22 @@ impl<'a> LineCollector<'a> {
                 return Err(error);
             }
 
-            let highlights = result.unwrap();
-            for highlight in highlights {
+            let response = result.unwrap();
+            for highlight in response.highlighted {
                 self.print_queue_putter.send(highlight).unwrap();
             }
 
-            if lines_highlighter.is_done() {
-                self.lines_highlighter = None;
-                return Ok(());
+            match response.line_accepted {
+                LineAcceptance::AcceptedWantMore => return Ok(()),
+                LineAcceptance::AcceptedDone => {
+                    self.lines_highlighter = None;
+                    return Ok(());
+                }
+                LineAcceptance::RejectedDone => {
+                    self.lines_highlighter = None;
+
+                    // Do not return, fall back to the no-handler code below
+                }
             }
         }
 
