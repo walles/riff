@@ -121,7 +121,7 @@ impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter {
         }
 
         // Context lines
-        if line.starts_with(' ') {
+        if line.starts_with(' ') || line.is_empty() {
             // FIXME: Consider whether we should be coalescing the plain lines?
             // Maybe that would improve performance? Measure and find out!
             return_me.append(&mut self.drain_old_new(thread_pool));
