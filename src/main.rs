@@ -515,8 +515,16 @@ mod tests {
                 riff_input_file = testdata_path.join(without_riff_output_extension);
             }
             if !riff_input_file.is_file() {
-                panic!("No riff input file found for {:?}", riff_output_file);
+                if failing_example.is_none() {
+                    failing_example = Some(riff_output_file.to_str().unwrap().to_string());
+                    failing_example_expected = vec![];
+                    failing_example_actual = vec![];
+                }
+
+                println!("FAIL: No riff input file found for {:?}", riff_output_file);
+                continue;
             }
+
             if riff_input_file.extension().unwrap() == "diff" {
                 diff_files.remove(&riff_input_file);
             }
