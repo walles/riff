@@ -540,7 +540,14 @@ mod tests {
                 &mut fs::File::open(&riff_input_file).unwrap(),
                 file.reopen().unwrap(),
             ) {
-                panic!("{:?}\n{}", riff_input_file, error);
+                if failing_example.is_none() {
+                    failing_example = Some(riff_input_file.to_str().unwrap().to_string());
+                    failing_example_expected = vec![];
+                    failing_example_actual = vec![];
+                }
+
+                eprintln!("  FAILED: Highlighting failed: {}", error);
+                continue;
             }
 
             let actual_result = fs::read_to_string(file.path()).unwrap();
