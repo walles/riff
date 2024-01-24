@@ -6,7 +6,7 @@ use crate::ansi::Weight;
 use crate::ansi::ANSI_STYLE_NORMAL;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum Style {
+pub(crate) enum Style {
     Plain,
     Highlighted,
     Error,
@@ -14,20 +14,20 @@ pub enum Style {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct StyledToken {
+pub(crate) struct StyledToken {
     token: String,
-    style: Style,
+    pub(crate) style: Style,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct LineStyle<'a> {
+pub(crate) struct LineStyle<'a> {
     prefix: &'a str,
     prefix_style: AnsiStyle,
     plain_style: AnsiStyle,
     highlighted_style: AnsiStyle,
 }
 
-pub const LINE_STYLE_OLD: LineStyle = {
+pub(crate) const LINE_STYLE_OLD: LineStyle = {
     LineStyle {
         prefix: "-",
         prefix_style: AnsiStyle {
@@ -48,7 +48,7 @@ pub const LINE_STYLE_OLD: LineStyle = {
     }
 };
 
-pub const LINE_STYLE_OLD_FAINT: LineStyle = {
+pub(crate) const LINE_STYLE_OLD_FAINT: LineStyle = {
     LineStyle {
         prefix: "-",
         prefix_style: AnsiStyle {
@@ -69,7 +69,7 @@ pub const LINE_STYLE_OLD_FAINT: LineStyle = {
     }
 };
 
-pub const LINE_STYLE_NEW: LineStyle = {
+pub(crate) const LINE_STYLE_NEW: LineStyle = {
     LineStyle {
         prefix: "+",
         prefix_style: AnsiStyle {
@@ -90,7 +90,7 @@ pub const LINE_STYLE_NEW: LineStyle = {
     }
 };
 
-pub const LINE_STYLE_ADDS_ONLY: LineStyle = {
+pub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
     LineStyle {
         prefix: "+",
         prefix_style: AnsiStyle {
@@ -111,7 +111,7 @@ pub const LINE_STYLE_ADDS_ONLY: LineStyle = {
     }
 };
 
-pub const LINE_STYLE_OLD_FILENAME: LineStyle = {
+pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
     LineStyle {
         prefix: "--- ",
         prefix_style: AnsiStyle {
@@ -132,7 +132,7 @@ pub const LINE_STYLE_OLD_FILENAME: LineStyle = {
     }
 };
 
-pub const LINE_STYLE_NEW_FILENAME: LineStyle = {
+pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
     LineStyle {
         prefix: "+++ ",
         prefix_style: AnsiStyle {
@@ -144,6 +144,50 @@ pub const LINE_STYLE_NEW_FILENAME: LineStyle = {
             inverse: false,
             weight: Weight::Bold,
             color: Default,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Normal,
+            color: Green,
+        },
+    }
+};
+
+/// Like `LINE_STYLE_OLD` but without any prefix
+pub(crate) const LINE_STYLE_CONFLICT_C1: LineStyle = {
+    LineStyle {
+        prefix: "",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Red,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Red,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Normal,
+            color: Red,
+        },
+    }
+};
+
+/// Like `LINE_STYLE_NEW` but without any prefix
+pub(crate) const LINE_STYLE_CONFLICT_C2: LineStyle = {
+    LineStyle {
+        prefix: "",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Green,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Green,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
