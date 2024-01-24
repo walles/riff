@@ -2,6 +2,9 @@ use threadpool::ThreadPool;
 
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::string_future::StringFuture;
+use crate::token_collector::LINE_STYLE_CONFLICT_C1;
+use crate::token_collector::LINE_STYLE_CONFLICT_C2;
+use crate::{refiner, token_collector};
 
 const CONFLICTS_HEADER: &str = "<<<<<<<";
 const BASE_HEADER: &str = "|||||||";
@@ -133,21 +136,33 @@ impl ConflictsHighlighter {
             return self.render_diff3(thread_pool);
         }
 
-        // FIXME: Highlight self.c1 and self.c2 before rendering
+        let c1_header = self.c1_header.clone();
+        let c1 = self.c1.clone();
+        let c2_header = self.c2_header.clone();
+        let c2 = self.c2.clone();
+        let footer = self.footer.clone();
+        return StringFuture::from_function(
+            move || {
+                let (c1_tokens, c2_tokens, _, _) = refiner::to_highlighted_tokens(&c1, &c2);
+                let highlighted_c1 = token_collector::render(&LINE_STYLE_CONFLICT_C1, c1_tokens);
+                let highlighted_c2 = token_collector::render(&LINE_STYLE_CONFLICT_C2, c2_tokens);
 
-        let mut rendered = String::new();
-        rendered.push_str(&self.c1_header);
-        rendered.push('\n');
-        rendered.push_str(&self.c1);
+                let mut rendered = String::new();
+                rendered.push_str(&c1_header);
+                rendered.push('\n');
+                rendered.push_str(&highlighted_c1);
 
-        rendered.push_str(&self.c2_header);
-        rendered.push('\n');
-        rendered.push_str(&self.c2);
+                rendered.push_str(&c2_header);
+                rendered.push('\n');
+                rendered.push_str(&highlighted_c2);
 
-        rendered.push_str(&self.footer);
-        rendered.push('\n');
+                rendered.push_str(&footer);
+                rendered.push('\n');
 
-        return StringFuture::from_string(rendered);
+                rendered
+            },
+            thread_pool,
+        );
     }
 
     fn render_diff3(&self, _thread_pool: &ThreadPool) -> StringFuture {

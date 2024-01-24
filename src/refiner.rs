@@ -71,7 +71,11 @@ fn too_large_to_refine(old_text: &str, new_text: &str) -> bool {
     return complexity > 13_000u64 * 13_000u64;
 }
 
-/// Returns a vector of ANSI highlighted lines
+/// Returns a vector of ANSI highlighted lines.
+///
+/// `old_text` and `new_text` are multi lines strings. Having or not having
+/// trailing newlines will affect tokenization. The lines are not expected to
+/// have any prefixes like `+` or `-`.
 #[must_use]
 pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
     if old_text.is_empty() || new_text.is_empty() {
@@ -101,6 +105,10 @@ pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
 /// Returns two vectors for old and new sections. The first bool is true if
 /// there were any highlights found in the old text. The second bool is true if
 /// any highlights were removed for readability in the new text.
+///
+/// `old_text` and `new_text` are multi lines strings. Having or not having
+/// trailing newlines will affect tokenization. The lines are not expected to
+/// have any prefixes like `+` or `-`.
 pub fn to_highlighted_tokens(
     old_text: &str,
     new_text: &str,

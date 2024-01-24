@@ -153,6 +153,50 @@ pub const LINE_STYLE_NEW_FILENAME: LineStyle = {
     }
 };
 
+/// Like `LINE_STYLE_OLD` but without any prefix
+pub const LINE_STYLE_CONFLICT_C1: LineStyle = {
+    LineStyle {
+        prefix: "",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Red,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Red,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Normal,
+            color: Red,
+        },
+    }
+};
+
+/// Like `LINE_STYLE_NEW` but without any prefix
+pub const LINE_STYLE_CONFLICT_C2: LineStyle = {
+    LineStyle {
+        prefix: "",
+        prefix_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Green,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Green,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Normal,
+            color: Green,
+        },
+    }
+};
+
 impl StyledToken {
     pub fn new(token: String, style: Style) -> StyledToken {
         return StyledToken { token, style };
