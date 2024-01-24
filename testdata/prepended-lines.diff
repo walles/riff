@@ -11,3 +11,5 @@ index a191ee0..d99c8a8 100755
 +    buildenv["RUSTFLAGS"] = "-Awarnings"
 +    subprocess.run(["cargo", "build", "--release"], check=True, env=buildenv)
      shutil.copy("target/release/riff", os.path.join(BINDIR, "riff-current"))
+
+
