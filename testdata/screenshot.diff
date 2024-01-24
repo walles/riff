@@ -16,12 +16,19 @@ index 88c1590..cfdaf0b 100644
 +  `git diff` [| `riff`](https://github.com/walles/riff) for example)
  * Supports UTF-8 input and output
  * The position in the file is always shown
-
+ 
 -For compatibility reasons, `moar` uses the formats declared in these
 -environment variables when viewing man pages:
 +[For compatibility reasons](https://github.com/walles/moar/issues/14), `moar`
 +uses the formats declared in these environment variables when viewing man pages:
-
+ 
  * `LESS_TERMCAP_md`: Bold
  * `LESS_TERMCAP_us`: Underline
-
+ 
+-See [here](https://github.com/walles/moar/issues/14) for usage examples.
++Moar is used as the default pager by:
++* [`px` / `ptop`](https://github.com/walles/px)
++* [`riff`](https://github.com/walles/riff)
+ 
+ Installing
+ ----------

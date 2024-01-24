@@ -25,8 +25,12 @@ mod ansi;
 mod commit_line;
 mod constants;
 mod hunk_header;
+mod hunk_highlighter;
 mod line_collector;
+mod lines_highlighter;
+mod plusminus_header_highlighter;
 mod refiner;
+mod string_future;
 mod token_collector;
 mod tokenizer;
 
@@ -93,27 +97,29 @@ struct Options {
     please_panic: bool,
 }
 
-/// Consume the line
-///
-/// If that fails, print an error message and exit with an error code.
-fn consume_line_or_exit(
-    line_collector: &mut LineCollector,
-    line_number: usize,
-    line: &mut Vec<u8>,
-) {
-    if let Some(error_message) = line_collector.consume_line(line) {
-        eprintln!(
-            "ERROR on line {}: {}\n         Line {}: {}",
-            line_number,
-            error_message,
-            line_number,
-            String::from_utf8_lossy(line),
-        );
+fn format_error(message: String, line_number: usize, line: &[u8]) -> Result<(), String> {
+    return Err(format!(
+        "ERROR on line {}: {}\n         Line {}: {}",
+        line_number,
+        message,
+        line_number,
+        String::from_utf8_lossy(line),
+    ));
+}
+
+fn highlight_diff_or_exit<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
+    if let Err(message) = highlight_diff(input, output) {
+        eprintln!("{}", message);
         exit(1);
     }
 }
 
-fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, output: W) {
+/// Read `diff` output from `input` and write highlighted output to `output`.
+/// The actual highlighting is done using a `LineCollector`.
+fn highlight_diff<W: io::Write + Send + 'static>(
+    input: &mut dyn io::Read,
+    output: W,
+) -> Result<(), String> {
     let mut line_collector = LineCollector::new(output);
 
     // Read input line by line, using from_utf8_lossy() to convert lines into
@@ -132,7 +138,9 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             // End of stream
             if !line.is_empty() {
                 // Stuff found on the last line without a trailing newline
-                consume_line_or_exit(&mut line_collector, line_number, &mut line);
+                if let Err(message) = line_collector.consume_line(&mut line) {
+                    return format_error(message, line_number, &line);
+                }
             }
             break;
         }
@@ -150,12 +158,16 @@ fn highlight_diff<W: io::Write + Send + 'static>(input: &mut dyn io::Read, outpu
             }
 
             // Line finished, consume it!
-            consume_line_or_exit(&mut line_collector, line_number, &mut line);
+            if let Err(message) = line_collector.consume_line(&mut line) {
+                return format_error(message, line_number, &line);
+            }
             line.clear();
             line_number += 1;
             continue;
         }
     }
+
+    return Ok(());
 }
 
 /// Try paging using the named pager (`$PATH` will be searched).
@@ -187,7 +199,7 @@ fn try_pager(input: &mut dyn io::Read, pager_name: &str) -> bool {
         Ok(mut pager) => {
             let pager_stdin = pager.stdin.unwrap();
             pager.stdin = None;
-            highlight_diff(input, pager_stdin);
+            highlight_diff_or_exit(input, pager_stdin);
 
             // FIXME: Report pager exit status if non-zero, together with
             // contents of pager stderr as well if possible.
@@ -221,15 +233,16 @@ fn panic_handler(panic_info: &panic::PanicInfo) {
     eprintln!("{CRASH_FOOTER}");
 }
 
+/// Highlight the given stream, paging if stdout is a terminal
 fn highlight_stream(input: &mut dyn io::Read, no_pager: bool) {
     if !io::stdout().is_terminal() {
         // We're being piped, just do stdin -> stdout
-        highlight_diff(input, io::stdout());
+        highlight_diff_or_exit(input, io::stdout());
         return;
     }
 
     if no_pager {
-        highlight_diff(input, io::stdout());
+        highlight_diff_or_exit(input, io::stdout());
         return;
     }
 
@@ -251,7 +264,7 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool) {
     }
 
     // No pager found, wth?
-    highlight_diff(input, io::stdout());
+    highlight_diff_or_exit(input, io::stdout());
 }
 
 pub fn type_string(path: &path::Path) -> &str {
@@ -281,6 +294,7 @@ fn ensure_listable(path: &path::Path) {
     }
 }
 
+/// Run the `diff` binary on the two paths and highlight the output
 fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool, no_pager: bool) {
     let path1 = path::Path::new(path1);
     let path2 = path::Path::new(path2);
@@ -398,7 +412,7 @@ mod tests {
     use crate::{constants::*, hunk_header::HUNK_HEADER};
 
     use super::*;
-    use std::{fs, path::PathBuf};
+    use std::{collections::HashSet, fs, path::PathBuf};
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
@@ -423,7 +437,9 @@ mod tests {
         );
 
         let file = tempfile::NamedTempFile::new().unwrap();
-        highlight_diff(&mut input, file.reopen().unwrap());
+        if let Err(error) = highlight_diff(&mut input, file.reopen().unwrap()) {
+            panic!("{}", error);
+        }
         let actual = fs::read_to_string(file.path()).unwrap();
         // collect()ing into line vectors inside of this assert() statement
         // splits test failure output into lines, making it easier to digest.
@@ -459,52 +475,85 @@ mod tests {
         }
         assert!(testdata_path.is_dir());
 
-        // Find all .diff example files
-        let mut diff_example_files: Vec<PathBuf> = vec![];
-        for diff in fs::read_dir(&testdata_path).unwrap() {
-            let diff = diff.unwrap();
-            let diff = diff.path();
-            if !diff.is_file() {
+        // Find all .riff-output example files
+        let mut riff_output_files: Vec<PathBuf> = vec![];
+        let mut diff_files: HashSet<PathBuf> = HashSet::new();
+        for riff_output in fs::read_dir(&testdata_path).unwrap() {
+            let riff_output = riff_output.unwrap();
+            let riff_output = riff_output.path();
+            if !riff_output.is_file() {
                 continue;
             }
 
-            if diff.extension().unwrap() != "diff" {
+            if riff_output.extension().unwrap() == "diff" {
+                diff_files.insert(riff_output);
                 continue;
             }
 
-            diff_example_files.push(diff);
+            if riff_output.extension().unwrap() != "riff-output" {
+                continue;
+            }
+
+            riff_output_files.push(riff_output);
         }
-        diff_example_files.sort();
+        riff_output_files.sort();
 
-        // Iterate over all the example files
+        // Iterate over all the example output files
         let mut failing_example: Option<String> = None;
         let mut failing_example_expected = vec![];
         let mut failing_example_actual = vec![];
-        for diff in diff_example_files {
-            let diff = diff.as_path();
-            if !diff.is_file() {
+        for riff_output_file in riff_output_files {
+            let without_riff_output_extension =
+                riff_output_file.file_stem().unwrap().to_str().unwrap();
+
+            // Find the corresponding .diff file...
+            let mut riff_input_file =
+                testdata_path.join(format!("{}.diff", without_riff_output_extension));
+            // ... or just the corresponding whatever file.
+            if !riff_input_file.is_file() {
+                // Used by the conflict-markers*.txt.riff-output files
+                riff_input_file = testdata_path.join(without_riff_output_extension);
+            }
+            if !riff_input_file.is_file() {
+                if failing_example.is_none() {
+                    failing_example = Some(riff_output_file.to_str().unwrap().to_string());
+                    failing_example_expected = vec![];
+                    failing_example_actual = vec![];
+                }
+
+                println!("FAIL: No riff input file found for {:?}", riff_output_file);
                 continue;
             }
 
-            if diff.extension().unwrap() != "diff" {
-                continue;
+            if riff_input_file.extension().unwrap() == "diff" {
+                diff_files.remove(&riff_input_file);
             }
 
-            println!("Evaluating example file <{}>...", diff.to_str().unwrap());
+            println!(
+                "Evaluating example file <{}>...",
+                riff_input_file.to_str().unwrap()
+            );
 
             // Run highlighting on the file into a memory buffer
             let file = tempfile::NamedTempFile::new().unwrap();
-            highlight_diff(&mut fs::File::open(diff).unwrap(), file.reopen().unwrap());
+            if let Err(error) = highlight_diff(
+                &mut fs::File::open(&riff_input_file).unwrap(),
+                file.reopen().unwrap(),
+            ) {
+                if failing_example.is_none() {
+                    failing_example = Some(riff_input_file.to_str().unwrap().to_string());
+                    failing_example_expected = vec![];
+                    failing_example_actual = vec![];
+                }
+
+                eprintln!("  FAILED: Highlighting failed: {}", error);
+                continue;
+            }
+
             let actual_result = fs::read_to_string(file.path()).unwrap();
 
             // Load the corresponding .riff-output file into a string
-            let basename = diff.file_stem().unwrap().to_str().unwrap();
-            let expected_path = format!(
-                "{}/{}.riff-output",
-                testdata_path.to_str().unwrap(),
-                basename
-            );
-            let expected_result = fs::read_to_string(expected_path).unwrap();
+            let expected_result = fs::read_to_string(riff_output_file).unwrap();
 
             // Assert that the highlighting output matches the contents of .riff-output
             let actual_lines: Vec<String> = actual_result.split('\n').map(str::to_string).collect();
@@ -513,7 +562,7 @@ mod tests {
 
             if actual_lines != expected_lines {
                 if failing_example.is_none() {
-                    failing_example = Some(diff.to_str().unwrap().to_string());
+                    failing_example = Some(riff_input_file.to_str().unwrap().to_string());
                     failing_example_actual = actual_lines;
                     failing_example_expected = expected_lines;
                 }
@@ -526,6 +575,10 @@ mod tests {
             println!();
             println!("Example: {}", failing_example.unwrap());
             assert_eq!(failing_example_actual, failing_example_expected);
+        }
+
+        if !diff_files.is_empty() {
+            panic!("Some .diff files were never verified: {:?}", diff_files);
         }
     }
 }

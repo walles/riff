@@ -7,10 +7,10 @@ Date:   Thu Dec 31 15:22:09 2020 +0100
     If old text and new text have very different line counts, just do the
     simplistic highlighting.
 
-[2mdiff --git a/src/refiner.rs b/src/refiner.rs[0m
+[2mdiff --git src/refiner.rs src/refiner.rs[0m
 [2mindex d1ebdc1..40ae0df 100644[0m
-[1m--- a/src/refiner.rs[0m
-[1m+++ b/src/refiner.rs[0m
+[1m--- src/refiner.rs[0m
+[1m+++ src/refiner.rs[0m
 [36m[2m@@ -15,8 +15,8 @@ [1muse diffus::{[0m
  /// it.
  const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
@@ -33,3 +33,9 @@ Date:   Thu Dec 31 15:22:09 2020 +0100
      if is_large_byte_count_change(old_text, new_text) {
          return simple_format(old_text, new_text);
      }
+[32m+    if is_large_newline_count_change(old_text, new_text) {[0m
+[32m+        return simple_format(old_text, new_text);[0m
+[32m+    }[0m
+
+     // Find diffs between adds and removals
+     let mut old_collector = TokenCollector::create(StyledToken::new("-".to_string(), Style::Old));

@@ -7,23 +7,23 @@ use crate::constants::*;
 /// This would mean "old line numbers are 1-2, and new line numbers are 1-2",
 /// making the line counts 2 for both.
 #[derive(Debug, PartialEq)]
-pub(crate) struct HunkHeader<'a> {
+pub(crate) struct HunkHeader {
     pub old_start: usize,
     pub old_linecount: usize,
 
     pub new_start: usize,
     pub new_linecount: usize,
 
-    pub title: Option<&'a str>,
+    pub title: Option<String>,
 }
 
 pub(crate) const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
-impl<'a> HunkHeader<'a> {
+impl HunkHeader {
     /// Parse a hunk header from a line of text.
     ///
     /// Returns `None` if the line is not a valid hunk header.
-    pub fn parse(line: &'a str) -> Option<Self> {
+    pub fn parse(line: &str) -> Option<Self> {
         let mut parts = line.splitn(5, ' ');
 
         if parts.next()? != "@@" {
@@ -40,7 +40,7 @@ impl<'a> HunkHeader<'a> {
         let _at_at_part = parts.next()?;
 
         // Example: "Initial commit"
-        let title = parts.next();
+        let title = parts.next().map(str::to_string);
 
         // Parse the old line count
         let old_line_numbers = old_line_counts_part
@@ -81,18 +81,19 @@ impl<'a> HunkHeader<'a> {
         })
     }
 
-    /// Render into an ANSI highlighted string
+    /// Render into an ANSI highlighted string, not ending in a newline.
     pub fn render(&self) -> String {
         let numbers = format!(
             "-{},{} +{},{}",
             self.old_start, self.old_linecount, self.new_start, self.new_linecount
         );
 
-        if let Some(title) = self.title {
+        if self.title.is_some() {
             // Highlight the title if we have one
             return format!(
                 "{HUNK_HEADER}{FAINT}@@ {} @@ {BOLD}{}{NORMAL}",
-                numbers, title
+                numbers,
+                self.title.as_ref().unwrap(),
             );
         }
 
@@ -132,7 +133,7 @@ mod tests {
                 old_linecount: 2,
                 new_start: 1,
                 new_linecount: 2,
-                title: Some("Hello there"),
+                title: Some("Hello there".to_string()),
             }),
             HunkHeader::parse("@@ -1,2 +1,2 @@ Hello there")
         );
@@ -146,7 +147,7 @@ mod tests {
                 old_linecount: 2,
                 new_start: 1,
                 new_linecount: 2,
-                title: Some("Hello  there"),
+                title: Some("Hello  there".to_string()),
             }),
             HunkHeader::parse("@@ -1,2 +1,2 @@ Hello  there")
         );

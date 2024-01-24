@@ -34,3 +34,4 @@ index 0cec7f2..7091f6a 100644
 +   reader := NewReaderFromStream(filename, stream)
     return reader, nil
  }
+

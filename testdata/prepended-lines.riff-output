@@ -11,3 +11,5 @@
 [32m+    buildenv["RUSTFLAGS"] = "-Awarnings"[0m
 [32m+[7m    [27msubprocess.run(["cargo", "build", "--release"], check=True[7m, env=buildenv[27m)[0m
      shutil.copy("target/release/riff", os.path.join(BINDIR, "riff-current"))
+
+

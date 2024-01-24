@@ -16,12 +16,19 @@ Date:   Tue Nov 17 08:44:29 2020 +0100
 [2m[32m+[0m  `git diff` [7m[32m[| `riff`](https://github.com/walles/riff) [0mfor example)
  * Supports UTF-8 input and output
  * The position in the file is always shown
-
+ 
 [31m-For compatibility reasons, `moar`[7m [27muses the formats declared in these[0m
 [31m-environment variables when viewing man pages:[0m
 [32m+[7m[[27mFor compatibility reasons[7m](https://github.com/walles/moar/issues/14)[27m, `moar`[0m
 [32m+uses the formats declared in these[7m [27menvironment variables when viewing man pages:[0m
-
+ 
  * `LESS_TERMCAP_md`: Bold
  * `LESS_TERMCAP_us`: Underline
-
+ 
+[31m-[7mSee[27m [[7mhere[27m](https://github.com/walles[7m/moar/issues/14) for usage examples[27m.[0m
+[32m+Moar is used as the default pager by:[0m
+[32m+[7m*[27m [[7m`px` / `ptop`[27m](https://github.com/walles/[7mpx)[0m
+[32m+* [`riff`](https://github.com/walles/riff)[0m
+ 
+ Installing
+ ----------
