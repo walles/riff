@@ -129,6 +129,46 @@ impl LinesHighlighter for ConflictsHighlighter {
 
 impl ConflictsHighlighter {
     fn render(&self, thread_pool: &ThreadPool) -> StringFuture {
-        todo!()
+        if self.base.is_some() {
+            return self.render_diff3(thread_pool);
+        }
+
+        // FIXME: Highlight self.c1 and self.c2 before rendering
+
+        let mut rendered = String::new();
+        rendered.push_str(&self.c1_header);
+        rendered.push('\n');
+        rendered.push_str(&self.c1);
+
+        rendered.push_str(&self.c2_header);
+        rendered.push('\n');
+        rendered.push_str(&self.c2);
+
+        rendered.push_str(&self.footer);
+        rendered.push('\n');
+
+        return StringFuture::from_string(rendered);
+    }
+
+    fn render_diff3(&self, _thread_pool: &ThreadPool) -> StringFuture {
+        // FIXME: Highlight self.c1, self.base and self.c2 before rendering
+
+        let mut rendered = String::new();
+        rendered.push_str(&self.c1_header);
+        rendered.push('\n');
+        rendered.push_str(&self.c1);
+
+        rendered.push_str(&self.base_header);
+        rendered.push('\n');
+        rendered.push_str(self.base.as_ref().unwrap());
+
+        rendered.push_str(&self.c2_header);
+        rendered.push('\n');
+        rendered.push_str(&self.c2);
+
+        rendered.push_str(&self.footer);
+        rendered.push('\n');
+
+        return StringFuture::from_string(rendered);
     }
 }
