@@ -4,6 +4,10 @@ Riff is a wrapper around `diff` that highlights which parts of lines have change
 
 ![Screenshot of riff in action](screenshot.png 'git show')
 
+Riff can also highlight merge conflicts marked by `git`:
+
+![Screenshot of riff highlighting conflict markers](screenshot-diff2-conflict.png 'riff < file-with-conflict-markers.txt')
+
 Much like `git`, Riff sends its output to a pager, trying these in order:
 
 1. Whatever is specified in the `$PAGER` environment variable
