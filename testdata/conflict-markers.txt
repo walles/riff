@@ -1,7 +1,0 @@
-This is an example of git conflict markers.
-
-<<<<<<< HEAD
-This line is changed on the main branch.
-=======
-This line is from the branch named "branch".
->>>>>>> branch

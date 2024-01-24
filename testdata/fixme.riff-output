@@ -1,5 +1,0 @@
-We should test for conflict marked regions with no-newline-at-end-of-file
-markers. Whatever those look like in this case.
-
-Figure out what they look like (if they are even there) and make sure we handle
-them.
