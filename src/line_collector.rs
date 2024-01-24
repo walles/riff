@@ -1,5 +1,6 @@
 use crate::ansi::remove_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
+use crate::conflicts_highlighter::ConflictsHighlighter;
 use crate::hunk_highlighter::HunkLinesHighlighter;
 use crate::io::ErrorKind;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter};
@@ -73,8 +74,8 @@ The not-diff-lines blocks will be enqueued for printing by the printing thread.
 The diff lines blocks will also be enqueued for printing, but the actual diffing
 will happen in background threads.
 */
-pub struct LineCollector<'a> {
-    lines_highlighter: Option<Box<dyn LinesHighlighter<'a>>>,
+pub struct LineCollector {
+    lines_highlighter: Option<Box<dyn LinesHighlighter>>,
 
     /// Headers and stuff that we just want printed, not part of a diff
     plain_text: String,
@@ -93,7 +94,7 @@ pub struct LineCollector<'a> {
     print_queue_putter: SyncSender<StringFuture>,
 }
 
-impl<'a> Drop for LineCollector<'a> {
+impl Drop for LineCollector {
     fn drop(&mut self) {
         // Flush outstanding lines
         self.drain_plain();
@@ -127,8 +128,8 @@ impl<'a> Drop for LineCollector<'a> {
     }
 }
 
-impl<'a> LineCollector<'a> {
-    pub fn new<W: io::Write + Send + 'static>(output: W) -> LineCollector<'a> {
+impl LineCollector {
+    pub fn new<W: io::Write + Send + 'static>(output: W) -> LineCollector {
         // This is how many entries we can look ahead. An "entry" in this case
         // being either a plain text section or an oldnew section.
         //
@@ -254,6 +255,18 @@ impl<'a> LineCollector<'a> {
             return Ok(());
         }
 
+        if let Some(plusminus_header_highlighter) = PlusMinusHeaderHighlighter::from_line(&line) {
+            self.drain_plain();
+            self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
+            return Ok(());
+        }
+
+        if let Some(conflicts_highlighter) = ConflictsHighlighter::from_line(&line) {
+            self.drain_plain();
+            self.lines_highlighter = Some(Box::new(conflicts_highlighter));
+            return Ok(());
+        }
+
         if line.starts_with("diff") {
             self.diff_seen = true;
         }
@@ -267,12 +280,6 @@ impl<'a> LineCollector<'a> {
 
         if line.starts_with("commit") {
             self.consume_plain_line(&format_commit_line(&line, self.diff_seen));
-            return Ok(());
-        }
-
-        if let Some(plusminus_header_highlighter) = PlusMinusHeaderHighlighter::from_line(&line) {
-            self.drain_plain();
-            self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
             return Ok(());
         }
 

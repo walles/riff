@@ -15,7 +15,7 @@ pub(crate) struct PlusMinusHeaderHighlighter {
     new_name: String,
 }
 
-impl LinesHighlighter<'_> for PlusMinusHeaderHighlighter {
+impl LinesHighlighter for PlusMinusHeaderHighlighter {
     fn from_line(line: &str) -> Option<Self>
     where
         Self: Sized,

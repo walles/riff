@@ -23,7 +23,7 @@ pub(crate) struct Response {
 }
 
 /// Consume some lines, return some highlighted text
-pub(crate) trait LinesHighlighter<'a> {
+pub(crate) trait LinesHighlighter {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.

@@ -22,7 +22,7 @@ pub(crate) struct HunkLinesHighlighter {
     new_text: String,
 }
 
-impl<'a> LinesHighlighter<'a> for HunkLinesHighlighter {
+impl LinesHighlighter for HunkLinesHighlighter {
     fn from_line(line: &str) -> Option<Self>
     where
         Self: Sized,
