@@ -1,0 +1,33 @@
+commit 7417813d28a5ec845ad040ab85c9e08754d84335 (HEAD -> main)
+Merge: 234d1fe fb7d21c
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Thu Jan 25 08:57:37 2024 +0100
+
+    Merge branch 'branch'
+    
+    Conflicts handled.
+
+diff --cc file.txt
+index 9b01805,3e9dad5..fa68b7b
+--- file.txt
++++ file.txt
+@@@ -1,10 -1,8 +1,9 @@@
+  This is the first line.
+ -This line will be edited in the main branch.
+ +This line was edited in the main branch.
+  This is placeholder line one.
+- This line will be removed in the branch.
+  This is placeholder line two.
+  After this line, a new line will be added in the main branch.
+ +Hello.
+  This is placeholder line three.
+  This line will be edited in both branches, so that both of these names are Johan: Johan, Johan
+  This is placeholder line four.
+@@@ -12,5 -10,5 +11,5 @@@ After this line, a new line will be add
+  Hello.
+  This is placeholder line five.
+  This is placeholder line six.
+- -> A prefix will be added to this line on main, a suffix on branch and the middle will be changed during conflict resolution.
+ -A prefix will be added to this line on main, a suffix on branch and the middle will be changed during conflict resolution. <-
+++-> A prefix will be added to this line on main, a suffix on branch and the middle was changed during conflict resolution. <-
+  This is placeholder line seven.
