@@ -19,7 +19,7 @@ Date:   Thu Jan 25 08:57:37 2024 +0100
 [31m- This line will be removed in the branch.[0m
   This is placeholder line two.
   After this line, a new line will be added in the main branch.
-[31m +Hello.[0m
+[32m +Hello.[0m
   This is placeholder line three.
   This line will be edited in both branches, so that both of these names are Johan: Johan, Johan
   This is placeholder line four.
