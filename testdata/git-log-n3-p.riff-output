@@ -8,7 +8,7 @@ Date:   Mon Oct 24 00:32:27 2022 +0200
 [2mindex 860dfcd..ac98582 100644[0m
 [1m--- Cargo.lock[0m
 [1m+++ Cargo.lock[0m
-[36m[2m@@ -357,7 +357,7 @@ [1mdependencies = [[0m
+[36m@@ -357,7 +357,7 @@ [1mdependencies = [[0m
  
  [[package]]
  name = "riffdiff"
@@ -53,7 +53,7 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
 [2mindex 034b97e..7bcbf6b 100644[0m
 [1m--- src/commit_line.rs[0m
 [1m+++ src/commit_line.rs[0m
-[36m[2m@@ -26,13 +26,14 @@ [1mpub fn format_commit_line(line: &str) -> String {[0m
+[36m@@ -26,13 +26,14 @@ [1mpub fn format_commit_line(line: &str) -> String {[0m
  
      let comma = format!("{}, {}", YELLOW, NORMAL);
      return format!(

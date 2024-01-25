@@ -2,7 +2,7 @@
 [2mindex a191ee0..d99c8a8 100755[0m
 [1m--- benchmark.py[0m
 [1m+++ benchmark.py[0m
-[36m[2m@@ -76,7 +76,9 @@ [1mdef gather_binaries():[0m
+[36m@@ -76,7 +76,9 @@ [1mdef gather_binaries():[0m
      # Build the current version
      print()
      print("Building current sources...")

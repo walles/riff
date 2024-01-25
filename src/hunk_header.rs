@@ -88,16 +88,12 @@ impl HunkHeader {
             self.old_start, self.old_linecount, self.new_start, self.new_linecount
         );
 
-        if self.title.is_some() {
+        if let Some(title) = &self.title {
             // Highlight the title if we have one
-            return format!(
-                "{HUNK_HEADER}{FAINT}@@ {} @@ {BOLD}{}{NORMAL}",
-                numbers,
-                self.title.as_ref().unwrap(),
-            );
+            return format!("{HUNK_HEADER}@@ {numbers} @@ {BOLD}{title}{NORMAL}");
         }
 
-        return format!("{HUNK_HEADER}@@ {} @@{NORMAL}", numbers);
+        return format!("{HUNK_HEADER}@@ {numbers} @@{NORMAL}");
     }
 }
 
