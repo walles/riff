@@ -72,7 +72,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
         let spaces_only = iter::repeat(' ')
             .take(self.expected_line_counts.len())
             .collect::<String>();
-        if line.starts_with(&spaces_only) || line.is_empty() {
+        if line.is_empty() || line.starts_with(&spaces_only) {
             return_me.append(&mut self.drain(thread_pool));
 
             self.expected_line_counts
@@ -97,6 +97,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
             });
         }
 
+        assert!(!line.is_empty()); // Handled as a plain line above
         return self.consume_plusminus_line(line, thread_pool, return_me);
     }
 
@@ -113,15 +114,32 @@ impl LinesHighlighter for HunkLinesHighlighter {
 }
 
 impl HunkLinesHighlighter {
+    /// Expects a non-empty line as input
     fn consume_plusminus_line(
         &mut self,
         line: &str,
         thread_pool: &ThreadPool,
         mut return_me: Vec<StringFuture>,
     ) -> Result<Response, String> {
+        assert!(!line.is_empty());
+
+        if line.len() < self.expected_line_counts.len() {
+            // Not enough columns
+            return Err(format!(
+                "Line too short, expected 0 or at least {} characters",
+                self.expected_line_counts.len(),
+            ));
+        }
+        let (prefix, line) = line.split_at(self.expected_line_counts.len());
+
+        if prefix.chars().any(|c| ![' ', '-', '+'].contains(&c)) {
+            return Err(format!(
+                "Unexpected prefix character, only +, - and space allowed"
+            ));
+        }
+
         // Keep track of which prefix we're currently on or start a new one if
         // needed
-        let (prefix, line) = self.to_prefix_and_line(line);
         if prefix.is_empty() {
             return Err("Hunk line must start with '-' or '+'".to_string());
         }
@@ -132,7 +150,7 @@ impl HunkLinesHighlighter {
                 self.drain(thread_pool);
             }
 
-            self.prefixes.push(prefix);
+            self.prefixes.push(prefix.to_string());
             self.prefix_texts.push(String::new());
 
             assert_eq!(prefix, self.current_prefix());
