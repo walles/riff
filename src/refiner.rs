@@ -88,15 +88,59 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
         return format_simple(prefixes, prefix_texts);
     }
 
-    let (old_tokens, new_tokens, old_highlights, new_unhighlighted) =
-        to_highlighted_tokens(old_text, new_text);
+    // This is what all old texts will be compared against
+    let new_text = prefix_texts.last().unwrap();
+    let new_text_prefix = prefixes.last().unwrap();
+
+    // These are all except for the last element
+    let old_prefixes = &prefixes[0..prefixes.len() - 1];
+    let old_prefix_texts = &prefix_texts[0..prefix_texts.len() - 1];
+
+    let old_tokens = vec![];
+    let new_tokens = None;
+    let old_highlights = false;
+    let new_unhighlighted = false;
+    for (old_text, old_text_prefix) in old_prefix_texts.iter().zip(old_prefixes.iter()) {
+        let (
+            old_tokens_internal,
+            new_tokens_internal,
+            old_highlights_internal,
+            new_unhighlighted_internal,
+        ) = to_highlighted_tokens(old_text, new_text);
+
+        old_tokens.push(old_tokens_internal);
+        old_highlights |= old_highlights_internal;
+        new_unhighlighted |= new_unhighlighted_internal;
+
+        if new_tokens.is_none() {
+            // First iteration, just remember the new tokens
+            new_tokens = Some(&mut new_tokens_internal);
+            continue;
+        }
+
+        // Subsequent iterations, merge the new token styles
+        for (new_token, new_token_internal) in
+            new_tokens.unwrap().iter_mut().zip(new_tokens_internal)
+        {
+            if new_token_internal.style as u8 > new_token.style as u8 {
+                new_token.style = new_token_internal.style;
+            }
+        }
+    }
+
+    // We should now have one token vector per old text
+    assert_eq!(old_tokens.len(), prefix_texts.len() - 1);
+
+    FIXME: Now turn all our token vectors (all vectors in old_tokens plus new_tokens) into lines of highlighted text
 
     let highlighted_old_text;
     let highlighted_new_text;
     if old_highlights || new_unhighlighted || count_lines(&old_tokens) != count_lines(&new_tokens) {
+        // Classical highlighting
         highlighted_old_text = render(&LINE_STYLE_OLD, old_tokens);
         highlighted_new_text = render(&LINE_STYLE_NEW, new_tokens);
     } else {
+        // Special adds-only highlighting
         highlighted_old_text = render(&LINE_STYLE_OLD_FAINT, old_tokens);
         highlighted_new_text = render(&LINE_STYLE_ADDS_ONLY, new_tokens);
     }
