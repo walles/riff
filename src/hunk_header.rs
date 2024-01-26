@@ -8,11 +8,18 @@ use crate::constants::*;
 /// making the line counts 2 for both.
 #[derive(Debug, PartialEq)]
 pub(crate) struct HunkHeader {
-    pub old_start: usize,
-    pub old_linecount: usize,
+    /// "@@" with the right number of @ chars, usually two.
+    ats: String,
 
-    pub new_start: usize,
-    pub new_linecount: usize,
+    /// One-based start lines of one or more old sections + one new section.
+    /// This vector will always have at least two entries, and mostly it will be
+    /// exactly two.
+    starts: Vec<usize>,
+
+    /// Number of lines in one or more old sections + one new section. This
+    /// vector will always have at least two entries, and mostly it will be
+    /// exactly two.
+    pub(crate) linecounts: Vec<usize>,
 
     pub title: Option<String>,
 }
@@ -24,76 +31,120 @@ impl HunkHeader {
     ///
     /// Returns `None` if the line is not a valid hunk header.
     pub fn parse(line: &str) -> Option<Self> {
-        let mut parts = line.splitn(5, ' ');
+        // Count the number of @ chars at the start of the line, followed by a space
+        let mut initial_at_count = 0;
+        for c in line.chars() {
+            if c == '@' {
+                initial_at_count += 1;
+                continue;
+            }
 
-        if parts.next()? != "@@" {
+            if c == ' ' {
+                // We found the end of the @ chars
+                break;
+            }
+
+            // Expected only @ chars followed by a space, this is not it
             return None;
         }
 
-        // Example: "-1,2", or just "-55"
-        let old_line_counts_part = parts.next()?;
+        if initial_at_count < 2 {
+            // Expected at least two @ chars, this is not it
+            return None;
+        }
 
-        // Example: "+1,2", or just "+55"
-        let new_line_counts_part = parts.next()?;
+        let mut parts = line.splitn(3 + initial_at_count, ' ');
+        let initial_ats = parts.next().unwrap();
 
-        // Skip the "@@" part
-        let _at_at_part = parts.next()?;
+        let expected_count_parts = initial_at_count;
+        let mut expected_start_char = '-';
+        let mut starts = Vec::new();
+        let mut linecounts = Vec::new();
+        loop {
+            let part = parts.next();
+            if part.is_none() {
+                // Not a hunk header
+                return None;
+            }
+
+            // Example: "-1,2", or just "-55"
+            let counts_part = part.unwrap();
+
+            // Parse the old line count
+            let numbers = counts_part
+                .trim_start_matches(expected_start_char)
+                .split(',')
+                .collect::<Vec<_>>();
+            if numbers.is_empty() || numbers.len() > 2 {
+                return None;
+            }
+
+            let start = numbers[0].parse::<usize>().ok()?;
+            let linecount = if numbers.len() == 2 {
+                numbers[1].parse::<usize>().ok()?
+            } else {
+                1
+            };
+
+            starts.push(start);
+            linecounts.push(linecount);
+            if starts.len() == expected_count_parts - 1 {
+                // We are done with all the `-` parts, let's go for the final `+` part
+                expected_start_char = '+';
+            }
+
+            if starts.len() == expected_count_parts {
+                // We are done with all the parts
+                break;
+            }
+        }
+
+        if parts.next()? != initial_ats {
+            // Not a hunk header, it wasn't finalized by @@ at the end
+            return None;
+        }
 
         // Example: "Initial commit"
         let title = parts.next().map(str::to_string);
 
-        // Parse the old line count
-        let old_line_numbers = old_line_counts_part
-            .trim_start_matches('-')
-            .split(',')
-            .collect::<Vec<_>>();
-        if old_line_numbers.is_empty() || old_line_numbers.len() > 2 {
-            return None;
-        }
-        let old_start = old_line_numbers[0].parse::<usize>().ok()?;
-        let old_linecount = if old_line_numbers.len() == 2 {
-            old_line_numbers[1].parse::<usize>().ok()?
-        } else {
-            1
-        };
-
-        // Parse the new line count
-        let new_line_numbers = new_line_counts_part
-            .trim_start_matches('+')
-            .split(',')
-            .collect::<Vec<_>>();
-        if new_line_numbers.is_empty() || new_line_numbers.len() > 2 {
-            return None;
-        }
-        let new_start = new_line_numbers[0].parse::<usize>().ok()?;
-        let new_linecount = if new_line_numbers.len() == 2 {
-            new_line_numbers[1].parse::<usize>().ok()?
-        } else {
-            1
-        };
-
         Some(HunkHeader {
-            old_start,
-            old_linecount,
-            new_start,
-            new_linecount,
+            ats: initial_ats.to_string(),
+            starts,
+            linecounts,
             title,
         })
     }
 
     /// Render into an ANSI highlighted string, not ending in a newline.
     pub fn render(&self) -> String {
-        let numbers = format!(
-            "-{},{} +{},{}",
-            self.old_start, self.old_linecount, self.new_start, self.new_linecount
-        );
+        let mut rendered = String::new();
+        rendered.push_str(HUNK_HEADER);
+        rendered.push_str(&self.ats);
+        rendered.push(' ');
 
-        if let Some(title) = &self.title {
-            // Highlight the title if we have one
-            return format!("{HUNK_HEADER}@@ {numbers} @@ {BOLD}{title}{NORMAL}");
+        for i in 0..self.starts.len() {
+            if i == self.starts.len() - 1 {
+                rendered.push('+');
+            } else {
+                rendered.push('-');
+            }
+
+            rendered.push_str(&self.starts[i].to_string());
+            rendered.push(',');
+            rendered.push_str(&self.linecounts[i].to_string());
+            rendered.push(' ');
         }
 
-        return format!("{HUNK_HEADER}@@ {numbers} @@{NORMAL}");
+        rendered.push_str(HUNK_HEADER);
+        if let Some(title) = &self.title {
+            rendered.push(' ');
+            rendered.push_str(BOLD);
+            rendered.push_str(title);
+        }
+
+        rendered.push_str(NORMAL);
+
+        return rendered;
     }
 }
 
@@ -111,10 +162,9 @@ mod tests {
     fn test_simple_hunk_header() {
         assert_eq!(
             Some(HunkHeader {
-                old_start: 1,
-                old_linecount: 2,
-                new_start: 1,
-                new_linecount: 2,
+                ats: "@@".to_string(),
+                starts: vec![1, 1],
+                linecounts: vec![2, 2],
                 title: None,
             }),
             HunkHeader::parse("@@ -1,2 +1,2 @@")
@@ -125,10 +175,9 @@ mod tests {
     fn test_hunk_header_with_title() {
         assert_eq!(
             Some(HunkHeader {
-                old_start: 1,
-                old_linecount: 2,
-                new_start: 1,
-                new_linecount: 2,
+                ats: "@@".to_string(),
+                starts: vec![1, 1],
+                linecounts: vec![2, 2],
                 title: Some("Hello there".to_string()),
             }),
             HunkHeader::parse("@@ -1,2 +1,2 @@ Hello there")
@@ -139,10 +188,9 @@ mod tests {
     fn test_hunk_header_with_spaced_title() {
         assert_eq!(
             Some(HunkHeader {
-                old_start: 1,
-                old_linecount: 2,
-                new_start: 1,
-                new_linecount: 2,
+                ats: "@@".to_string(),
+                starts: vec![1, 1],
+                linecounts: vec![2, 2],
                 title: Some("Hello  there".to_string()),
             }),
             HunkHeader::parse("@@ -1,2 +1,2 @@ Hello  there")
@@ -153,13 +201,25 @@ mod tests {
     fn test_hunk_header_with_default_linecounts() {
         assert_eq!(
             Some(HunkHeader {
-                old_start: 5,
-                old_linecount: 1,
-                new_start: 6,
-                new_linecount: 1,
+                ats: "@@".to_string(),
+                starts: vec![5, 6],
+                linecounts: vec![1, 1],
                 title: None,
             }),
             HunkHeader::parse("@@ -5 +6 @@")
+        );
+    }
+
+    #[test]
+    fn test_hunk_header_with_multiple_olds() {
+        assert_eq!(
+            Some(HunkHeader {
+                ats: "@@@".to_string(),
+                starts: vec![1, 3, 5],
+                linecounts: vec![2, 4, 6],
+                title: None,
+            }),
+            HunkHeader::parse("@@@ -1,2 -3,4 +5,6 @@@")
         );
     }
 }
