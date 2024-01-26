@@ -1,3 +1,5 @@
+use std::iter;
+
 use threadpool::ThreadPool;
 
 use crate::hunk_header::HunkHeader;
@@ -10,16 +12,15 @@ pub(crate) struct HunkLinesHighlighter {
     hunk_header: Option<String>,
 
     /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
-    expected_old_lines: usize,
+    expected_line_counts: Vec<usize>,
 
-    /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
-    expected_new_lines: usize,
+    /// The different flavors of some text. All but the last are `-` sections,
+    /// and the last one is a `+` section.
+    flavors: Vec<String>,
 
-    /// The old text of a diff, if any. Includes `-` lines only.
-    old_text: String,
-
-    /// The new text of a diff, if any. Includes `+` lines only.
-    new_text: String,
+    /// Line prefixes for each flavor. Usually `-` or `+`, but could be things
+    /// line ` -` or `+++` if this is a merge diff.
+    prefixes: Vec<String>,
 }
 
 impl LinesHighlighter for HunkLinesHighlighter {
@@ -28,17 +29,17 @@ impl LinesHighlighter for HunkLinesHighlighter {
         Self: Sized,
     {
         if let Some(hunk_header) = HunkHeader::parse(line) {
-            let expected_old_lines = hunk_header.old_linecount;
-            let expected_new_lines = hunk_header.new_linecount;
-            let old_text = String::new();
-            let new_text = String::new();
+            let expected_line_counts = hunk_header.linecounts;
+            let mut flavors = Vec::new();
+            flavors.resize(expected_line_counts.len(), String::new());
+            let mut prefixes = Vec::new();
+            prefixes.resize(expected_line_counts.len(), String::new());
 
             return Some(HunkLinesHighlighter {
                 hunk_header: Some(hunk_header.render()),
-                expected_old_lines,
-                expected_new_lines,
-                old_text,
-                new_text,
+                expected_line_counts,
+                flavors,
+                prefixes,
             });
         }
 
@@ -48,7 +49,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
     fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String> {
         let mut return_me = vec![];
 
-        // Always start by returning the hunk header
+        // Always start by rendering the hunk header
         if let Some(hunk_header) = &self.hunk_header {
             return_me.push(StringFuture::from_string(hunk_header.to_string() + "\n"));
             self.hunk_header = None;
@@ -56,38 +57,42 @@ impl LinesHighlighter for HunkLinesHighlighter {
 
         // "\ No newline at end of file"
         if line.starts_with('\\') {
-            if !self.new_text.is_empty() {
-                // New section comes after old, so if we get in here it's a new
-                // section that doesn't end in a newline. Remove its trailing
-                // newline.
-                assert!(self.new_text.pop().unwrap() == '\n');
-
-                // If we got here we're definitely done
-                return_me.append(&mut self.drain_old_new(thread_pool));
-
-                return Ok(Response {
-                    line_accepted: LineAcceptance::AcceptedDone,
-                    highlighted: return_me,
-                });
-            }
-
-            if !self.old_text.is_empty() {
-                // Old text doesn't end in a newline, remove its trailing newline
-                assert!(self.old_text.pop().unwrap() == '\n');
-                return Ok(Response {
-                    line_accepted: LineAcceptance::AcceptedWantMore,
-                    highlighted: return_me,
-                });
-            }
-
-            return Err(
-                "Got '\\ No newline at end of file' without any preceding text".to_string(),
-            );
+            // "\ No newline at end of file"
+            todo!("Remove trailing newlines from whatever section(s) we are in");
         }
 
-        if self.expected_new_lines + self.expected_old_lines == 0 {
+        if !self.more_lines_expected() {
             return Ok(Response {
                 line_accepted: LineAcceptance::RejectedDone,
+                highlighted: return_me,
+            });
+        }
+
+        // Context lines
+        let spaces_only = iter::repeat(' ')
+            .take(self.expected_line_counts.len())
+            .collect::<String>();
+        if line.starts_with(&spaces_only) || line.is_empty() {
+            return_me.append(&mut self.drain(thread_pool));
+
+            self.expected_line_counts
+                .iter_mut()
+                .for_each(|expected_line_count| {
+                    *expected_line_count -= 1;
+                });
+
+            // FIXME: Consider whether we should be coalescing the plain lines?
+            // Maybe that would improve performance? Measure and find out!
+            return_me.push(StringFuture::from_string(line.to_string() + "\n"));
+
+            let acceptance = if !self.more_lines_expected() {
+                LineAcceptance::AcceptedDone
+            } else {
+                LineAcceptance::AcceptedWantMore
+            };
+
+            return Ok(Response {
+                line_accepted: acceptance,
                 highlighted: return_me,
             });
         }
@@ -120,58 +125,38 @@ impl LinesHighlighter for HunkLinesHighlighter {
             });
         }
 
-        // Context lines
-        if line.starts_with(' ') || line.is_empty() {
-            // FIXME: Consider whether we should be coalescing the plain lines?
-            // Maybe that would improve performance? Measure and find out!
-            return_me.append(&mut self.drain_old_new(thread_pool));
-
-            self.expected_old_lines -= 1;
-            self.expected_new_lines -= 1;
-
-            return_me.push(StringFuture::from_string(line.to_string() + "\n"));
-
-            let acceptance = if self.expected_old_lines + self.expected_new_lines == 0 {
-                LineAcceptance::AcceptedDone
-            } else {
-                LineAcceptance::AcceptedWantMore
-            };
-
-            return Ok(Response {
-                line_accepted: acceptance,
-                highlighted: return_me,
-            });
-        }
-
         return Err("Hunk line must start with '-' or '+'".to_string());
     }
 
     fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
-        if self.expected_old_lines != 0 || self.expected_new_lines != 0 {
+        if self.more_lines_expected() {
             return Err(format!(
-                "Still expecting {} old lines and {} new lines, but got EOF",
-                self.expected_old_lines, self.expected_new_lines
+                "Still expecting more lines, but got EOF: {:?}",
+                self.expected_line_counts
             ));
         }
 
-        return Ok(self.drain_old_new(thread_pool));
+        return Ok(self.drain(thread_pool));
     }
 }
 
 impl HunkLinesHighlighter {
-    fn drain_old_new(&mut self, thread_pool: &ThreadPool) -> Vec<StringFuture> {
-        if self.old_text.is_empty() && self.new_text.is_empty() {
+    fn drain(&mut self, thread_pool: &ThreadPool) -> Vec<StringFuture> {
+        // Return nothing if all flavors are empty
+        if self.flavors.iter().all(|flavor| flavor.is_empty()) {
             return vec![];
         }
 
-        let old_text = self.old_text.clone();
-        let new_text = self.new_text.clone();
-        self.old_text.clear();
-        self.new_text.clear();
+        let flavors = self.flavors.clone();
+        let prefixes = self.prefixes.clone();
+
+        self.flavors.iter_mut().for_each(|flavor| flavor.clear());
+        self.prefixes.iter_mut().for_each(|prefix| prefix.clear());
+
         let return_me = StringFuture::from_function(
             move || {
                 let mut result = String::new();
-                for line in refiner::format(&old_text, &new_text) {
+                for line in refiner::format(&flavors, &prefixes) {
                     result.push_str(&line);
                     result.push('\n');
                 }
@@ -182,6 +167,15 @@ impl HunkLinesHighlighter {
         );
 
         return vec![return_me];
+    }
+
+    fn more_lines_expected(&self) -> bool {
+        for expected_line_count in &self.expected_line_counts {
+            if *expected_line_count != 0 {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
