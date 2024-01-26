@@ -8,10 +8,10 @@ use diffus::{
 };
 
 /// Like format!(), but faster for our special case
-fn format_simple_line(old_new: &str, plus_minus: char, contents: &str) -> String {
+fn format_simple_line(old_new: &str, plus_minus: &str, contents: &str) -> String {
     let mut line = String::with_capacity(old_new.len() + 1 + contents.len() + NORMAL.len());
     line.push_str(old_new);
-    line.push(plus_minus);
+    line.push_str(plus_minus);
     line.push_str(contents);
     line.push_str(NORMAL);
     return line;
@@ -21,39 +21,34 @@ fn format_simple_line(old_new: &str, plus_minus: char, contents: &str) -> String
 ///
 /// No intra-line refinement.
 #[must_use]
-fn format_simple(old_text: &str, new_text: &str) -> Vec<String> {
+fn format_simple(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
-    for old_line in old_text.lines() {
-        // Use a specialized line formatter since this code is in a hot path
-        lines.push(format_simple_line(OLD, '-', old_line));
-    }
-    if (!old_text.is_empty()) && !old_text.ends_with('\n') {
-        let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
-        let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-        lines.push(format!(
-            "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
-        ));
-    }
+    for (prefix, prefix_text) in prefixes.iter().zip(prefix_texts.iter()) {
+        let old_new = if prefix.contains('+') { NEW } else { OLD };
 
-    let announce_lost_newline = !new_text.is_empty() && !new_text.ends_with('\n');
-    for (line_number, add_line) in new_text.lines().enumerate() {
-        let new_line: String =
-            if announce_lost_newline && line_number == new_text.lines().count() - 1 {
-                // Add a red highlighted newline symbol at the end
-                format!("{NEW}+{add_line}{OLD}{INVERSE_VIDEO}⏎{NORMAL}")
+        // If the user adds a section with a missing trailing newline, we want
+        // to draw a highlighted-in-red newline symbol at the end of the last
+        // line.
+        let draw_missing_trailing_newline = prefix.contains('+') && !prefix_text.ends_with('\n');
+
+        for (pos, line) in prefix_text.lines().enumerate() {
+            let last_line = pos == prefix_text.lines().count() - 1;
+
+            if last_line && draw_missing_trailing_newline {
+                lines.push(format!("{NEW}+{line}{OLD}{INVERSE_VIDEO}⏎{NORMAL}"));
             } else {
-                // Use a specialized line formatter since this code is in a hot path
-                format_simple_line(NEW, '+', add_line)
-            };
-        lines.push(new_line);
-    }
-    if (!new_text.is_empty()) && !new_text.ends_with('\n') {
-        let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
-        let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-        lines.push(format!(
-            "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
-        ));
+                lines.push(format_simple_line(old_new, prefix, line));
+            }
+        }
+
+        if !prefix_text.ends_with('\n') {
+            let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+            let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
+            lines.push(format!(
+                "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
+            ));
+        }
     }
 
     return lines;
@@ -63,27 +58,34 @@ fn format_simple(old_text: &str, new_text: &str) -> Vec<String> {
 /// much time and memory, so we shouldn't.
 ///
 /// Ref: https://github.com/walles/riff/issues/35
-fn too_large_to_refine(old_text: &str, new_text: &str) -> bool {
-    let complexity = (old_text.len() as u64) * (new_text.len() as u64);
+fn too_large_to_refine(texts: &Vec<String>) -> bool {
+    let size = texts.iter().map(|text| text.len()).sum::<usize>();
 
     // Around this point refining starts taking near one second on Johan's
     // laptop. Numbers have been invented through experimentation.
-    return complexity > 13_000u64 * 13_000u64;
+    return size > 13_000usize * 13_000usize;
 }
 
 /// Returns a vector of ANSI highlighted lines.
 ///
-/// `old_text` and `new_text` are multi lines strings. Having or not having
-/// trailing newlines will affect tokenization. The lines are not expected to
-/// have any prefixes like `+` or `-`.
+/// `prefix_texts` are multi line strings. Having or not having trailing
+/// newlines will affect tokenization. The lines are not expected to have any
+/// prefixes like `+` or `-`.
+///
+/// `prefixes` are the prefixes to use for each `prefix_texts` text.
 #[must_use]
-pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
-    if old_text.is_empty() || new_text.is_empty() {
-        return format_simple(old_text, new_text);
+pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String> {
+    if prefixes.len() < 2 {
+        // Nothing to compare, we can't highlight anything
+        return format_simple(prefixes, prefix_texts);
+    }
+    if !prefixes.iter().any(|prefix| prefix.contains('+')) {
+        // Nothing added, we can't highlight anything
+        return format_simple(prefixes, prefix_texts);
     }
 
-    if too_large_to_refine(old_text, new_text) {
-        return format_simple(old_text, new_text);
+    if too_large_to_refine(prefix_texts) {
+        return format_simple(prefixes, prefix_texts);
     }
 
     let (old_tokens, new_tokens, old_highlights, new_unhighlighted) =

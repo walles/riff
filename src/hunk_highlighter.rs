@@ -213,7 +213,7 @@ impl HunkLinesHighlighter {
         let return_me = StringFuture::from_function(
             move || {
                 let mut result = String::new();
-                for line in refiner::format(&prefix_texts, &prefixes) {
+                for line in refiner::format(&prefixes, &prefix_texts) {
                     result.push_str(&line);
                     result.push('\n');
                 }
