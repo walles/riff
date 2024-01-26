@@ -14,12 +14,14 @@ pub(crate) struct HunkLinesHighlighter {
     /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
     expected_line_counts: Vec<usize>,
 
-    /// The different flavors of some text. All but the last are `-` sections,
-    /// and the last one is a `+` section.
-    flavors: Vec<String>,
+    /// Different versions of the same text. The last version in this vector is
+    /// the end result. All versions before that are sources that this version
+    /// is based on.
+    prefix_texts: Vec<String>,
 
-    /// Line prefixes for each flavor. Usually `-` or `+`, but could be things
-    /// line ` -` or `+++` if this is a merge diff.
+    /// Line prefixes. Usually `-` or `+`, but could be things line ` -` or
+    /// `+++` if this is a merge diff. Each prefix corresponds to one prefix
+    /// text (stored in `prefix_texts`).
     prefixes: Vec<String>,
 }
 
@@ -30,15 +32,13 @@ impl LinesHighlighter for HunkLinesHighlighter {
     {
         if let Some(hunk_header) = HunkHeader::parse(line) {
             let expected_line_counts = hunk_header.linecounts;
-            let mut flavors = Vec::new();
-            flavors.resize(expected_line_counts.len(), String::new());
+            let mut prefix_texts = Vec::new();
             let mut prefixes = Vec::new();
-            prefixes.resize(expected_line_counts.len(), String::new());
 
             return Some(HunkLinesHighlighter {
                 hunk_header: Some(hunk_header.render()),
                 expected_line_counts,
-                flavors,
+                prefix_texts,
                 prefixes,
             });
         }
@@ -85,10 +85,10 @@ impl LinesHighlighter for HunkLinesHighlighter {
             // Maybe that would improve performance? Measure and find out!
             return_me.push(StringFuture::from_string(line.to_string() + "\n"));
 
-            let acceptance = if !self.more_lines_expected() {
-                LineAcceptance::AcceptedDone
-            } else {
+            let acceptance = if self.more_lines_expected() {
                 LineAcceptance::AcceptedWantMore
+            } else {
+                LineAcceptance::AcceptedDone
             };
 
             return Ok(Response {
@@ -97,35 +97,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
             });
         }
 
-        if let Some(minus_line) = line.strip_prefix('-') {
-            self.expected_old_lines -= 1;
-            self.old_text.push_str(minus_line);
-            self.old_text.push('\n');
-
-            return Ok(Response {
-                // Note that even if we don't "expect" any more lines, we could
-                // still get "\ No newline at end of file" lines, so we have to
-                // ask for more here, and we can't drain_old_new() just yet.
-                line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: return_me,
-            });
-        }
-
-        if let Some(plus_line) = line.strip_prefix('+') {
-            self.expected_new_lines -= 1;
-            self.new_text.push_str(plus_line);
-            self.new_text.push('\n');
-
-            return Ok(Response {
-                // Note that even if we don't "expect" any more lines, we could
-                // still get "\ No newline at end of file" lines, so we have to
-                // ask for more here, and we can't drain_old_new() just yet.
-                line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: return_me,
-            });
-        }
-
-        return Err("Hunk line must start with '-' or '+'".to_string());
+        return self.consume_plusminus_line(line, thread_pool, return_me);
     }
 
     fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
@@ -141,22 +113,89 @@ impl LinesHighlighter for HunkLinesHighlighter {
 }
 
 impl HunkLinesHighlighter {
+    fn consume_plusminus_line(
+        &mut self,
+        line: &str,
+        thread_pool: &ThreadPool,
+        mut return_me: Vec<StringFuture>,
+    ) -> Result<Response, String> {
+        // Keep track of which prefix we're currently on or start a new one if
+        // needed
+        let (prefix, line) = self.to_prefix_and_line(line);
+        if prefix.is_empty() {
+            return Err("Hunk line must start with '-' or '+'".to_string());
+        }
+        if prefix != self.current_prefix() {
+            if self.current_prefix().contains('+') {
+                // Always start anew after any `+` section, there are never more
+                // than one of those.
+                self.drain(thread_pool);
+            }
+
+            self.prefixes.push(prefix);
+            self.prefix_texts.push(String::new());
+
+            assert_eq!(prefix, self.current_prefix());
+        }
+
+        // Update the current prefix text with the new line
+        let mut current_prefix_text = self.prefix_texts.last_mut().unwrap();
+        current_prefix_text.push_str(&line.to_string());
+        current_prefix_text.push('\n');
+
+        // Decrease the expected line counts for all non-` ` prefix columns
+        for (pos, plus_minus_space) in prefix.chars().enumerate() {
+            if plus_minus_space == ' ' {
+                continue;
+            }
+
+            let expected_line_count = &mut self.expected_line_counts[pos];
+            if *expected_line_count == 0 {
+                return Err(format!(
+                    "Got more lines than expected for version (column) {:?}",
+                    pos + 1,
+                ));
+            }
+
+            *expected_line_count -= 1;
+        }
+
+        let acceptance = if self.more_lines_expected() {
+            LineAcceptance::AcceptedWantMore
+        } else {
+            LineAcceptance::AcceptedDone
+        };
+        return Ok(Response {
+            line_accepted: acceptance,
+            highlighted: return_me,
+        });
+    }
+
+    /// Returns `` (the empty string) on no-current-prefix
+    fn current_prefix(&self) -> &str {
+        if let Some(prefix) = self.prefixes.last() {
+            return prefix;
+        }
+        return "";
+    }
+
+    #[must_use]
     fn drain(&mut self, thread_pool: &ThreadPool) -> Vec<StringFuture> {
         // Return nothing if all flavors are empty
-        if self.flavors.iter().all(|flavor| flavor.is_empty()) {
+        if self.prefix_texts.iter().all(|flavor| flavor.is_empty()) {
             return vec![];
         }
 
-        let flavors = self.flavors.clone();
+        let prefix_texts = self.prefix_texts.clone();
         let prefixes = self.prefixes.clone();
 
-        self.flavors.iter_mut().for_each(|flavor| flavor.clear());
-        self.prefixes.iter_mut().for_each(|prefix| prefix.clear());
+        self.prefix_texts.clear();
+        self.prefixes.clear();
 
         let return_me = StringFuture::from_function(
             move || {
                 let mut result = String::new();
-                for line in refiner::format(&flavors, &prefixes) {
+                for line in refiner::format(&prefix_texts, &prefixes) {
                     result.push_str(&line);
                     result.push('\n');
                 }
