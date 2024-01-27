@@ -21,7 +21,7 @@ fn format_simple_line(old_new: &str, plus_minus: &str, contents: &str) -> String
 ///
 /// No intra-line refinement.
 #[must_use]
-fn format_simple(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String> {
+fn format_simple(prefixes: &[String], prefix_texts: &[String]) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
     for (prefix, prefix_text) in prefixes.iter().zip(prefix_texts.iter()) {
@@ -58,7 +58,7 @@ fn format_simple(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<Stri
 /// much time and memory, so we shouldn't.
 ///
 /// Ref: https://github.com/walles/riff/issues/35
-fn too_large_to_refine(texts: &Vec<String>) -> bool {
+fn too_large_to_refine(texts: &[String]) -> bool {
     let size = texts.iter().map(|text| text.len()).sum::<usize>();
 
     // Around this point refining starts taking near one second on Johan's

@@ -1,5 +1,3 @@
-use std::iter;
-
 use threadpool::ThreadPool;
 
 use crate::hunk_header::HunkHeader;
@@ -65,9 +63,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
         }
 
         // Context lines
-        let spaces_only = iter::repeat(' ')
-            .take(self.expected_line_counts.len())
-            .collect::<String>();
+        let spaces_only = " ".repeat(self.expected_line_counts.len());
         if line.is_empty() || line.starts_with(&spaces_only) {
             return_me.append(&mut self.drain(thread_pool));
 
@@ -129,9 +125,7 @@ impl HunkLinesHighlighter {
         let (prefix, line) = line.split_at(self.expected_line_counts.len());
 
         if prefix.chars().any(|c| ![' ', '-', '+'].contains(&c)) {
-            return Err(format!(
-                "Unexpected prefix character, only +, - and space allowed"
-            ));
+            return Err("Unexpected prefix character, only +, - and space allowed".to_string());
         }
 
         // Keep track of which prefix we're currently on or start a new one if
@@ -154,7 +148,7 @@ impl HunkLinesHighlighter {
 
         // Update the current prefix text with the new line
         let current_prefix_text = self.prefix_texts.last_mut().unwrap();
-        current_prefix_text.push_str(&line.to_string());
+        current_prefix_text.push_str(line);
         current_prefix_text.push('\n');
 
         // Decrease the expected line counts for all non-` ` prefix columns

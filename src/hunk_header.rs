@@ -61,14 +61,8 @@ impl HunkHeader {
         let mut starts = Vec::new();
         let mut linecounts = Vec::new();
         loop {
-            let part = parts.next();
-            if part.is_none() {
-                // Not a hunk header
-                return None;
-            }
-
             // Example: "-1,2", or just "-55"
-            let counts_part = part.unwrap();
+            let counts_part = parts.next()?;
 
             // Parse the old line count
             let numbers = counts_part
