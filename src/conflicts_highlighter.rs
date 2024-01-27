@@ -146,8 +146,10 @@ impl ConflictsHighlighter {
         return StringFuture::from_function(
             move || {
                 let (c1_tokens, c2_tokens, _, _) = refiner::to_highlighted_tokens(&c1, &c2);
-                let highlighted_c1 = token_collector::render(&LINE_STYLE_CONFLICT_C1, c1_tokens);
-                let highlighted_c2 = token_collector::render(&LINE_STYLE_CONFLICT_C2, c2_tokens);
+                let highlighted_c1 =
+                    token_collector::render(&LINE_STYLE_CONFLICT_C1, "", &c1_tokens);
+                let highlighted_c2 =
+                    token_collector::render(&LINE_STYLE_CONFLICT_C2, "", &c2_tokens);
 
                 let mut rendered = String::new();
                 rendered.push_str(&c1_header);
@@ -185,11 +187,13 @@ impl ConflictsHighlighter {
             move || {
                 let (base_vs_c1_tokens, c1_tokens, _, _) =
                     refiner::to_highlighted_tokens(&base, &c1);
-                let highlighted_c1 = token_collector::render(&LINE_STYLE_CONFLICT_C2, c1_tokens);
+                let highlighted_c1 =
+                    token_collector::render(&LINE_STYLE_CONFLICT_C2, "", &c1_tokens);
 
                 let (base_vs_c2_tokens, c2_tokens, _, _) =
                     refiner::to_highlighted_tokens(&base, &c2);
-                let highlighted_c2 = token_collector::render(&LINE_STYLE_CONFLICT_C2, c2_tokens);
+                let highlighted_c2 =
+                    token_collector::render(&LINE_STYLE_CONFLICT_C2, "", &c2_tokens);
 
                 assert_eq!(base_vs_c1_tokens.len(), base_vs_c2_tokens.len());
 
@@ -204,7 +208,7 @@ impl ConflictsHighlighter {
                 }
 
                 let highlighted_base =
-                    token_collector::render(&LINE_STYLE_CONFLICT_C1, base_tokens);
+                    token_collector::render(&LINE_STYLE_CONFLICT_C1, "", &base_tokens);
 
                 let mut rendered = String::new();
                 rendered.push_str(&c1_header);
