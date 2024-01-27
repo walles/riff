@@ -31,15 +31,11 @@ impl LinesHighlighter for HunkLinesHighlighter {
         Self: Sized,
     {
         if let Some(hunk_header) = HunkHeader::parse(line) {
-            let expected_line_counts = hunk_header.linecounts;
-            let mut prefix_texts = Vec::new();
-            let mut prefixes = Vec::new();
-
             return Some(HunkLinesHighlighter {
                 hunk_header: Some(hunk_header.render()),
-                expected_line_counts,
-                prefix_texts,
-                prefixes,
+                expected_line_counts: hunk_header.linecounts,
+                prefix_texts: Vec::new(),
+                prefixes: Vec::new(),
             });
         }
 
