@@ -262,15 +262,15 @@ mod tests {
     #[test]
     fn test_simple_format_adds_and_removes() {
         let empty: Vec<String> = Vec::new();
-        assert_eq!(format_simple(&["-", "+"], &["", ""]), empty);
+        assert_eq!(format_simple(&[], &[]), empty);
 
         // Test adds-only
         assert_eq!(
-            format_simple(&["-", "+"], &["", "a\n"]),
+            format_simple(&["+"], &["a\n"]),
             ["".to_string() + NEW + "+a" + NORMAL]
         );
         assert_eq!(
-            format_simple(&["-", "+"], &["", "a\nb\n"]),
+            format_simple(&["+"], &["a\nb\n"]),
             [
                 "".to_string() + NEW + "+a" + NORMAL,
                 "".to_string() + NEW + "+b" + NORMAL,
@@ -279,11 +279,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            format_simple(&["-", "+"], &["a\n", ""]),
+            format_simple(&["-"], &["a\n"]),
             ["".to_string() + OLD + "-a" + NORMAL]
         );
         assert_eq!(
-            format_simple(&["-", "+"], &["a\nb\n", ""]),
+            format_simple(&["-"], &["a\nb\n"]),
             [
                 "".to_string() + OLD + "-a" + NORMAL,
                 "".to_string() + OLD + "-b" + NORMAL,
