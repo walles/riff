@@ -216,7 +216,7 @@ impl StyledToken {
 }
 
 #[must_use]
-fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
+fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> String {
     let mut rendered = String::new();
 
     let mut current_style = ANSI_STYLE_NORMAL;
@@ -224,7 +224,7 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
     // Render prefix
     rendered.push_str(&line_style.prefix_style.from(&current_style));
     current_style = line_style.prefix_style;
-    rendered.push_str(line_style.prefix);
+    rendered.push_str(prefix);
 
     // Render tokens
     for token in row {
@@ -256,13 +256,13 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
 
 /// Render all the tokens into a (most of the time multiline) string
 #[must_use]
-pub fn render(line_style: &LineStyle, tokens: Vec<StyledToken>) -> String {
+pub fn render(line_style: &LineStyle, prefix: &str, tokens: &Vec<StyledToken>) -> String {
     let mut rendered = String::new();
 
     let mut current_row_start = 0;
     for (i, token) in tokens.iter().enumerate() {
         if token.token == "\n" {
-            let rendered_row = &render_row(line_style, &tokens[current_row_start..i]);
+            let rendered_row = &render_row(line_style, prefix, &tokens[current_row_start..i]);
             rendered.push_str(rendered_row);
             rendered.push('\n');
             current_row_start = i + 1;
@@ -271,7 +271,7 @@ pub fn render(line_style: &LineStyle, tokens: Vec<StyledToken>) -> String {
     }
 
     if current_row_start < tokens.len() {
-        let rendered_row = &render_row(line_style, &tokens[current_row_start..]);
+        let rendered_row = &render_row(line_style, prefix, &tokens[current_row_start..]);
         rendered.push_str(rendered_row);
     }
 
@@ -525,7 +525,8 @@ mod tests {
     fn test_basic() {
         let rendered = render(
             &LINE_STYLE_NEW,
-            vec![
+            "+",
+            &vec![
                 StyledToken {
                     token: "hej".to_string(),
                     style: Style::Plain,
@@ -580,7 +581,8 @@ mod tests {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
             &LINE_STYLE_OLD,
-            vec![StyledToken::new(" ".to_string(), Style::Plain)],
+            "-",
+            &vec![StyledToken::new(" ".to_string(), Style::Plain)],
         );
 
         assert_eq!(actual, format!("{OLD}- {NORMAL}"));
@@ -643,7 +645,8 @@ mod tests {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
             &LINE_STYLE_OLD,
-            vec![
+            "-",
+            &vec![
                 StyledToken::new("x".to_string(), Style::Plain),
                 StyledToken::new("\t".to_string(), Style::Plain),
             ],

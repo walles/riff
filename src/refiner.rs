@@ -96,14 +96,14 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
     let old_prefixes = &prefixes[0..prefixes.len() - 1];
     let old_prefix_texts = &prefix_texts[0..prefix_texts.len() - 1];
 
-    let old_tokens = vec![];
-    let new_tokens = None;
-    let old_highlights = false;
-    let new_unhighlighted = false;
+    let mut old_tokens = vec![];
+    let mut new_tokens = None;
+    let mut old_highlights = false;
+    let mut new_unhighlighted = false;
     for (old_text, old_text_prefix) in old_prefix_texts.iter().zip(old_prefixes.iter()) {
         let (
             old_tokens_internal,
-            new_tokens_internal,
+            mut new_tokens_internal,
             old_highlights_internal,
             new_unhighlighted_internal,
         ) = to_highlighted_tokens(old_text, new_text);
@@ -131,21 +131,31 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
     // We should now have one token vector per old text
     assert_eq!(old_tokens.len(), prefix_texts.len() - 1);
 
-    FIXME: Now turn all our token vectors (all vectors in old_tokens plus new_tokens) into lines of highlighted text
+    // Now turn all our token vectors (all vectors in old_tokens plus
+    // new_tokens) into lines of highlighted text
+    let new_line_count = count_lines(&new_tokens.unwrap());
+    let all_line_counts_match = old_tokens
+        .iter()
+        .all(|tokens| count_lines(tokens) == new_line_count);
 
-    let highlighted_old_text;
-    let highlighted_new_text;
-    if old_highlights || new_unhighlighted || count_lines(&old_tokens) != count_lines(&new_tokens) {
+    let (old_style, new_style) = if old_highlights || new_unhighlighted || !all_line_counts_match {
         // Classical highlighting
-        highlighted_old_text = render(&LINE_STYLE_OLD, old_tokens);
-        highlighted_new_text = render(&LINE_STYLE_NEW, new_tokens);
+        (LINE_STYLE_OLD, LINE_STYLE_NEW)
     } else {
         // Special adds-only highlighting
-        highlighted_old_text = render(&LINE_STYLE_OLD_FAINT, old_tokens);
-        highlighted_new_text = render(&LINE_STYLE_ADDS_ONLY, new_tokens);
-    }
+        (LINE_STYLE_OLD_FAINT, LINE_STYLE_ADDS_ONLY)
+    };
 
-    return to_lines(&highlighted_old_text, &highlighted_new_text);
+    // First render() into strings, then to_lines() into lines
+    let mut highlighted_lines = Vec::new();
+    for (prefix, tokens) in old_prefixes.iter().zip(old_tokens.iter()) {
+        let text = render(&old_style, prefix, tokens);
+        highlighted_lines.extend(to_lines(&text));
+    }
+    let new_text = render(&new_style, prefixes.last().unwrap(), new_tokens.unwrap());
+    highlighted_lines.extend(to_lines(&new_text));
+
+    return highlighted_lines;
 }
 
 /// Returns two vectors for old and new sections. The first bool is true if
@@ -224,25 +234,16 @@ pub fn to_highlighted_tokens(
     return (old_tokens, new_tokens, old_highlights, new_unhighlighted);
 }
 
+/// Splits text into lines. If the text doesn't end in a newline, a no-newline
+/// marker will be added at the end.
 #[must_use]
-fn to_lines(old: &str, new: &str) -> Vec<String> {
+fn to_lines(text: &str) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
-    for highlighted_old_line in old.lines() {
-        lines.push(highlighted_old_line.to_string());
+    for line in text.lines() {
+        lines.push(line.to_string());
     }
-    if (!old.is_empty()) && !old.ends_with('\n') {
-        let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
-        let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-        lines.push(format!(
-            "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
-        ));
-    }
-
-    for highlighted_new_line in new.lines() {
-        lines.push(highlighted_new_line.to_string());
-    }
-    if (!new.is_empty()) && !new.ends_with('\n') {
+    if (!text.is_empty()) && !text.ends_with('\n') {
         let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
         let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
         lines.push(format!(
