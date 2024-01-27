@@ -122,10 +122,13 @@ impl HunkLinesHighlighter {
                 self.expected_line_counts.len(),
             ));
         }
-        let (prefix, line) = line.split_at(self.expected_line_counts.len());
+        let (prefix, line) = line.split_at(self.expected_line_counts.len() - 1);
 
         if prefix.chars().any(|c| ![' ', '-', '+'].contains(&c)) {
-            return Err("Unexpected prefix character, only +, - and space allowed".to_string());
+            return Err(format!(
+                "Unexpected character in prefix <{}>, only +, - and space allowed",
+                prefix
+            ));
         }
 
         // Keep track of which prefix we're currently on or start a new one if
