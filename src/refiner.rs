@@ -152,7 +152,7 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
         let text = render(&old_style, prefix, tokens);
         highlighted_lines.extend(to_lines(&text));
     }
-    let new_text = render(&new_style, &new_prefix, new_tokens.unwrap());
+    let new_text = render(&new_style, &new_prefix, &new_tokens.unwrap());
     highlighted_lines.extend(to_lines(&new_text));
 
     return highlighted_lines;

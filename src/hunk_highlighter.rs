@@ -143,7 +143,7 @@ impl HunkLinesHighlighter {
             if self.current_prefix().contains('+') {
                 // Always start anew after any `+` section, there are never more
                 // than one of those.
-                self.drain(thread_pool);
+                return_me.extend(self.drain(thread_pool));
             }
 
             self.prefixes.push(prefix.to_string());
@@ -153,7 +153,7 @@ impl HunkLinesHighlighter {
         }
 
         // Update the current prefix text with the new line
-        let mut current_prefix_text = self.prefix_texts.last_mut().unwrap();
+        let current_prefix_text = self.prefix_texts.last_mut().unwrap();
         current_prefix_text.push_str(&line.to_string());
         current_prefix_text.push('\n');
 
