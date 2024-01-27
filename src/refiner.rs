@@ -90,7 +90,7 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
 
     // This is what all old texts will be compared against
     let new_text = prefix_texts.last().unwrap();
-    let new_text_prefix = prefixes.last().unwrap();
+    let new_prefix = prefixes.last().unwrap();
 
     // These are all except for the last element
     let old_prefixes = &prefixes[0..prefixes.len() - 1];
@@ -100,7 +100,7 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
     let mut new_tokens = None;
     let mut old_highlights = false;
     let mut new_unhighlighted = false;
-    for (old_text, old_text_prefix) in old_prefix_texts.iter().zip(old_prefixes.iter()) {
+    for old_text in old_prefix_texts.iter() {
         let (
             old_tokens_internal,
             mut new_tokens_internal,
@@ -152,7 +152,7 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
         let text = render(&old_style, prefix, tokens);
         highlighted_lines.extend(to_lines(&text));
     }
-    let new_text = render(&new_style, prefixes.last().unwrap(), new_tokens.unwrap());
+    let new_text = render(&new_style, &new_prefix, new_tokens.unwrap());
     highlighted_lines.extend(to_lines(&new_text));
 
     return highlighted_lines;
