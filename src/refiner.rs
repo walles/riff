@@ -318,10 +318,10 @@ mod tests {
 
     #[test]
     fn test_almost_empty_changes() {
-        let result = format(&vec!["-", "+"], &vec!["x\n", ""]);
+        let result = format(&vec!["-"], &vec!["x\n"]);
         assert_eq!(result, [format!("{OLD}-x{NORMAL}"),]);
 
-        let result = format(&vec!["-", "+"], &vec!["", "x\n"]);
+        let result = format(&vec!["+"], &vec!["x\n"]);
         assert_eq!(result, [format!("{NEW}+x{NORMAL}"),]);
     }
 }
