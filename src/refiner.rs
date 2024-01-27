@@ -21,7 +21,7 @@ fn format_simple_line(old_new: &str, plus_minus: &str, contents: &str) -> String
 ///
 /// No intra-line refinement.
 #[must_use]
-fn format_simple(prefixes: &[String], prefix_texts: &[String]) -> Vec<String> {
+fn format_simple(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
     for (prefix, prefix_text) in prefixes.iter().zip(prefix_texts.iter()) {
@@ -58,7 +58,7 @@ fn format_simple(prefixes: &[String], prefix_texts: &[String]) -> Vec<String> {
 /// much time and memory, so we shouldn't.
 ///
 /// Ref: https://github.com/walles/riff/issues/35
-fn too_large_to_refine(texts: &[String]) -> bool {
+fn too_large_to_refine(texts: &[&str]) -> bool {
     let size = texts.iter().map(|text| text.len()).sum::<usize>();
 
     // Around this point refining starts taking near one second on Johan's
@@ -74,7 +74,7 @@ fn too_large_to_refine(texts: &[String]) -> bool {
 ///
 /// `prefixes` are the prefixes to use for each `prefix_texts` text.
 #[must_use]
-pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String> {
+pub fn format(prefixes: &Vec<&str>, prefix_texts: &Vec<&str>) -> Vec<String> {
     if prefixes.len() < 2 {
         // Nothing to compare, we can't highlight anything
         return format_simple(prefixes, prefix_texts);
@@ -262,15 +262,15 @@ mod tests {
     #[test]
     fn test_simple_format_adds_and_removes() {
         let empty: Vec<String> = Vec::new();
-        assert_eq!(format_simple("", ""), empty);
+        assert_eq!(format_simple(&vec!["-", "+"], &vec!["", ""]), empty);
 
         // Test adds-only
         assert_eq!(
-            format_simple("", "a\n"),
+            format_simple(&vec!["-", "+"], &vec!["", "a\n"]),
             ["".to_string() + NEW + "+a" + NORMAL]
         );
         assert_eq!(
-            format_simple("", "a\nb\n"),
+            format_simple(&vec!["-", "+"], &vec!["", "a\nb\n"]),
             [
                 "".to_string() + NEW + "+a" + NORMAL,
                 "".to_string() + NEW + "+b" + NORMAL,
@@ -279,11 +279,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            format_simple("a\n", ""),
+            format_simple(&vec!["-", "+"], &vec!["a\n", ""]),
             ["".to_string() + OLD + "-a" + NORMAL]
         );
         assert_eq!(
-            format_simple("a\nb\n", ""),
+            format_simple(&vec!["-", "+"], &vec!["a\nb\n", ""]),
             [
                 "".to_string() + OLD + "-a" + NORMAL,
                 "".to_string() + OLD + "-b" + NORMAL,
@@ -297,8 +297,11 @@ mod tests {
         const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
 
         let result = format(
-            "<unchanged text between quotes>\n",
-            "[unchanged text between quotes]\n",
+            &vec!["-", "+"],
+            &vec![
+                "<unchanged text between quotes>\n",
+                "[unchanged text between quotes]\n",
+            ],
         );
         assert_eq!(
             result,
@@ -315,10 +318,10 @@ mod tests {
 
     #[test]
     fn test_almost_empty_changes() {
-        let result = format("x\n", "");
+        let result = format(&vec!["-", "+"], &vec!["x\n", ""]);
         assert_eq!(result, [format!("{OLD}-x{NORMAL}"),]);
 
-        let result = format("", "x\n");
+        let result = format(&vec!["-", "+"], &vec!["", "x\n"]);
         assert_eq!(result, [format!("{NEW}+x{NORMAL}"),]);
     }
 }

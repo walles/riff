@@ -203,7 +203,10 @@ impl HunkLinesHighlighter {
         let return_me = StringFuture::from_function(
             move || {
                 let mut result = String::new();
-                for line in refiner::format(&prefixes, &prefix_texts) {
+                for line in refiner::format(
+                    &prefixes.iter().map(String::as_ref).collect(),
+                    &prefix_texts.iter().map(String::as_ref).collect(),
+                ) {
                     result.push_str(&line);
                     result.push('\n');
                 }
