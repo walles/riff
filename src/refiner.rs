@@ -97,13 +97,13 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
     let old_prefix_texts = &prefix_texts[0..prefix_texts.len() - 1];
 
     let mut old_tokens = vec![];
-    let mut new_tokens = None;
+    let mut new_tokens = vec![];
     let mut old_highlights = false;
     let mut new_unhighlighted = false;
     for old_text in old_prefix_texts.iter() {
         let (
             old_tokens_internal,
-            mut new_tokens_internal,
+            new_tokens_internal,
             old_highlights_internal,
             new_unhighlighted_internal,
         ) = to_highlighted_tokens(old_text, new_text);
@@ -112,16 +112,14 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
         old_highlights |= old_highlights_internal;
         new_unhighlighted |= new_unhighlighted_internal;
 
-        if new_tokens.is_none() {
+        if new_tokens.is_empty() {
             // First iteration, just remember the new tokens
-            new_tokens = Some(new_tokens_internal);
+            new_tokens = new_tokens_internal;
             continue;
         }
 
         // Subsequent iterations, merge the new token styles
-        for (new_token, new_token_internal) in
-            new_tokens.unwrap().iter_mut().zip(new_tokens_internal)
-        {
+        for (new_token, new_token_internal) in new_tokens.iter_mut().zip(new_tokens_internal) {
             if new_token_internal.style as u8 > new_token.style as u8 {
                 new_token.style = new_token_internal.style;
             }
@@ -133,7 +131,7 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
 
     // Now turn all our token vectors (all vectors in old_tokens plus
     // new_tokens) into lines of highlighted text
-    let new_line_count = count_lines(&new_tokens.unwrap());
+    let new_line_count = count_lines(&new_tokens);
     let all_line_counts_match = old_tokens
         .iter()
         .all(|tokens| count_lines(tokens) == new_line_count);
@@ -152,7 +150,7 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
         let text = render(&old_style, prefix, tokens);
         highlighted_lines.extend(to_lines(&text));
     }
-    let new_text = render(&new_style, &new_prefix, &new_tokens.unwrap());
+    let new_text = render(&new_style, new_prefix, &new_tokens);
     highlighted_lines.extend(to_lines(&new_text));
 
     return highlighted_lines;
