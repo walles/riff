@@ -129,7 +129,8 @@ impl HunkHeader {
             rendered.push(' ');
         }
 
-        rendered.push_str(HUNK_HEADER);
+        rendered.push_str(&self.ats);
+
         if let Some(title) = &self.title {
             rendered.push(' ');
             rendered.push_str(BOLD);
