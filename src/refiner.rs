@@ -114,7 +114,7 @@ pub fn format(prefixes: &Vec<String>, prefix_texts: &Vec<String>) -> Vec<String>
 
         if new_tokens.is_none() {
             // First iteration, just remember the new tokens
-            new_tokens = Some(&mut new_tokens_internal);
+            new_tokens = Some(new_tokens_internal);
             continue;
         }
 
