@@ -391,4 +391,38 @@ mod tests {
             "With a - line, we should decrease the first line count"
         );
     }
+
+    // `\ No newline at end of file` test, based on
+    // `testdata/add-remove-trailing-newline.diff`.
+    #[test]
+    fn test_nnaeol() {
+        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,1 +1,2 @@").unwrap();
+        assert_eq!(test_me.expected_line_counts, vec![1, 2]);
+
+        let thread_pool = ThreadPool::new(1);
+        test_me.consume_line(" Hello", &thread_pool).unwrap();
+        let result = test_me
+            .consume_line("+No trailing newline", &thread_pool)
+            .unwrap();
+
+        // We should now be expecting the `\ No newline at end of file` line
+        assert_eq!(result.line_accepted, LineAcceptance::AcceptedWantMore);
+        assert_eq!(result.highlighted.len(), 0);
+
+        assert_eq!(test_me.expected_line_counts, vec![0, 0]);
+        assert_eq!(test_me.prefixes, vec!["+"]);
+        assert_eq!(test_me.texts, vec!["No trailing newline\n"]);
+
+        let mut result = test_me
+            .consume_line("\\ No newline at end of file", &thread_pool)
+            .unwrap();
+        assert_eq!(result.line_accepted, LineAcceptance::AcceptedDone);
+        assert_eq!(result.highlighted.len(), 1);
+        assert_eq!(
+            result.highlighted[0].get(),
+            "No trailing newline", /* <- Note no \n at the end of the line */
+        );
+
+        assert!(!test_me.more_lines_expected());
+    }
 }
