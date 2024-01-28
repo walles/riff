@@ -5,6 +5,7 @@ use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::refiner;
 use crate::string_future::StringFuture;
 
+#[derive(Debug)]
 pub(crate) struct HunkLinesHighlighter {
     // This will have to be rendered at the top of our returned result.
     hunk_header: Option<String>,
@@ -63,7 +64,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
         }
 
         // Context lines
-        let spaces_only = " ".repeat(self.expected_line_counts.len());
+        let spaces_only = " ".repeat(self.expected_line_counts.len() - 1);
         if line.is_empty() || line.starts_with(&spaces_only) {
             return_me.append(&mut self.drain(thread_pool));
 
@@ -154,7 +155,34 @@ impl HunkLinesHighlighter {
         current_prefix_text.push_str(line);
         current_prefix_text.push('\n');
 
-        // Decrease the expected line counts for all non-` ` prefix columns
+        let decrease_result = self.decrease_expected_line_counts(prefix);
+        if let Err(error) = decrease_result {
+            return Err(error);
+        }
+
+        let acceptance = if self.more_lines_expected() {
+            LineAcceptance::AcceptedWantMore
+        } else {
+            LineAcceptance::AcceptedDone
+        };
+        return Ok(Response {
+            line_accepted: acceptance,
+            highlighted: return_me,
+        });
+    }
+
+    fn decrease_expected_line_counts(&mut self, prefix: &str) -> Result<(), String> {
+        if prefix.contains('+') {
+            // Any additions always count towards the last (additions) line
+            // count
+            let expected_line_count = self.expected_line_counts.last_mut().unwrap();
+            if *expected_line_count == 0 {
+                return Err("Got more + lines than expected".to_string());
+            }
+            *expected_line_count -= 1;
+            return Ok(());
+        }
+
         for (pos, plus_minus_space) in prefix.chars().enumerate() {
             if plus_minus_space == ' ' {
                 continue;
@@ -171,15 +199,7 @@ impl HunkLinesHighlighter {
             *expected_line_count -= 1;
         }
 
-        let acceptance = if self.more_lines_expected() {
-            LineAcceptance::AcceptedWantMore
-        } else {
-            LineAcceptance::AcceptedDone
-        };
-        return Ok(Response {
-            line_accepted: acceptance,
-            highlighted: return_me,
-        });
+        return Ok(());
     }
 
     /// Returns `` (the empty string) on no-current-prefix
@@ -277,5 +297,25 @@ mod tests {
             )
         );
         assert_eq!(result.highlighted[1].get(), " I like pie.\n");
+    }
+
+    #[test]
+    fn test_decrease_expected_line_count() {
+        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@").unwrap();
+        assert_eq!(test_me.expected_line_counts, vec![2, 2]);
+
+        test_me.decrease_expected_line_counts("+").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![2, 1],
+            "With a + line, we should decrease the last line count"
+        );
+
+        test_me.decrease_expected_line_counts("-").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![1, 1],
+            "With a - line, we should decrease the first line count"
+        );
     }
 }
