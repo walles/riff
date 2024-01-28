@@ -165,13 +165,10 @@ impl HunkLinesHighlighter {
 
         self.decrease_expected_line_counts(prefix)?;
 
-        let acceptance = if self.more_lines_expected() {
-            LineAcceptance::AcceptedWantMore
-        } else {
-            LineAcceptance::AcceptedDone
-        };
         return Ok(Response {
-            line_accepted: acceptance,
+            // Even if we don't expect any more lines, we could still receive a
+            // `\ No newline at end of file` line after this one.
+            line_accepted: LineAcceptance::AcceptedWantMore,
             highlighted: return_me,
         });
     }
@@ -216,7 +213,7 @@ impl HunkLinesHighlighter {
         thread_pool: &ThreadPool,
         mut return_me: Vec<StringFuture>,
     ) -> Result<Response, String> {
-        if !self.last_seen_prefix.is_some() {
+        if self.last_seen_prefix.is_none() {
             return Err(
                 "Got '\\ No newline at end of file' without being in a +/- section".to_string(),
             );
@@ -327,7 +324,7 @@ impl HunkLinesHighlighter {
 
 #[cfg(test)]
 mod tests {
-    use crate::lines_highlighter::LineAcceptance;
+    use crate::{line_collector::NO_EOF_NEWLINE_MARKER_HOLDER, lines_highlighter::LineAcceptance};
 
     use super::*;
 
@@ -396,6 +393,11 @@ mod tests {
     // `testdata/add-remove-trailing-newline.diff`.
     #[test]
     fn test_nnaeol() {
+        {
+            let mut no_eof_newline_marker = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+            *no_eof_newline_marker = Some("\\ No newline at end of file".to_string());
+        }
+
         let mut test_me = HunkLinesHighlighter::from_line("@@ -1,1 +1,2 @@").unwrap();
         assert_eq!(test_me.expected_line_counts, vec![1, 2]);
 
