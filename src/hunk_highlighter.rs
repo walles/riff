@@ -57,11 +57,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
 
         // "\ No newline at end of file"
         if line.starts_with('\\') {
-            self.handle_no_newline_at_end_of_file()?;
-            return Ok(Response {
-                line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: return_me,
-            });
+            return self.consume_nnaeof(thread_pool, return_me);
         }
 
         if !self.more_lines_expected() {
@@ -211,9 +207,15 @@ impl HunkLinesHighlighter {
         return Ok(());
     }
 
+    /// Consume a `\ No newline at end of file` line.
+    ///
     /// Strip trailing newlines from the relevant texts, as decided by
     /// self.last_seen_prefix.
-    fn handle_no_newline_at_end_of_file(&mut self) -> Result<(), String> {
+    fn consume_nnaeof(
+        &mut self,
+        thread_pool: &ThreadPool,
+        mut return_me: Vec<StringFuture>,
+    ) -> Result<Response, String> {
         if !self.last_seen_prefix.is_some() {
             return Err(
                 "Got '\\ No newline at end of file' without being in a +/- section".to_string(),
@@ -235,7 +237,13 @@ impl HunkLinesHighlighter {
                 );
             }
 
-            return Ok(());
+            // `\ No newline at end of file` is always the last line of +
+            // section, and the + sections always come last, so we're done.
+            return_me.extend(self.drain(thread_pool));
+            return Ok(Response {
+                line_accepted: LineAcceptance::AcceptedDone,
+                highlighted: return_me,
+            });
         }
 
         // Remove trailing newlines from all texts with a `-` in their column
@@ -255,7 +263,16 @@ impl HunkLinesHighlighter {
             }
         }
 
-        return Ok(());
+        let acceptance = if self.more_lines_expected() {
+            // We're still waiting for + lines, or for lines of other - sections
+            LineAcceptance::AcceptedWantMore
+        } else {
+            LineAcceptance::AcceptedDone
+        };
+        return Ok(Response {
+            line_accepted: acceptance,
+            highlighted: return_me,
+        });
     }
 
     /// Returns `` (the empty string) on no-current-prefix
