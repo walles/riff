@@ -16,11 +16,13 @@ pub(crate) struct HunkLinesHighlighter {
     /// Different versions of the same text. The last version in this vector is
     /// the end result. All versions before that are sources that this version
     /// is based on.
-    prefix_texts: Vec<String>,
+    ///
+    /// Each version's diff prefix is stored in `prefixes`.
+    texts: Vec<String>,
 
     /// Line prefixes. Usually `-` or `+`, but could be things line ` -` or
     /// `+++` if this is a merge diff. Each prefix corresponds to one prefix
-    /// text (stored in `prefix_texts`).
+    /// text (stored in `texts`).
     prefixes: Vec<String>,
 }
 
@@ -33,7 +35,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
             return Some(HunkLinesHighlighter {
                 hunk_header: Some(hunk_header.render()),
                 expected_line_counts: hunk_header.linecounts,
-                prefix_texts: Vec::new(),
+                texts: Vec::new(),
                 prefixes: Vec::new(),
             });
         }
@@ -145,20 +147,17 @@ impl HunkLinesHighlighter {
             }
 
             self.prefixes.push(prefix.to_string());
-            self.prefix_texts.push(String::new());
+            self.texts.push(String::new());
 
             assert_eq!(prefix, self.current_prefix());
         }
 
         // Update the current prefix text with the new line
-        let current_prefix_text = self.prefix_texts.last_mut().unwrap();
-        current_prefix_text.push_str(line);
-        current_prefix_text.push('\n');
+        let text = self.texts.last_mut().unwrap();
+        text.push_str(line);
+        text.push('\n');
 
-        let decrease_result = self.decrease_expected_line_counts(prefix);
-        if let Err(error) = decrease_result {
-            return Err(error);
-        }
+        self.decrease_expected_line_counts(prefix)?;
 
         let acceptance = if self.more_lines_expected() {
             LineAcceptance::AcceptedWantMore
@@ -213,14 +212,14 @@ impl HunkLinesHighlighter {
     #[must_use]
     fn drain(&mut self, thread_pool: &ThreadPool) -> Vec<StringFuture> {
         // Return nothing if all flavors are empty
-        if self.prefix_texts.iter().all(|flavor| flavor.is_empty()) {
+        if self.texts.iter().all(|flavor| flavor.is_empty()) {
             return vec![];
         }
 
-        let prefix_texts = self.prefix_texts.clone();
+        let texts = self.texts.clone();
         let prefixes = self.prefixes.clone();
 
-        self.prefix_texts.clear();
+        self.texts.clear();
         self.prefixes.clear();
 
         let return_me = StringFuture::from_function(
@@ -228,7 +227,7 @@ impl HunkLinesHighlighter {
                 let mut result = String::new();
                 for line in refiner::format(
                     &prefixes.iter().map(String::as_ref).collect(),
-                    &prefix_texts.iter().map(String::as_ref).collect(),
+                    &texts.iter().map(String::as_ref).collect(),
                 ) {
                     result.push_str(&line);
                     result.push('\n');
