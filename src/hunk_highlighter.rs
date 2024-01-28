@@ -24,6 +24,8 @@ pub(crate) struct HunkLinesHighlighter {
     /// `+++` if this is a merge diff. Each prefix corresponds to one prefix
     /// text (stored in `texts`).
     prefixes: Vec<String>,
+
+    last_seen_prefix: Option<String>,
 }
 
 impl LinesHighlighter for HunkLinesHighlighter {
@@ -37,6 +39,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
                 expected_line_counts: hunk_header.linecounts,
                 texts: Vec::new(),
                 prefixes: Vec::new(),
+                last_seen_prefix: None,
             });
         }
 
@@ -54,8 +57,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
 
         // "\ No newline at end of file"
         if line.starts_with('\\') {
-            // "\ No newline at end of file"
-            todo!("Remove trailing newlines from whatever section(s) we are in");
+            self.handle_no_newline_at_end_of_file()?;
         }
 
         if !self.more_lines_expected() {
@@ -125,14 +127,16 @@ impl HunkLinesHighlighter {
                 self.expected_line_counts.len(),
             ));
         }
-        let (prefix, line) = line.split_at(self.expected_line_counts.len() - 1);
 
+        let (prefix, line) = line.split_at(self.expected_line_counts.len() - 1);
         if prefix.chars().any(|c| ![' ', '-', '+'].contains(&c)) {
             return Err(format!(
                 "Unexpected character in prefix <{}>, only +, - and space allowed",
                 prefix
             ));
         }
+
+        self.last_seen_prefix = Some(prefix.to_string());
 
         // Keep track of which prefix we're currently on or start a new one if
         // needed
@@ -196,6 +200,53 @@ impl HunkLinesHighlighter {
             }
 
             *expected_line_count -= 1;
+        }
+
+        return Ok(());
+    }
+
+    /// Strip trailing newlines from the relevant texts, as decided by
+    /// self.last_seen_prefix.
+    fn handle_no_newline_at_end_of_file(&mut self) -> Result<(), String> {
+        if !self.last_seen_prefix.is_some() {
+            return Err(
+                "Got '\\ No newline at end of file' without being in a +/- section".to_string(),
+            );
+        }
+
+        let prefix = self.last_seen_prefix.as_ref().unwrap();
+
+        // Additions are always about the last text
+        if prefix.contains('+') {
+            let text = self.texts.last_mut().unwrap();
+
+            if let Some(without_newline) = text.strip_suffix('\n') {
+                *text = without_newline.to_string();
+            } else {
+                return Err(
+                    "Got + '\\ No newline at end of file' without any newline to remove"
+                        .to_string(),
+                );
+            }
+
+            return Ok(());
+        }
+
+        // Remove trailing newlines from all texts with a `-` in their column
+        for (pos, plus_minus_space) in prefix.chars().enumerate() {
+            if plus_minus_space == ' ' {
+                continue;
+            }
+
+            let text = self.texts[pos].strip_suffix('\n');
+            if let Some(text) = text {
+                self.texts[pos] = text.to_string();
+            } else {
+                return Err(
+                    "Got - '\\ No newline at end of file' without any newline to remove"
+                        .to_string(),
+                );
+            }
         }
 
         return Ok(());
