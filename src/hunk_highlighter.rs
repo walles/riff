@@ -120,8 +120,10 @@ impl HunkLinesHighlighter {
     ) -> Result<Response, String> {
         assert!(!line.is_empty());
 
-        if line.len() < self.expected_line_counts.len() {
-            // Not enough columns
+        if line.len() < self.expected_line_counts.len() - 1 {
+            // Not enough columns. For example, if we expect two line counts,
+            // one of them will have a + prefix and the other one -. So lines
+            // need to be at least 1 long in this case.
             return Err(format!(
                 "Line too short, expected 0 or at least {} characters",
                 self.expected_line_counts.len(),
