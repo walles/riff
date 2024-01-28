@@ -498,11 +498,13 @@ mod tests {
             riff_output_files.push(riff_output);
         }
         riff_output_files.sort();
+        let example_count = riff_output_files.len();
 
         // Iterate over all the example output files
         let mut failing_example: Option<String> = None;
         let mut failing_example_expected = vec![];
         let mut failing_example_actual = vec![];
+        let mut failure_count = 0;
         for riff_output_file in riff_output_files {
             let without_riff_output_extension =
                 riff_output_file.file_stem().unwrap().to_str().unwrap();
@@ -523,6 +525,7 @@ mod tests {
                 }
 
                 println!("FAIL: No riff input file found for {:?}", riff_output_file);
+                failure_count += 1;
                 continue;
             }
 
@@ -548,6 +551,7 @@ mod tests {
                 }
 
                 eprintln!("  FAILED: Highlighting failed: {}", error);
+                failure_count += 1;
                 continue;
             }
 
@@ -569,8 +573,11 @@ mod tests {
                 }
 
                 println!("  FAILED: Output mismatches!");
+                failure_count += 1;
             }
         }
+
+        println!("\n{}/{} examples failed", failure_count, example_count,);
 
         if failing_example.is_some() {
             println!();
