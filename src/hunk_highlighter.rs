@@ -58,6 +58,10 @@ impl LinesHighlighter for HunkLinesHighlighter {
         // "\ No newline at end of file"
         if line.starts_with('\\') {
             self.handle_no_newline_at_end_of_file()?;
+            return Ok(Response {
+                line_accepted: LineAcceptance::AcceptedWantMore,
+                highlighted: return_me,
+            });
         }
 
         if !self.more_lines_expected() {
