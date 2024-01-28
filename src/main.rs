@@ -576,6 +576,10 @@ mod tests {
             println!();
             println!("Example: {}", failing_example.unwrap());
             assert_eq!(failing_example_actual, failing_example_expected);
+
+            // Sometimes the previous assert doesn't trigger, so we put this one
+            // here as a safety measure. Do not remove it!!
+            assert!(false);
         }
 
         if !diff_files.is_empty() {
