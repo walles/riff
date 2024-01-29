@@ -436,35 +436,35 @@ mod tests {
         test_me.decrease_expected_line_counts(" -").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![5, 4, 5],
-            "Second line count should have gone down"
+            vec![4, 4, 5],
+            "Minus and space counts should have gone down"
         );
 
         test_me.decrease_expected_line_counts("- ").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![4, 4, 5],
-            "First line count should have gone down"
+            vec![3, 3, 5],
+            "Minus and space counts should have gone down"
         );
 
         test_me.decrease_expected_line_counts("--").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![3, 3, 5],
-            "First and second line counts should have gone down"
+            vec![2, 2, 5],
+            "Minus and space counts should have gone down"
         );
 
         test_me.decrease_expected_line_counts("++").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![3, 3, 4],
+            vec![2, 2, 4],
             "With a + line, we should decrease the last line count"
         );
 
         test_me.decrease_expected_line_counts(" +").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![2, 3, 3],
+            vec![1, 2, 3],
             "First count should have gone down because of the space in its column. Last count should have gone down because of the + in its column."
         );
     }
