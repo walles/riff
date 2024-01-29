@@ -72,11 +72,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
         if line.is_empty() || line.starts_with(&spaces_only) {
             return_me.append(&mut self.drain(thread_pool));
 
-            self.expected_line_counts
-                .iter_mut()
-                .for_each(|expected_line_count| {
-                    *expected_line_count -= 1;
-                });
+            self.decrease_expected_line_counts(&spaces_only)?;
 
             // FIXME: Consider whether we should be coalescing the plain lines?
             // Maybe that would improve performance? Measure and find out!
@@ -174,9 +170,10 @@ impl HunkLinesHighlighter {
     }
 
     fn decrease_expected_line_counts(&mut self, prefix: &str) -> Result<(), String> {
-        if prefix.contains('+') {
+        if prefix.contains('+') || prefix.chars().all(|c| c == ' ') {
             // Any additions always count towards the last (additions) line
-            // count
+            // count. Context lines (space only) count also count towards the
+            // last count.
             let expected_line_count = self.expected_line_counts.last_mut().unwrap();
             if *expected_line_count == 0 {
                 return Err("Got more + lines than expected".to_string());
@@ -466,6 +463,13 @@ mod tests {
             test_me.expected_line_counts,
             vec![1, 2, 3],
             "First count should have gone down because of the space in its column. Last count should have gone down because of the + in its column."
+        );
+
+        test_me.decrease_expected_line_counts("  ").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![0, 1, 2],
+            "All counts should drop on context (space only) lines"
         );
     }
 }
