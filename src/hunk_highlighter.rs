@@ -172,25 +172,43 @@ impl HunkLinesHighlighter {
     fn decrease_expected_line_counts(&mut self, prefix: &str) -> Result<(), String> {
         if prefix.contains('+') || prefix.chars().all(|c| c == ' ') {
             // Any additions always count towards the last (additions) line
-            // count. Context lines (space only) count also count towards the
-            // last count.
+            // count. Context lines (space only) also count towards the last
+            // count.
             let expected_line_count = self.expected_line_counts.last_mut().unwrap();
             if *expected_line_count == 0 {
                 return Err("Got more + lines than expected".to_string());
             }
             *expected_line_count -= 1;
+
+            for (pos, plus_or_space) in prefix.chars().enumerate() {
+                if plus_or_space != ' ' {
+                    continue;
+                }
+
+                let expected_line_count = &mut self.expected_line_counts[pos];
+                if *expected_line_count == 0 {
+                    return Err(format!(
+                        "Got more lines than expected for version (+ context column) {:?}",
+                        pos + 1,
+                    ));
+                }
+
+                *expected_line_count -= 1;
+            }
+
+            return Ok(());
         }
 
-        // Now, also decrease any ` ` columns
-        for (pos, plus_minus_space) in prefix.chars().enumerate() {
-            if plus_minus_space != ' ' && plus_minus_space != '-' {
+        // Now, also decrease any `-` columns
+        for (pos, minus_or_space) in prefix.chars().enumerate() {
+            if minus_or_space != '-' {
                 continue;
             }
 
             let expected_line_count = &mut self.expected_line_counts[pos];
             if *expected_line_count == 0 {
                 return Err(format!(
-                    "Got more lines than expected for version (space column) {:?}",
+                    "Got more lines than expected for version (minus / space column) {:?}",
                     pos + 1,
                 ));
             }
@@ -433,42 +451,42 @@ mod tests {
         test_me.decrease_expected_line_counts(" -").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![4, 4, 5],
-            "Minus and space counts should have gone down"
+            vec![5, 4, 5],
+            "Minus counts should have gone down"
         );
 
         test_me.decrease_expected_line_counts("- ").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![4, 4, 5],
+            "Minus counts should have gone down"
+        );
+
+        test_me.decrease_expected_line_counts("--").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
             vec![3, 3, 5],
             "Minus and space counts should have gone down"
         );
 
-        test_me.decrease_expected_line_counts("--").unwrap();
-        assert_eq!(
-            test_me.expected_line_counts,
-            vec![2, 2, 5],
-            "Minus and space counts should have gone down"
-        );
-
         test_me.decrease_expected_line_counts("++").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![2, 2, 4],
+            vec![3, 3, 4],
             "With a + line, we should decrease the last line count"
         );
 
         test_me.decrease_expected_line_counts(" +").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![1, 2, 3],
+            vec![2, 3, 3],
             "First count should have gone down because of the space in its column. Last count should have gone down because of the + in its column."
         );
 
         test_me.decrease_expected_line_counts("  ").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![0, 1, 2],
+            vec![1, 2, 2],
             "All counts should drop on context (space only) lines"
         );
     }
