@@ -430,35 +430,42 @@ mod tests {
 
     #[test]
     fn test_decrease_expected_line_count_merge() {
-        let mut test_me = HunkLinesHighlighter::from_line("@@@ -1,2 -1,2 +1,2 @@@").unwrap();
-        assert_eq!(test_me.expected_line_counts, vec![2, 2, 2]);
+        let mut test_me = HunkLinesHighlighter::from_line("@@@ -1,5 -1,5 +1,5 @@@").unwrap();
+        assert_eq!(test_me.expected_line_counts, vec![5, 5, 5]);
 
         test_me.decrease_expected_line_counts(" -").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![2, 1, 2],
+            vec![5, 4, 5],
             "Second line count should have gone down"
         );
 
         test_me.decrease_expected_line_counts("- ").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![1, 1, 2],
+            vec![4, 4, 5],
             "First line count should have gone down"
         );
 
         test_me.decrease_expected_line_counts("--").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![0, 0, 2],
+            vec![3, 3, 5],
             "First and second line counts should have gone down"
         );
 
         test_me.decrease_expected_line_counts("++").unwrap();
         assert_eq!(
             test_me.expected_line_counts,
-            vec![0, 0, 1],
+            vec![3, 3, 4],
             "With a + line, we should decrease the last line count"
+        );
+
+        test_me.decrease_expected_line_counts(" +").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![2, 3, 3],
+            "First count should have gone down because of the space in its column. Last count should have gone down because of the + in its column."
         );
     }
 }
