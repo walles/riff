@@ -4,10 +4,6 @@ Riff is a wrapper around `diff` that highlights which parts of lines have change
 
 ![Screenshot of riff in action](screenshot.png 'git show')
 
-Riff can also highlight merge conflicts marked by `git`:
-
-![Screenshot of riff highlighting conflict markers](screenshot-diff2-conflict.png 'riff < file-with-conflict-markers.txt')
-
 Much like `git`, Riff sends its output to a pager, trying these in order:
 
 1. Whatever is specified in the `$PAGER` environment variable
@@ -85,6 +81,16 @@ is nice. Yes, I wrote it and I'm tooting my own horn here.
 
 Good choice if you (like me!) are [using VSCode for Git commit message
 editing](https://jonasbn.github.io/til/vscode/integrate_with_cli.html).
+
+# More Features
+
+`riff` can highlight conflict markers created by `git`:
+
+![Screenshot of riff highlighting conflict markers](screenshot-diff2-conflict.png 'riff < file-with-conflict-markers.txt')
+
+`riff` highlighting a `git` merge commits highlighting
+
+![Screenshot of riff highlighting merge commits](screenshot-git-merge.png)
 
 # Development
 
