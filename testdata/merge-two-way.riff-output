@@ -1,0 +1,33 @@
+[33mcommit 7417813d28a5ec845ad040ab85c9e08754d84335 ([1m[36mHEAD -> [32mmain[22m[33m)[0m
+Merge: 234d1fe fb7d21c
+Author: Johan Walles <johan.walles@gmail.com>
+Date:   Thu Jan 25 08:57:37 2024 +0100
+
+    Merge branch 'branch'
+    
+    Conflicts handled.
+
+[2mdiff --cc file.txt[0m
+[2mindex 9b01805,3e9dad5..fa68b7b[0m
+[1m--- file.txt[0m
+[1m+++ file.txt[0m
+[36m@@@ -1,10 -1,8 +1,9 @@@[0m
+  This is the first line.
+[31m -This line [7mwill be[27m edited in the main branch.[0m
+[32m +This line [7mwas[27m edited in the main branch.[0m
+  This is placeholder line one.
+[31m- This line will be removed in the branch.[0m
+  This is placeholder line two.
+  After this line, a new line will be added in the main branch.
+[32m +Hello.[0m
+  This is placeholder line three.
+  This line will be edited in both branches, so that both of these names are Johan: Johan, Johan
+  This is placeholder line four.
+[36m@@@ -12,5 -10,5 +11,5 @@@ [1mAfter this line, a new line will be add[0m
+  Hello.
+  This is placeholder line five.
+  This is placeholder line six.
+[31m- -> A prefix will be added to this line on main, a suffix on branch and the middle [7mwill be[27m changed during conflict resolution.[0m
+[31m -A prefix will be added to this line on main, a suffix on branch and the middle[7m will be[27m changed during conflict resolution. <-[0m
+[32m++[7m-> [27mA prefix will be added to this line on main, a suffix on branch and the middle [7mwas[27m changed during conflict resolution.[7m <-[0m
+  This is placeholder line seven.

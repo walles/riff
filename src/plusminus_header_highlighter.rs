@@ -96,8 +96,8 @@ impl PlusMinusHeaderHighlighter {
         lowlight_timestamp(&mut new_tokens);
         unhighlight_git_prefix(&mut new_tokens);
 
-        let old_filename = render(&LINE_STYLE_OLD_FILENAME, old_tokens);
-        let new_filename = render(&LINE_STYLE_NEW_FILENAME, new_tokens);
+        let old_filename = render(&LINE_STYLE_OLD_FILENAME, "--- ", &old_tokens);
+        let new_filename = render(&LINE_STYLE_NEW_FILENAME, "+++ ", &new_tokens);
 
         let mut highlighted = String::new();
         highlighted.push_str(&old_filename);

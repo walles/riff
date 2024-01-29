@@ -8,10 +8,10 @@ use diffus::{
 };
 
 /// Like format!(), but faster for our special case
-fn format_simple_line(old_new: &str, plus_minus: char, contents: &str) -> String {
+fn format_simple_line(old_new: &str, plus_minus: &str, contents: &str) -> String {
     let mut line = String::with_capacity(old_new.len() + 1 + contents.len() + NORMAL.len());
     line.push_str(old_new);
-    line.push(plus_minus);
+    line.push_str(plus_minus);
     line.push_str(contents);
     line.push_str(NORMAL);
     return line;
@@ -21,39 +21,34 @@ fn format_simple_line(old_new: &str, plus_minus: char, contents: &str) -> String
 ///
 /// No intra-line refinement.
 #[must_use]
-fn format_simple(old_text: &str, new_text: &str) -> Vec<String> {
+fn format_simple(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
-    for old_line in old_text.lines() {
-        // Use a specialized line formatter since this code is in a hot path
-        lines.push(format_simple_line(OLD, '-', old_line));
-    }
-    if (!old_text.is_empty()) && !old_text.ends_with('\n') {
-        let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
-        let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-        lines.push(format!(
-            "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
-        ));
-    }
+    for (prefix, prefix_text) in prefixes.iter().zip(prefix_texts.iter()) {
+        let old_new = if prefix.contains('+') { NEW } else { OLD };
 
-    let announce_lost_newline = !new_text.is_empty() && !new_text.ends_with('\n');
-    for (line_number, add_line) in new_text.lines().enumerate() {
-        let new_line: String =
-            if announce_lost_newline && line_number == new_text.lines().count() - 1 {
-                // Add a red highlighted newline symbol at the end
-                format!("{NEW}+{add_line}{OLD}{INVERSE_VIDEO}⏎{NORMAL}")
+        // If the user adds a section with a missing trailing newline, we want
+        // to draw a highlighted-in-red newline symbol at the end of the last
+        // line.
+        let draw_missing_trailing_newline = prefix.contains('+') && !prefix_text.ends_with('\n');
+
+        for (pos, line) in prefix_text.lines().enumerate() {
+            let last_line = pos == prefix_text.lines().count() - 1;
+
+            if last_line && draw_missing_trailing_newline {
+                lines.push(format!("{NEW}+{line}{OLD}{INVERSE_VIDEO}⏎{NORMAL}"));
             } else {
-                // Use a specialized line formatter since this code is in a hot path
-                format_simple_line(NEW, '+', add_line)
-            };
-        lines.push(new_line);
-    }
-    if (!new_text.is_empty()) && !new_text.ends_with('\n') {
-        let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
-        let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-        lines.push(format!(
-            "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
-        ));
+                lines.push(format_simple_line(old_new, prefix, line));
+            }
+        }
+
+        if !prefix_text.ends_with('\n') {
+            let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+            let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
+            lines.push(format!(
+                "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
+            ));
+        }
     }
 
     return lines;
@@ -63,43 +58,102 @@ fn format_simple(old_text: &str, new_text: &str) -> Vec<String> {
 /// much time and memory, so we shouldn't.
 ///
 /// Ref: https://github.com/walles/riff/issues/35
-fn too_large_to_refine(old_text: &str, new_text: &str) -> bool {
-    let complexity = (old_text.len() as u64) * (new_text.len() as u64);
+fn too_large_to_refine(texts: &[&str]) -> bool {
+    let size = texts.iter().map(|text| text.len()).sum::<usize>();
 
     // Around this point refining starts taking near one second on Johan's
     // laptop. Numbers have been invented through experimentation.
-    return complexity > 13_000u64 * 13_000u64;
+    return size > 13_000usize * 13_000usize;
 }
 
 /// Returns a vector of ANSI highlighted lines.
 ///
-/// `old_text` and `new_text` are multi lines strings. Having or not having
-/// trailing newlines will affect tokenization. The lines are not expected to
-/// have any prefixes like `+` or `-`.
+/// `prefix_texts` are multi line strings. Having or not having trailing
+/// newlines will affect tokenization. The lines are not expected to have any
+/// prefixes like `+` or `-`.
+///
+/// `prefixes` are the prefixes to use for each `prefix_texts` text.
 #[must_use]
-pub fn format(old_text: &str, new_text: &str) -> Vec<String> {
-    if old_text.is_empty() || new_text.is_empty() {
-        return format_simple(old_text, new_text);
+pub fn format(prefixes: &Vec<&str>, prefix_texts: &Vec<&str>) -> Vec<String> {
+    if prefixes.len() < 2 {
+        // Nothing to compare, we can't highlight anything
+        return format_simple(prefixes, prefix_texts);
+    }
+    if !prefixes.iter().any(|prefix| prefix.contains('+')) {
+        // Nothing added, we can't highlight anything
+        return format_simple(prefixes, prefix_texts);
     }
 
-    if too_large_to_refine(old_text, new_text) {
-        return format_simple(old_text, new_text);
+    if too_large_to_refine(prefix_texts) {
+        return format_simple(prefixes, prefix_texts);
     }
 
-    let (old_tokens, new_tokens, old_highlights, new_unhighlighted) =
-        to_highlighted_tokens(old_text, new_text);
+    // This is what all old texts will be compared against
+    let new_text = prefix_texts.last().unwrap();
+    let new_prefix = prefixes.last().unwrap();
 
-    let highlighted_old_text;
-    let highlighted_new_text;
-    if old_highlights || new_unhighlighted || count_lines(&old_tokens) != count_lines(&new_tokens) {
-        highlighted_old_text = render(&LINE_STYLE_OLD, old_tokens);
-        highlighted_new_text = render(&LINE_STYLE_NEW, new_tokens);
+    // These are all except for the last element
+    let old_prefixes = &prefixes[0..prefixes.len() - 1];
+    let old_prefix_texts = &prefix_texts[0..prefix_texts.len() - 1];
+
+    let mut old_tokens = vec![];
+    let mut new_tokens = vec![];
+    let mut old_highlights = false;
+    let mut new_unhighlighted = false;
+    for old_text in old_prefix_texts.iter() {
+        let (
+            old_tokens_internal,
+            new_tokens_internal,
+            old_highlights_internal,
+            new_unhighlighted_internal,
+        ) = to_highlighted_tokens(old_text, new_text);
+
+        old_tokens.push(old_tokens_internal);
+        old_highlights |= old_highlights_internal;
+        new_unhighlighted |= new_unhighlighted_internal;
+
+        if new_tokens.is_empty() {
+            // First iteration, just remember the new tokens
+            new_tokens = new_tokens_internal;
+            continue;
+        }
+
+        // Subsequent iterations, merge the new token styles
+        for (new_token, new_token_internal) in new_tokens.iter_mut().zip(new_tokens_internal) {
+            if new_token_internal.style as u8 > new_token.style as u8 {
+                new_token.style = new_token_internal.style;
+            }
+        }
+    }
+
+    // We should now have one token vector per old text
+    assert_eq!(old_tokens.len(), prefix_texts.len() - 1);
+
+    // Now turn all our token vectors (all vectors in old_tokens plus
+    // new_tokens) into lines of highlighted text
+    let new_line_count = count_lines(&new_tokens);
+    let all_line_counts_match = old_tokens
+        .iter()
+        .all(|tokens| count_lines(tokens) == new_line_count);
+
+    let (old_style, new_style) = if old_highlights || new_unhighlighted || !all_line_counts_match {
+        // Classical highlighting
+        (LINE_STYLE_OLD, LINE_STYLE_NEW)
     } else {
-        highlighted_old_text = render(&LINE_STYLE_OLD_FAINT, old_tokens);
-        highlighted_new_text = render(&LINE_STYLE_ADDS_ONLY, new_tokens);
-    }
+        // Special adds-only highlighting
+        (LINE_STYLE_OLD_FAINT, LINE_STYLE_ADDS_ONLY)
+    };
 
-    return to_lines(&highlighted_old_text, &highlighted_new_text);
+    // First render() into strings, then to_lines() into lines
+    let mut highlighted_lines = Vec::new();
+    for (prefix, tokens) in old_prefixes.iter().zip(old_tokens.iter()) {
+        let text = render(&old_style, prefix, tokens);
+        highlighted_lines.extend(to_lines(&text));
+    }
+    let new_text = render(&new_style, new_prefix, &new_tokens);
+    highlighted_lines.extend(to_lines(&new_text));
+
+    return highlighted_lines;
 }
 
 /// Returns two vectors for old and new sections. The first bool is true if
@@ -178,25 +232,16 @@ pub fn to_highlighted_tokens(
     return (old_tokens, new_tokens, old_highlights, new_unhighlighted);
 }
 
+/// Splits text into lines. If the text doesn't end in a newline, a no-newline
+/// marker will be added at the end.
 #[must_use]
-fn to_lines(old: &str, new: &str) -> Vec<String> {
+fn to_lines(text: &str) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
-    for highlighted_old_line in old.lines() {
-        lines.push(highlighted_old_line.to_string());
+    for line in text.lines() {
+        lines.push(line.to_string());
     }
-    if (!old.is_empty()) && !old.ends_with('\n') {
-        let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
-        let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-        lines.push(format!(
-            "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
-        ));
-    }
-
-    for highlighted_new_line in new.lines() {
-        lines.push(highlighted_new_line.to_string());
-    }
-    if (!new.is_empty()) && !new.ends_with('\n') {
+    if (!text.is_empty()) && !text.ends_with('\n') {
         let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
         let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
         lines.push(format!(
@@ -217,15 +262,15 @@ mod tests {
     #[test]
     fn test_simple_format_adds_and_removes() {
         let empty: Vec<String> = Vec::new();
-        assert_eq!(format_simple("", ""), empty);
+        assert_eq!(format_simple(&[], &[]), empty);
 
         // Test adds-only
         assert_eq!(
-            format_simple("", "a\n"),
+            format_simple(&["+"], &["a\n"]),
             ["".to_string() + NEW + "+a" + NORMAL]
         );
         assert_eq!(
-            format_simple("", "a\nb\n"),
+            format_simple(&["+"], &["a\nb\n"]),
             [
                 "".to_string() + NEW + "+a" + NORMAL,
                 "".to_string() + NEW + "+b" + NORMAL,
@@ -234,11 +279,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            format_simple("a\n", ""),
+            format_simple(&["-"], &["a\n"]),
             ["".to_string() + OLD + "-a" + NORMAL]
         );
         assert_eq!(
-            format_simple("a\nb\n", ""),
+            format_simple(&["-"], &["a\nb\n"]),
             [
                 "".to_string() + OLD + "-a" + NORMAL,
                 "".to_string() + OLD + "-b" + NORMAL,
@@ -252,8 +297,11 @@ mod tests {
         const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
 
         let result = format(
-            "<unchanged text between quotes>\n",
-            "[unchanged text between quotes]\n",
+            &vec!["-", "+"],
+            &vec![
+                "<unchanged text between quotes>\n",
+                "[unchanged text between quotes]\n",
+            ],
         );
         assert_eq!(
             result,
@@ -270,10 +318,10 @@ mod tests {
 
     #[test]
     fn test_almost_empty_changes() {
-        let result = format("x\n", "");
+        let result = format(&vec!["-"], &vec!["x\n"]);
         assert_eq!(result, [format!("{OLD}-x{NORMAL}"),]);
 
-        let result = format("", "x\n");
+        let result = format(&vec!["+"], &vec!["x\n"]);
         assert_eq!(result, [format!("{NEW}+x{NORMAL}"),]);
     }
 }

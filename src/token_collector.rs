@@ -20,8 +20,7 @@ pub(crate) struct StyledToken {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct LineStyle<'a> {
-    prefix: &'a str,
+pub(crate) struct LineStyle {
     prefix_style: AnsiStyle,
     plain_style: AnsiStyle,
     highlighted_style: AnsiStyle,
@@ -29,7 +28,6 @@ pub(crate) struct LineStyle<'a> {
 
 pub(crate) const LINE_STYLE_OLD: LineStyle = {
     LineStyle {
-        prefix: "-",
         prefix_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
@@ -50,7 +48,6 @@ pub(crate) const LINE_STYLE_OLD: LineStyle = {
 
 pub(crate) const LINE_STYLE_OLD_FAINT: LineStyle = {
     LineStyle {
-        prefix: "-",
         prefix_style: AnsiStyle {
             inverse: false,
             weight: Weight::Faint,
@@ -71,7 +68,6 @@ pub(crate) const LINE_STYLE_OLD_FAINT: LineStyle = {
 
 pub(crate) const LINE_STYLE_NEW: LineStyle = {
     LineStyle {
-        prefix: "+",
         prefix_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
@@ -92,7 +88,6 @@ pub(crate) const LINE_STYLE_NEW: LineStyle = {
 
 pub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
     LineStyle {
-        prefix: "+",
         prefix_style: AnsiStyle {
             inverse: false,
             weight: Weight::Faint,
@@ -113,7 +108,6 @@ pub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
 
 pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
     LineStyle {
-        prefix: "--- ",
         prefix_style: AnsiStyle {
             inverse: false,
             weight: Weight::Bold,
@@ -134,7 +128,6 @@ pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
 
 pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
     LineStyle {
-        prefix: "+++ ",
         prefix_style: AnsiStyle {
             inverse: false,
             weight: Weight::Bold,
@@ -144,50 +137,6 @@ pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
             inverse: false,
             weight: Weight::Bold,
             color: Default,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Green,
-        },
-    }
-};
-
-/// Like `LINE_STYLE_OLD` but without any prefix
-pub(crate) const LINE_STYLE_CONFLICT_C1: LineStyle = {
-    LineStyle {
-        prefix: "",
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Red,
-        },
-    }
-};
-
-/// Like `LINE_STYLE_NEW` but without any prefix
-pub(crate) const LINE_STYLE_CONFLICT_C2: LineStyle = {
-    LineStyle {
-        prefix: "",
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Green,
-        },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Green,
         },
         highlighted_style: AnsiStyle {
             inverse: true,
@@ -216,7 +165,7 @@ impl StyledToken {
 }
 
 #[must_use]
-fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
+fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> String {
     let mut rendered = String::new();
 
     let mut current_style = ANSI_STYLE_NORMAL;
@@ -224,7 +173,7 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
     // Render prefix
     rendered.push_str(&line_style.prefix_style.from(&current_style));
     current_style = line_style.prefix_style;
-    rendered.push_str(line_style.prefix);
+    rendered.push_str(prefix);
 
     // Render tokens
     for token in row {
@@ -256,13 +205,13 @@ fn render_row(line_style: &LineStyle, row: &[StyledToken]) -> String {
 
 /// Render all the tokens into a (most of the time multiline) string
 #[must_use]
-pub fn render(line_style: &LineStyle, tokens: Vec<StyledToken>) -> String {
+pub fn render(line_style: &LineStyle, prefix: &str, tokens: &Vec<StyledToken>) -> String {
     let mut rendered = String::new();
 
     let mut current_row_start = 0;
     for (i, token) in tokens.iter().enumerate() {
         if token.token == "\n" {
-            let rendered_row = &render_row(line_style, &tokens[current_row_start..i]);
+            let rendered_row = &render_row(line_style, prefix, &tokens[current_row_start..i]);
             rendered.push_str(rendered_row);
             rendered.push('\n');
             current_row_start = i + 1;
@@ -271,7 +220,7 @@ pub fn render(line_style: &LineStyle, tokens: Vec<StyledToken>) -> String {
     }
 
     if current_row_start < tokens.len() {
-        let rendered_row = &render_row(line_style, &tokens[current_row_start..]);
+        let rendered_row = &render_row(line_style, prefix, &tokens[current_row_start..]);
         rendered.push_str(rendered_row);
     }
 
@@ -525,7 +474,8 @@ mod tests {
     fn test_basic() {
         let rendered = render(
             &LINE_STYLE_NEW,
-            vec![
+            "+",
+            &vec![
                 StyledToken {
                     token: "hej".to_string(),
                     style: Style::Plain,
@@ -580,7 +530,8 @@ mod tests {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
             &LINE_STYLE_OLD,
-            vec![StyledToken::new(" ".to_string(), Style::Plain)],
+            "-",
+            &vec![StyledToken::new(" ".to_string(), Style::Plain)],
         );
 
         assert_eq!(actual, format!("{OLD}- {NORMAL}"));
@@ -643,7 +594,8 @@ mod tests {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
             &LINE_STYLE_OLD,
-            vec![
+            "-",
+            &vec![
                 StyledToken::new("x".to_string(), Style::Plain),
                 StyledToken::new("\t".to_string(), Style::Plain),
             ],

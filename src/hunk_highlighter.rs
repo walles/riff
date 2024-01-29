@@ -5,21 +5,27 @@ use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::refiner;
 use crate::string_future::StringFuture;
 
+#[derive(Debug)]
 pub(crate) struct HunkLinesHighlighter {
     // This will have to be rendered at the top of our returned result.
     hunk_header: Option<String>,
 
     /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
-    expected_old_lines: usize,
+    expected_line_counts: Vec<usize>,
 
-    /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
-    expected_new_lines: usize,
+    /// Different versions of the same text. The last version in this vector is
+    /// the end result. All versions before that are sources that this version
+    /// is based on.
+    ///
+    /// Each version's diff prefix is stored in `prefixes`.
+    texts: Vec<String>,
 
-    /// The old text of a diff, if any. Includes `-` lines only.
-    old_text: String,
+    /// Line prefixes. Usually `-` or `+`, but could be things line ` -` or
+    /// `+++` if this is a merge diff. Each prefix corresponds to one prefix
+    /// text (stored in `texts`).
+    prefixes: Vec<String>,
 
-    /// The new text of a diff, if any. Includes `+` lines only.
-    new_text: String,
+    last_seen_prefix: Option<String>,
 }
 
 impl LinesHighlighter for HunkLinesHighlighter {
@@ -28,17 +34,12 @@ impl LinesHighlighter for HunkLinesHighlighter {
         Self: Sized,
     {
         if let Some(hunk_header) = HunkHeader::parse(line) {
-            let expected_old_lines = hunk_header.old_linecount;
-            let expected_new_lines = hunk_header.new_linecount;
-            let old_text = String::new();
-            let new_text = String::new();
-
             return Some(HunkLinesHighlighter {
                 hunk_header: Some(hunk_header.render()),
-                expected_old_lines,
-                expected_new_lines,
-                old_text,
-                new_text,
+                expected_line_counts: hunk_header.linecounts,
+                texts: Vec::new(),
+                prefixes: Vec::new(),
+                last_seen_prefix: None,
             });
         }
 
@@ -48,7 +49,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
     fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String> {
         let mut return_me = vec![];
 
-        // Always start by returning the hunk header
+        // Always start by rendering the hunk header
         if let Some(hunk_header) = &self.hunk_header {
             return_me.push(StringFuture::from_string(hunk_header.to_string() + "\n"));
             self.hunk_header = None;
@@ -56,85 +57,31 @@ impl LinesHighlighter for HunkLinesHighlighter {
 
         // "\ No newline at end of file"
         if line.starts_with('\\') {
-            if !self.new_text.is_empty() {
-                // New section comes after old, so if we get in here it's a new
-                // section that doesn't end in a newline. Remove its trailing
-                // newline.
-                assert!(self.new_text.pop().unwrap() == '\n');
-
-                // If we got here we're definitely done
-                return_me.append(&mut self.drain_old_new(thread_pool));
-
-                return Ok(Response {
-                    line_accepted: LineAcceptance::AcceptedDone,
-                    highlighted: return_me,
-                });
-            }
-
-            if !self.old_text.is_empty() {
-                // Old text doesn't end in a newline, remove its trailing newline
-                assert!(self.old_text.pop().unwrap() == '\n');
-                return Ok(Response {
-                    line_accepted: LineAcceptance::AcceptedWantMore,
-                    highlighted: return_me,
-                });
-            }
-
-            return Err(
-                "Got '\\ No newline at end of file' without any preceding text".to_string(),
-            );
+            return self.consume_nnaeof(thread_pool, return_me);
         }
 
-        if self.expected_new_lines + self.expected_old_lines == 0 {
+        if !self.more_lines_expected() {
             return Ok(Response {
                 line_accepted: LineAcceptance::RejectedDone,
                 highlighted: return_me,
             });
         }
 
-        if let Some(minus_line) = line.strip_prefix('-') {
-            self.expected_old_lines -= 1;
-            self.old_text.push_str(minus_line);
-            self.old_text.push('\n');
-
-            return Ok(Response {
-                // Note that even if we don't "expect" any more lines, we could
-                // still get "\ No newline at end of file" lines, so we have to
-                // ask for more here, and we can't drain_old_new() just yet.
-                line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: return_me,
-            });
-        }
-
-        if let Some(plus_line) = line.strip_prefix('+') {
-            self.expected_new_lines -= 1;
-            self.new_text.push_str(plus_line);
-            self.new_text.push('\n');
-
-            return Ok(Response {
-                // Note that even if we don't "expect" any more lines, we could
-                // still get "\ No newline at end of file" lines, so we have to
-                // ask for more here, and we can't drain_old_new() just yet.
-                line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: return_me,
-            });
-        }
-
         // Context lines
-        if line.starts_with(' ') || line.is_empty() {
+        let spaces_only = " ".repeat(self.expected_line_counts.len() - 1);
+        if line.is_empty() || line.starts_with(&spaces_only) {
+            return_me.append(&mut self.drain(thread_pool));
+
+            self.decrease_expected_line_counts(&spaces_only)?;
+
             // FIXME: Consider whether we should be coalescing the plain lines?
             // Maybe that would improve performance? Measure and find out!
-            return_me.append(&mut self.drain_old_new(thread_pool));
-
-            self.expected_old_lines -= 1;
-            self.expected_new_lines -= 1;
-
             return_me.push(StringFuture::from_string(line.to_string() + "\n"));
 
-            let acceptance = if self.expected_old_lines + self.expected_new_lines == 0 {
-                LineAcceptance::AcceptedDone
-            } else {
+            let acceptance = if self.more_lines_expected() {
                 LineAcceptance::AcceptedWantMore
+            } else {
+                LineAcceptance::AcceptedDone
             };
 
             return Ok(Response {
@@ -143,35 +90,231 @@ impl LinesHighlighter for HunkLinesHighlighter {
             });
         }
 
-        return Err("Hunk line must start with '-' or '+'".to_string());
+        assert!(!line.is_empty()); // Handled as a plain line above
+        return self.consume_plusminus_line(line, thread_pool, return_me);
     }
 
     fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
-        if self.expected_old_lines != 0 || self.expected_new_lines != 0 {
+        if self.more_lines_expected() {
             return Err(format!(
-                "Still expecting {} old lines and {} new lines, but got EOF",
-                self.expected_old_lines, self.expected_new_lines
+                "Still expecting more lines, but got EOF: {:?}",
+                self.expected_line_counts
             ));
         }
 
-        return Ok(self.drain_old_new(thread_pool));
+        return Ok(self.drain(thread_pool));
     }
 }
 
 impl HunkLinesHighlighter {
-    fn drain_old_new(&mut self, thread_pool: &ThreadPool) -> Vec<StringFuture> {
-        if self.old_text.is_empty() && self.new_text.is_empty() {
+    /// Expects a non-empty line as input
+    fn consume_plusminus_line(
+        &mut self,
+        line: &str,
+        thread_pool: &ThreadPool,
+        mut return_me: Vec<StringFuture>,
+    ) -> Result<Response, String> {
+        assert!(!line.is_empty());
+
+        if line.len() < self.expected_line_counts.len() - 1 {
+            // Not enough columns. For example, if we expect two line counts,
+            // one of them will have a + prefix and the other one -. So lines
+            // need to be at least 1 long in this case.
+            return Err(format!(
+                "Line too short, expected 0 or at least {} characters",
+                self.expected_line_counts.len(),
+            ));
+        }
+
+        let (prefix, line) = line.split_at(self.expected_line_counts.len() - 1);
+        if prefix.chars().any(|c| ![' ', '-', '+'].contains(&c)) {
+            return Err(format!(
+                "Unexpected character in prefix <{prefix}>, only +, - and space allowed JOHAN: {:?}",
+                self.expected_line_counts,
+            ));
+        }
+
+        self.last_seen_prefix = Some(prefix.to_string());
+
+        // Keep track of which prefix we're currently on or start a new one if
+        // needed
+        if prefix.is_empty() {
+            return Err("Hunk line must start with '-' or '+'".to_string());
+        }
+        if prefix != self.current_prefix() {
+            if self.current_prefix().contains('+') {
+                // Always start anew after any `+` section, there are never more
+                // than one of those.
+                return_me.extend(self.drain(thread_pool));
+            }
+
+            self.prefixes.push(prefix.to_string());
+            self.texts.push(String::new());
+
+            assert_eq!(prefix, self.current_prefix());
+        }
+
+        // Update the current prefix text with the new line
+        let text = self.texts.last_mut().unwrap();
+        text.push_str(line);
+        text.push('\n');
+
+        self.decrease_expected_line_counts(prefix)?;
+
+        return Ok(Response {
+            // Even if we don't expect any more lines, we could still receive a
+            // `\ No newline at end of file` line after this one.
+            line_accepted: LineAcceptance::AcceptedWantMore,
+            highlighted: return_me,
+        });
+    }
+
+    fn decrease_expected_line_counts(&mut self, prefix: &str) -> Result<(), String> {
+        if prefix.contains('+') || prefix.chars().all(|c| c == ' ') {
+            // Any additions always count towards the last (additions) line
+            // count. Context lines (space only) also count towards the last
+            // count.
+            let expected_line_count = self.expected_line_counts.last_mut().unwrap();
+            if *expected_line_count == 0 {
+                return Err("Got more + lines than expected".to_string());
+            }
+            *expected_line_count -= 1;
+
+            for (pos, plus_or_space) in prefix.chars().enumerate() {
+                if plus_or_space != ' ' {
+                    continue;
+                }
+
+                let expected_line_count = &mut self.expected_line_counts[pos];
+                if *expected_line_count == 0 {
+                    return Err(format!(
+                        "Got more lines than expected for version (+ context column) {:?}",
+                        pos + 1,
+                    ));
+                }
+
+                *expected_line_count -= 1;
+            }
+
+            return Ok(());
+        }
+
+        // Now, also decrease any `-` columns
+        for (pos, minus_or_space) in prefix.chars().enumerate() {
+            if minus_or_space != '-' {
+                continue;
+            }
+
+            let expected_line_count = &mut self.expected_line_counts[pos];
+            if *expected_line_count == 0 {
+                return Err(format!(
+                    "Got more lines than expected for version (minus / space column) {:?}",
+                    pos + 1,
+                ));
+            }
+
+            *expected_line_count -= 1;
+        }
+
+        return Ok(());
+    }
+
+    /// Consume a `\ No newline at end of file` line.
+    ///
+    /// Strip trailing newlines from the relevant texts, as decided by
+    /// self.last_seen_prefix.
+    fn consume_nnaeof(
+        &mut self,
+        thread_pool: &ThreadPool,
+        mut return_me: Vec<StringFuture>,
+    ) -> Result<Response, String> {
+        if self.last_seen_prefix.is_none() {
+            return Err(
+                "Got '\\ No newline at end of file' without being in a +/- section".to_string(),
+            );
+        }
+
+        let prefix = self.last_seen_prefix.as_ref().unwrap();
+
+        // Additions are always about the last text
+        if prefix.contains('+') {
+            let text = self.texts.last_mut().unwrap();
+
+            if let Some(without_newline) = text.strip_suffix('\n') {
+                *text = without_newline.to_string();
+            } else {
+                return Err(
+                    "Got + '\\ No newline at end of file' without any newline to remove"
+                        .to_string(),
+                );
+            }
+
+            // `\ No newline at end of file` is always the last line of +
+            // section, and the + sections always come last, so we're done.
+            return_me.extend(self.drain(thread_pool));
+            return Ok(Response {
+                line_accepted: LineAcceptance::AcceptedDone,
+                highlighted: return_me,
+            });
+        }
+
+        // Remove trailing newlines from all texts with a `-` in their column
+        for (pos, plus_minus_space) in prefix.chars().enumerate() {
+            if plus_minus_space == ' ' {
+                continue;
+            }
+
+            let text = self.texts[pos].strip_suffix('\n');
+            if let Some(text) = text {
+                self.texts[pos] = text.to_string();
+            } else {
+                return Err(
+                    "Got - '\\ No newline at end of file' without any newline to remove"
+                        .to_string(),
+                );
+            }
+        }
+
+        let acceptance = if self.more_lines_expected() {
+            // We're still waiting for + lines, or for lines of other - sections
+            LineAcceptance::AcceptedWantMore
+        } else {
+            LineAcceptance::AcceptedDone
+        };
+        return Ok(Response {
+            line_accepted: acceptance,
+            highlighted: return_me,
+        });
+    }
+
+    /// Returns `` (the empty string) on no-current-prefix
+    fn current_prefix(&self) -> &str {
+        if let Some(prefix) = self.prefixes.last() {
+            return prefix;
+        }
+        return "";
+    }
+
+    #[must_use]
+    fn drain(&mut self, thread_pool: &ThreadPool) -> Vec<StringFuture> {
+        // Return nothing if all flavors are empty
+        if self.texts.iter().all(|flavor| flavor.is_empty()) {
             return vec![];
         }
 
-        let old_text = self.old_text.clone();
-        let new_text = self.new_text.clone();
-        self.old_text.clear();
-        self.new_text.clear();
+        let texts = self.texts.clone();
+        let prefixes = self.prefixes.clone();
+
+        self.texts.clear();
+        self.prefixes.clear();
+
         let return_me = StringFuture::from_function(
             move || {
                 let mut result = String::new();
-                for line in refiner::format(&old_text, &new_text) {
+                for line in refiner::format(
+                    &prefixes.iter().map(String::as_ref).collect(),
+                    &texts.iter().map(String::as_ref).collect(),
+                ) {
                     result.push_str(&line);
                     result.push('\n');
                 }
@@ -183,11 +326,20 @@ impl HunkLinesHighlighter {
 
         return vec![return_me];
     }
+
+    fn more_lines_expected(&self) -> bool {
+        for expected_line_count in &self.expected_line_counts {
+            if *expected_line_count != 0 {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::lines_highlighter::LineAcceptance;
+    use crate::{line_collector::NO_EOF_NEWLINE_MARKER_HOLDER, lines_highlighter::LineAcceptance};
 
     use super::*;
 
@@ -230,5 +382,112 @@ mod tests {
             )
         );
         assert_eq!(result.highlighted[1].get(), " I like pie.\n");
+    }
+
+    #[test]
+    fn test_decrease_expected_line_count() {
+        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@").unwrap();
+        assert_eq!(test_me.expected_line_counts, vec![2, 2]);
+
+        test_me.decrease_expected_line_counts("+").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![2, 1],
+            "With a + line, we should decrease the last line count"
+        );
+
+        test_me.decrease_expected_line_counts("-").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![1, 1],
+            "With a - line, we should decrease the first line count"
+        );
+    }
+
+    // `\ No newline at end of file` test, based on
+    // `testdata/add-remove-trailing-newline.diff`.
+    #[test]
+    fn test_nnaeol() {
+        {
+            let mut no_eof_newline_marker = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+            *no_eof_newline_marker = Some("\\ No newline at end of file".to_string());
+        }
+
+        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,1 +1,2 @@").unwrap();
+        assert_eq!(test_me.expected_line_counts, vec![1, 2]);
+
+        let thread_pool = ThreadPool::new(1);
+        test_me.consume_line(" Hello", &thread_pool).unwrap();
+        let result = test_me
+            .consume_line("+No trailing newline", &thread_pool)
+            .unwrap();
+
+        // We should now be expecting the `\ No newline at end of file` line
+        assert_eq!(result.line_accepted, LineAcceptance::AcceptedWantMore);
+        assert_eq!(result.highlighted.len(), 0);
+
+        assert_eq!(test_me.expected_line_counts, vec![0, 0]);
+        assert_eq!(test_me.prefixes, vec!["+"]);
+        assert_eq!(test_me.texts, vec!["No trailing newline\n"]);
+
+        let mut result = test_me
+            .consume_line("\\ No newline at end of file", &thread_pool)
+            .unwrap();
+        assert_eq!(result.line_accepted, LineAcceptance::AcceptedDone);
+        assert_eq!(result.highlighted.len(), 1);
+        assert_eq!(
+            result.highlighted[0].get(),
+            "\u{1b}[32m+No trailing newline\u{1b}[31m\u{1b}[7m⏎\u{1b}[0m\n\u{1b}[2m\\ No newline at end of file\u{1b}[0m\n",
+        );
+
+        assert!(!test_me.more_lines_expected());
+    }
+
+    #[test]
+    fn test_decrease_expected_line_count_merge() {
+        let mut test_me = HunkLinesHighlighter::from_line("@@@ -1,5 -1,5 +1,5 @@@").unwrap();
+        assert_eq!(test_me.expected_line_counts, vec![5, 5, 5]);
+
+        test_me.decrease_expected_line_counts(" -").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![5, 4, 5],
+            "Minus counts should have gone down"
+        );
+
+        test_me.decrease_expected_line_counts("- ").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![4, 4, 5],
+            "Minus counts should have gone down"
+        );
+
+        test_me.decrease_expected_line_counts("--").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![3, 3, 5],
+            "Minus and space counts should have gone down"
+        );
+
+        test_me.decrease_expected_line_counts("++").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![3, 3, 4],
+            "With a + line, we should decrease the last line count"
+        );
+
+        test_me.decrease_expected_line_counts(" +").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![2, 3, 3],
+            "First count should have gone down because of the space in its column. Last count should have gone down because of the + in its column."
+        );
+
+        test_me.decrease_expected_line_counts("  ").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![1, 2, 2],
+            "All counts should drop on context (space only) lines"
+        );
     }
 }
