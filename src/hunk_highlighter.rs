@@ -133,8 +133,8 @@ impl HunkLinesHighlighter {
         let (prefix, line) = line.split_at(self.expected_line_counts.len() - 1);
         if prefix.chars().any(|c| ![' ', '-', '+'].contains(&c)) {
             return Err(format!(
-                "Unexpected character in prefix <{}>, only +, - and space allowed",
-                prefix
+                "Unexpected character in prefix <{prefix}>, only +, - and space allowed JOHAN: {:?}",
+                self.expected_line_counts,
             ));
         }
 
@@ -182,32 +182,18 @@ impl HunkLinesHighlighter {
                 return Err("Got more + lines than expected".to_string());
             }
             *expected_line_count -= 1;
-
-            // Now, also decrease any ` ` columns
-            for (pos, plus_minus_space) in prefix.chars().enumerate() {
-                if plus_minus_space != ' ' {
-                    continue;
-                }
-
-                let expected_line_count = &mut self.expected_line_counts[pos];
-                if *expected_line_count == 0 {
-                    return Err(format!(
-                        "Got more lines than expected for version (space column) {:?}",
-                        pos + 1,
-                    ));
-                }
-
-                *expected_line_count -= 1;
-            }
-
-            return Ok(());
         }
 
-        for pos in 0..prefix.len() {
+        // Now, also decrease any ` ` columns
+        for (pos, plus_minus_space) in prefix.chars().enumerate() {
+            if plus_minus_space != ' ' && plus_minus_space != '-' {
+                continue;
+            }
+
             let expected_line_count = &mut self.expected_line_counts[pos];
             if *expected_line_count == 0 {
                 return Err(format!(
-                    "Got more lines than expected for version (space or minus column) {:?}",
+                    "Got more lines than expected for version (space column) {:?}",
                     pos + 1,
                 ));
             }
