@@ -182,18 +182,32 @@ impl HunkLinesHighlighter {
                 return Err("Got more + lines than expected".to_string());
             }
             *expected_line_count -= 1;
+
+            // Now, also decrease any ` ` columns
+            for (pos, plus_minus_space) in prefix.chars().enumerate() {
+                if plus_minus_space != ' ' {
+                    continue;
+                }
+
+                let expected_line_count = &mut self.expected_line_counts[pos];
+                if *expected_line_count == 0 {
+                    return Err(format!(
+                        "Got more lines than expected for version (space column) {:?}",
+                        pos + 1,
+                    ));
+                }
+
+                *expected_line_count -= 1;
+            }
+
             return Ok(());
         }
 
-        for (pos, plus_minus_space) in prefix.chars().enumerate() {
-            if plus_minus_space == ' ' {
-                continue;
-            }
-
+        for pos in 0..prefix.len() {
             let expected_line_count = &mut self.expected_line_counts[pos];
             if *expected_line_count == 0 {
                 return Err(format!(
-                    "Got more lines than expected for version (column) {:?}",
+                    "Got more lines than expected for version (space or minus column) {:?}",
                     pos + 1,
                 ));
             }
