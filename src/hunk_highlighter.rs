@@ -427,4 +427,38 @@ mod tests {
 
         assert!(!test_me.more_lines_expected());
     }
+
+    #[test]
+    fn test_decrease_expected_line_count_merge() {
+        let mut test_me = HunkLinesHighlighter::from_line("@@@ -1,2 -1,2 +1,2 @@@").unwrap();
+        assert_eq!(test_me.expected_line_counts, vec![2, 2, 2]);
+
+        test_me.decrease_expected_line_counts(" -").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![2, 1, 2],
+            "Second line count should have gone down"
+        );
+
+        test_me.decrease_expected_line_counts("- ").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![1, 1, 2],
+            "First line count should have gone down"
+        );
+
+        test_me.decrease_expected_line_counts("--").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![0, 0, 2],
+            "First and second line counts should have gone down"
+        );
+
+        test_me.decrease_expected_line_counts("++").unwrap();
+        assert_eq!(
+            test_me.expected_line_counts,
+            vec![0, 0, 1],
+            "With a + line, we should decrease the last line count"
+        );
+    }
 }
