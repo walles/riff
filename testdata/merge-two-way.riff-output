@@ -4,7 +4,7 @@ Author: Johan Walles <johan.walles@gmail.com>
 Date:   Thu Jan 25 08:57:37 2024 +0100
 
     Merge branch 'branch'
-
+    
     Conflicts handled.
 
 [2mdiff --cc file.txt[0m
@@ -14,7 +14,7 @@ Date:   Thu Jan 25 08:57:37 2024 +0100
 [36m@@@ -1,10 -1,8 +1,9 @@@[0m
   This is the first line.
 [31m -This line [7mwill be[27m edited in the main branch.[0m
-[32m +This line [7mwas edited[27m in the main branch.[0m
+[32m +This line [7mwas[27m edited in the main branch.[0m
   This is placeholder line one.
 [31m- This line will be removed in the branch.[0m
   This is placeholder line two.
@@ -29,5 +29,5 @@ Date:   Thu Jan 25 08:57:37 2024 +0100
   This is placeholder line six.
 [31m- -> A prefix will be added to this line on main, a suffix on branch and the middle [7mwill be[27m changed during conflict resolution.[0m
 [31m -A prefix will be added to this line on main, a suffix on branch and the middle [7mwill be[27m changed during conflict resolution. <-[0m
-[32m++[7m-> [27mA prefix will be added to this line on main, a suffix on branch and the middle [7mwas changed[27m during conflict resolution.[7m <-[27m[0m
+[32m++[7m-> [27mA prefix will be added to this line on main, a suffix on branch and the middle [7mwas[27m changed during conflict resolution.[7m <-[27m[0m
   This is placeholder line seven.
