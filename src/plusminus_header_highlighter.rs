@@ -6,7 +6,7 @@ use crate::lines_highlighter::{LinesHighlighter, Response};
 use crate::refiner::to_highlighted_tokens;
 use crate::string_future::StringFuture;
 use crate::token_collector::{
-    lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,
+    align_tabs, lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,
     LINE_STYLE_OLD_FILENAME,
 };
 
@@ -92,8 +92,11 @@ impl PlusMinusHeaderHighlighter {
             to_highlighted_tokens(&self.old_name, &self.new_name);
 
         lowlight_timestamp(&mut old_tokens);
-        unhighlight_git_prefix(&mut old_tokens);
         lowlight_timestamp(&mut new_tokens);
+
+        align_tabs(&mut old_tokens, &mut new_tokens);
+
+        unhighlight_git_prefix(&mut old_tokens);
         unhighlight_git_prefix(&mut new_tokens);
 
         let old_filename = render(&LINE_STYLE_OLD_FILENAME, "--- ", &old_tokens);
@@ -106,5 +109,36 @@ impl PlusMinusHeaderHighlighter {
         highlighted.push('\n');
 
         return highlighted;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ansi::remove_ansi_escape_codes;
+
+    use super::*;
+
+    #[test]
+    fn test_align_timestamps() {
+        let mut test_me =
+            PlusMinusHeaderHighlighter::from_line("--- x.txt\t2023-12-15 15:43:29").unwrap();
+        let mut response = test_me
+            .consume_line(
+                "+++ /Users/johan/src/riff/README.md\t2024-01-29 14:56:40",
+                &ThreadPool::new(1),
+            )
+            .unwrap();
+        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
+        assert_eq!(1, response.highlighted.len());
+
+        let mut highlighted = response.highlighted[0].get().to_string().into_bytes();
+        remove_ansi_escape_codes(&mut highlighted);
+        let plain = String::from_utf8(highlighted).unwrap();
+
+        assert_eq!(
+            "--- x.txt                            2023-12-15 15:43:29\n\
+            +++ /Users/johan/src/riff/README.md  2024-01-29 14:56:40\n",
+            plain.as_str()
+        );
     }
 }

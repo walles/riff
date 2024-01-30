@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::ansi::AnsiStyle;
 use crate::ansi::Color::Default;
 use crate::ansi::Color::Green;
@@ -309,6 +311,38 @@ pub fn highlight_nonleading_tabs(tokens: &mut [StyledToken]) {
             token.style = Style::Error;
         }
     }
+}
+
+pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
+    let old_tab_index_token = old.iter().position(|token| token.token == "\t");
+    if old_tab_index_token.is_none() {
+        return;
+    }
+    let old_tab_index_token = old_tab_index_token.unwrap();
+    let old_tab_index_char = old
+        .iter()
+        .take(old_tab_index_token)
+        .map(|token| token.token.chars().count())
+        .sum::<usize>();
+
+    let new_tab_index_token = new.iter().position(|token| token.token == "\t");
+    if new_tab_index_token.is_none() {
+        return;
+    }
+    let new_tab_index_token = new_tab_index_token.unwrap();
+    let new_tab_index_char = new
+        .iter()
+        .take(new_tab_index_token)
+        .map(|token| token.token.chars().count())
+        .sum::<usize>();
+
+    let old_spaces =
+        " ".repeat(2 + cmp::max(old_tab_index_char, new_tab_index_char) - old_tab_index_char);
+    let new_spaces =
+        " ".repeat(2 + cmp::max(old_tab_index_char, new_tab_index_char) - new_tab_index_char);
+
+    old[old_tab_index_token].token = old_spaces;
+    new[new_tab_index_token].token = new_spaces;
 }
 
 /// Highlight single space between two highlighted tokens
