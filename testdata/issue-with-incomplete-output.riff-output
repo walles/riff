@@ -1,0 +1,110 @@
+[2mdiff --git src/plusminus_header_highlighter.rs src/plusminus_header_highlighter.rs[0m
+[2mindex 5bb5056..c354931 100644[0m
+[1m--- src/plusminus_header_highlighter.rs[0m
+[1m+++ src/plusminus_header_highlighter.rs[0m
+[36m@@ -6,7 +6,7 @@ [1muse crate::lines_highlighter::{LinesHighlighter, Response};[0m
+ use crate::refiner::to_highlighted_tokens;
+ use crate::string_future::StringFuture;
+ use crate::token_collector::{
+[2m[31m-    lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,[0m
+[2m[32m+[0m    [7m[32malign_tabs, [0mlowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,
+     LINE_STYLE_OLD_FILENAME,
+ };
+ 
+[36m@@ -92,8 +92,11 @@ [1mimpl PlusMinusHeaderHighlighter {[0m
+             to_highlighted_tokens(&self.old_name, &self.new_name);
+ 
+         lowlight_timestamp(&mut old_tokens);
+[31m-        unhighlight_git_prefix(&mut old_tokens);[0m
+         lowlight_timestamp(&mut new_tokens);
+[32m+[0m
+[32m+        align_tabs(&mut old_tokens, &mut new_tokens);[0m
+[32m+[0m
+[32m+        unhighlight_git_prefix(&mut old_tokens);[0m
+         unhighlight_git_prefix(&mut new_tokens);
+ 
+         let old_filename = render(&LINE_STYLE_OLD_FILENAME, "--- ", &old_tokens);
+[36m@@ -108,3 +111,34 @@ [1mimpl PlusMinusHeaderHighlighter {[0m
+         return highlighted;
+     }
+ }
+[32m+[0m
+[32m+#[cfg(test)][0m
+[32m+mod tests {[0m
+[32m+    use crate::ansi::remove_ansi_escape_codes;[0m
+[32m+[0m
+[32m+    use super::*;[0m
+[32m+[0m
+[32m+    #[test][0m
+[32m+    fn test_align_timestamps() {[0m
+[32m+        let mut test_me =[0m
+[32m+            PlusMinusHeaderHighlighter::from_line("--- x.txt\t2023-12-15 15:43:29").unwrap();[0m
+[32m+        let mut response = test_me[0m
+[32m+            .consume_line([0m
+[32m+                "+++ /Users/johan/src/riff/README.md\t2024-01-29 14:56:40",[0m
+[32m+                &ThreadPool::new(1),[0m
+[32m+            )[0m
+[32m+            .unwrap();[0m
+[32m+        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);[0m
+[32m+        assert_eq!(1, response.highlighted.len());[0m
+[32m+[0m
+[32m+        let mut highlighted = response.highlighted[0].get().to_string().into_bytes();[0m
+[32m+        remove_ansi_escape_codes(&mut highlighted);[0m
+[32m+        let plain = String::from_utf8(highlighted).unwrap();[0m
+[32m+[0m
+[32m+        assert_eq!([0m
+[32m+            "--- x.txt                            2023-12-15 15:43:29\n\[0m
+[32m+            +++ /Users/johan/src/riff/README.md  2024-01-29 14:56:40\n",[0m
+[32m+            plain.as_str()[0m
+[32m+        );[0m
+[32m+    }[0m
+[32m+}[0m
+[2mdiff --git src/token_collector.rs src/token_collector.rs[0m
+[2mindex b58c50f..e4d4152 100644[0m
+[1m--- src/token_collector.rs[0m
+[1m+++ src/token_collector.rs[0m
+[36m@@ -1,3 +1,5 @@[0m
+[32m+use std::cmp;[0m
+[32m+[0m
+ use crate::ansi::AnsiStyle;
+ use crate::ansi::Color::Default;
+ use crate::ansi::Color::Green;
+[36m@@ -311,6 +313,38 @@ [1mpub fn highlight_nonleading_tabs(tokens: &mut [StyledToken]) {[0m
+     }
+ }
+ 
+[32m+pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {[0m
+[32m+    let old_tab_index_token = old.iter().position(|token| token.token == "\t");[0m
+[32m+    if old_tab_index_token.is_none() {[0m
+[32m+        return;[0m
+[32m+    }[0m
+[32m+    let old_tab_index_token = old_tab_index_token.unwrap();[0m
+[32m+    let old_tab_index_char = old[0m
+[32m+        .iter()[0m
+[32m+        .take(old_tab_index_token)[0m
+[32m+        .map(|token| token.token.chars().count())[0m
+[32m+        .sum::<usize>();[0m
+[32m+[0m
+[32m+    let new_tab_index_token = new.iter().position(|token| token.token == "\t");[0m
+[32m+    if new_tab_index_token.is_none() {[0m
+[32m+        return;[0m
+[32m+    }[0m
+[32m+    let new_tab_index_token = new_tab_index_token.unwrap();[0m
+[32m+    let new_tab_index_char = new[0m
+[32m+        .iter()[0m
+[32m+        .take(new_tab_index_token)[0m
+[32m+        .map(|token| token.token.chars().count())[0m
+[32m+        .sum::<usize>();[0m
+[32m+[0m
+[32m+    let old_spaces =[0m
+[32m+        " ".repeat(2 + cmp::max(old_tab_index_char, new_tab_index_char) - old_tab_index_char);[0m
+[32m+    let new_spaces =[0m
+[32m+        " ".repeat(2 + cmp::max(old_tab_index_char, new_tab_index_char) - new_tab_index_char);[0m
+[32m+[0m
+[32m+    old[old_tab_index_token].token = old_spaces;[0m
+[32m+    new[new_tab_index_token].token = new_spaces;[0m
+[32m+}[0m
+[32m+[0m
+ /// Highlight single space between two highlighted tokens
+ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
+     enum FoundState {

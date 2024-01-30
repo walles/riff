@@ -61,6 +61,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
         }
 
         if !self.more_lines_expected() {
+            return_me.append(&mut self.drain(thread_pool));
             return Ok(Response {
                 line_accepted: LineAcceptance::RejectedDone,
                 highlighted: return_me,
