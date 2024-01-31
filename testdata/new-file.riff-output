@@ -2,7 +2,7 @@
 [2mnew file mode 100644[0m
 [2mindex 0000000..ad5deba[0m
 [1m--- [22m[2m/dev/null[0m
-[1m+++ NEW b/etc/db/004_table_gris.up.sql[0m
+[1m+++ NEW [22m[2mb/[22m[1metc/db/004_table_gris.up.sql[0m
 [36m@@ -0,0 +1,3 @@[0m
 [32m+CREATE TABLE gris ([0m
 [32m+  id uuid PRIMARY KEY[0m

@@ -68,7 +68,16 @@ impl PlusMinusHeaderHighlighter {
 
             highlighted.push_str(BOLD);
             highlighted.push_str("+++ NEW ");
-            highlighted.push_str(&self.new_name);
+            if let Some(no_prefix) = self.new_name.strip_prefix("b/") {
+                highlighted.push_str(NORMAL_INTENSITY);
+                highlighted.push_str(FAINT);
+                highlighted.push_str("b/");
+                highlighted.push_str(NORMAL_INTENSITY);
+                highlighted.push_str(BOLD);
+                highlighted.push_str(no_prefix);
+            } else {
+                highlighted.push_str(&self.new_name);
+            }
             highlighted.push_str(NORMAL);
             highlighted.push('\n');
 
@@ -81,7 +90,16 @@ impl PlusMinusHeaderHighlighter {
 
             highlighted.push_str(BOLD);
             highlighted.push_str("--- DELETED ");
-            highlighted.push_str(&self.old_name);
+            if let Some(no_prefix) = self.old_name.strip_prefix("a/") {
+                highlighted.push_str(NORMAL_INTENSITY);
+                highlighted.push_str(FAINT);
+                highlighted.push_str("a/");
+                highlighted.push_str(NORMAL_INTENSITY);
+                highlighted.push_str(BOLD);
+                highlighted.push_str(no_prefix);
+            } else {
+                highlighted.push_str(&self.old_name);
+            }
             highlighted.push_str(NORMAL);
             highlighted.push('\n');
 
