@@ -55,15 +55,19 @@ impl LinesHighlighter for PlusMinusHeaderHighlighter {
 impl PlusMinusHeaderHighlighter {
     fn highlighted(&self) -> String {
         if self.old_name == "/dev/null" {
+            // New file added
             let mut highlighted = String::new();
 
+            highlighted.push_str(BOLD);
+            highlighted.push_str("--- ");
+            highlighted.push_str(NORMAL_INTENSITY);
             highlighted.push_str(FAINT);
-            highlighted.push_str("--- /dev/null");
+            highlighted.push_str("/dev/null");
             highlighted.push_str(NORMAL);
             highlighted.push('\n');
 
             highlighted.push_str(BOLD);
-            highlighted.push_str("+++ ");
+            highlighted.push_str("+++ NEW ");
             highlighted.push_str(&self.new_name);
             highlighted.push_str(NORMAL);
             highlighted.push('\n');
@@ -72,16 +76,20 @@ impl PlusMinusHeaderHighlighter {
         }
 
         if self.new_name == "/dev/null" {
+            // File deleted
             let mut highlighted = String::new();
 
             highlighted.push_str(BOLD);
-            highlighted.push_str("--- ");
+            highlighted.push_str("--- DELETED ");
             highlighted.push_str(&self.old_name);
             highlighted.push_str(NORMAL);
             highlighted.push('\n');
 
+            highlighted.push_str(BOLD);
+            highlighted.push_str("+++ ");
+            highlighted.push_str(NORMAL_INTENSITY);
             highlighted.push_str(FAINT);
-            highlighted.push_str("+++ /dev/null");
+            highlighted.push_str("/dev/null");
             highlighted.push_str(NORMAL);
             highlighted.push('\n');
 
