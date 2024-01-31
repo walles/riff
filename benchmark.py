@@ -93,14 +93,16 @@ def gather_binaries():
     # Query git for all Rust versions released and store freshly built binaries
     # for those in BINDIR
     tags = [tag.decode() for tag in subprocess.check_output(["git", "tag"]).split()]
-    tags.remove("PRERELEASE")
+
+    # Only include version number tags
+    tags = list(filter(lambda tag: re.match(r"^[0-9.]+$", tag), tags))
 
     # Ignore Ruby tags
     rust_tags = list(filter(lambda tag: not tag.startswith("0"), tags))
     rust_tags = list(filter(lambda tag: not tag.startswith("1"), rust_tags))
 
-    # Just do the three last releases
-    rust_tags = list(sorted(rust_tags, key=natural_keys))[-3:]
+    # Just do the four last releases
+    rust_tags = list(sorted(rust_tags, key=natural_keys))[-4:]
 
     # Build binaries we need
     with tempfile.TemporaryDirectory(prefix="riff-benchmark") as clonedir:
@@ -190,9 +192,9 @@ def time_binaries():
         # Do riff-current last: https://stackoverflow.com/a/20320940/473672
         binaries.sort(key=lambda s: s.endswith("riff-current"))
 
-        # 5 = three versions back, plus the most recent commit and any
+        # 5 = four versions back, plus the most recent commit and any
         # non-commited changes
-        for binary in binaries[-5:]:
+        for binary in binaries[-6:]:
             print_timings(binary, testdata.name)
         print_timings("/bin/cat", testdata.name)
 
