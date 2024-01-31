@@ -50,10 +50,15 @@ impl AnsiStyle {
         }
 
         if self.weight != before.weight {
-            match self.weight {
-                Weight::Normal => return_me.push_str("\x1b[22m"),
-                Weight::Bold => return_me.push_str("\x1b[1m"),
-                Weight::Faint => return_me.push_str("\x1b[2m"),
+            if before.weight != Weight::Normal {
+                // Turn off bold or faint
+                return_me.push_str("\x1b[22m");
+            }
+            if self.weight == Weight::Faint {
+                return_me.push_str("\x1b[2m");
+            }
+            if self.weight == Weight::Bold {
+                return_me.push_str("\x1b[1m");
             }
         }
 
