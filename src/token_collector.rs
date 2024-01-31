@@ -464,8 +464,8 @@ pub fn unhighlight_git_prefix(row: &mut [StyledToken]) {
     }
 
     if (row[0].token == "a" || row[0].token == "b") && row[1].token == "/" {
-        row[0].style = Style::Plain;
-        row[1].style = Style::Plain;
+        row[0].style = Style::Lowlighted;
+        row[1].style = Style::Lowlighted;
     }
 }
 

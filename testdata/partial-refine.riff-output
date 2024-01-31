@@ -1,7 +1,7 @@
 [2mdiff --git a/src/main.rs b/src/main.rs[0m
 [2mindex 55a7c18..8826249 100644[0m
-[1m--- a/src/main.rs[0m
-[1m+++ b/src/main.rs[0m
+[1m--- [22m[2ma/[22m[1msrc/main.rs[0m
+[1m+++ [22m[2mb/[22m[1msrc/main.rs[0m
 [36m@@ -90,7 +91,15 @@ [1mfn get_fixed_highlight(line: &str) -> &str {[0m
  }
 
