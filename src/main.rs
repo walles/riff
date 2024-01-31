@@ -35,6 +35,8 @@ mod string_future;
 mod token_collector;
 mod tokenizer;
 
+static mut NO_ADDS_ONLY_SPECIAL: bool = false;
+
 const HELP_TEXT_FOOTER: &str = r#"Installing riff in the $PATH:
   sudo cp riff /usr/local/bin
 
@@ -68,9 +70,9 @@ const GIT_VERSION: &str = git_version!(cargo_prefix = "");
     about = "Colors diff output, highlighting the changed parts of every line.",
     after_help = HELP_TEXT_FOOTER,
     override_usage = r#"
-  diff ... | riff [--no-pager]
-  riff [-b] [--no-pager] <X1> <X2>
-  riff [-b] [--no-pager] --file <FILE>"#
+  diff ... | riff [--no-pager] [--no-adds-only-special]
+  riff [-b] [--no-pager] [--no-adds-only-special] <X1> <X2>
+  riff [-b] [--no-pager] [--no-adds-only-special] --file <FILE>"#
 )]
 
 struct Options {
@@ -93,6 +95,11 @@ struct Options {
     /// Don't page the result
     #[arg(long)]
     no_pager: bool,
+
+    /// No special highlighting for lines that only add content
+    // Ref: https://github.com/walles/riff/issues/47
+    #[arg(long)]
+    no_adds_only_special: bool,
 
     #[arg(long, hide(true))]
     please_panic: bool,
@@ -268,6 +275,7 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool) {
     highlight_diff_or_exit(input, io::stdout());
 }
 
+/// `Not found`, `File`, `Directory` or `Not file not dir`
 pub fn type_string(path: &path::Path) -> &str {
     if !path.exists() {
         return "Not found";
@@ -365,6 +373,11 @@ fn main() {
     if options.please_panic {
         panic!("Panicking on purpose");
     }
+
+    unsafe {
+        // Nothing going on yet, updating this variable should be fine!
+        NO_ADDS_ONLY_SPECIAL = options.no_adds_only_special
+    };
 
     if let (Some(file1), Some(file2)) = (options.x1, options.x2) {
         // "riff file1 file2"

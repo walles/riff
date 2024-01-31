@@ -2,6 +2,7 @@ use crate::constants::*;
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::token_collector::*;
 use crate::tokenizer;
+use crate::NO_ADDS_ONLY_SPECIAL;
 use diffus::{
     edit::{self, collection},
     Diffable,
@@ -136,12 +137,14 @@ pub fn format(prefixes: &Vec<&str>, prefix_texts: &Vec<&str>) -> Vec<String> {
         .iter()
         .all(|tokens| count_lines(tokens) == new_line_count);
 
-    let (old_style, new_style) = if old_highlights || new_unhighlighted || !all_line_counts_match {
-        // Classical highlighting
-        (LINE_STYLE_OLD, LINE_STYLE_NEW)
-    } else {
-        // Special adds-only highlighting
-        (LINE_STYLE_OLD_FAINT, LINE_STYLE_ADDS_ONLY)
+    let (old_style, new_style) = unsafe {
+        if NO_ADDS_ONLY_SPECIAL || old_highlights || new_unhighlighted || !all_line_counts_match {
+            // Classical highlighting
+            (LINE_STYLE_OLD, LINE_STYLE_NEW)
+        } else {
+            // Special adds-only highlighting
+            (LINE_STYLE_OLD_FAINT, LINE_STYLE_ADDS_ONLY)
+        }
     };
 
     // First render() into strings, then to_lines() into lines
