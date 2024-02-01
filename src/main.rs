@@ -388,7 +388,24 @@ fn main() {
         panic_handler(panic_info);
     }));
 
-    let options = Options::parse_from(env_and_command_line());
+    let options = Options::try_parse_from(env_and_command_line());
+    if let Err(e) = options {
+        let _ = e.print();
+        if let Ok(riff) = env::var("RIFF") {
+            if e.kind() == clap::error::ErrorKind::DisplayHelp {
+                println!("");
+                println!("Environment:");
+                println!("  RIFF={}", riff);
+            } else {
+                eprintln!("");
+                eprintln!("Environment:");
+                eprintln!("  RIFF={}", riff);
+            }
+        }
+
+        exit(e.exit_code());
+    }
+    let options = options.unwrap();
 
     if options.please_panic {
         panic!("Panicking on purpose");
