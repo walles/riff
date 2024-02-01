@@ -393,11 +393,11 @@ fn main() {
         let _ = e.print();
         if let Ok(riff) = env::var("RIFF") {
             if e.kind() == clap::error::ErrorKind::DisplayHelp {
-                println!("");
+                println!();
                 println!("Environment:");
                 println!("  RIFF={}", riff);
             } else {
-                eprintln!("");
+                eprintln!();
                 eprintln!("Environment:");
                 eprintln!("  RIFF={}", riff);
             }
