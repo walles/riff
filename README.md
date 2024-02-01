@@ -34,6 +34,14 @@ Or you can use `riff` as an alias for `diff`:
 riff file1.txt file2.txt
 ```
 
+## Configuration
+
+You can configure `riff` by setting the `RIFF` environment variable to one or
+more (space separated) command line options.
+
+For example, set `RIFF=--no-adds-only-special` to disable adds-only special
+highlighting.
+
 # Installation
 
 ## With [Homebrew](https://brew.sh)

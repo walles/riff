@@ -363,12 +363,49 @@ fn exec_diff_highlight(path1: &str, path2: &str, ignore_space_change: bool, no_p
     }
 }
 
+/// Will return the first argument from the command line, followed by any
+/// arguments from the `RIFF` environment variable, followed by the rest of the
+/// command line arguments.
+fn env_and_command_line() -> Vec<String> {
+    let mut result = vec![];
+
+    // First argument from the command line
+    result.push(env::args().next().unwrap());
+
+    // Arguments from the `RIFF` environment variable
+    if let Ok(riff) = env::var("RIFF") {
+        result.extend(riff.split_whitespace().map(str::to_string));
+    }
+
+    // Rest of the command line arguments
+    result.extend(env::args().skip(1));
+
+    return result;
+}
+
 fn main() {
     panic::set_hook(Box::new(|panic_info: &panic::PanicInfo| {
         panic_handler(panic_info);
     }));
 
-    let options = Options::parse();
+    let options = Options::try_parse_from(env_and_command_line());
+    if let Err(e) = options {
+        let _ = e.print();
+        if let Ok(riff) = env::var("RIFF") {
+            if e.kind() == clap::error::ErrorKind::DisplayHelp {
+                println!();
+                println!("Environment:");
+                println!("  RIFF={}", riff);
+            } else {
+                eprintln!();
+                eprintln!("Environment:");
+                eprintln!("  RIFF={}", riff);
+            }
+        }
+
+        exit(e.exit_code());
+    }
+    let options = options.unwrap();
 
     if options.please_panic {
         panic!("Panicking on purpose");
