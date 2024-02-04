@@ -168,38 +168,6 @@ impl HunkLinesHighlighter {
         return Ok(());
     }
 
-    #[must_use]
-    fn drain(&mut self, thread_pool: &ThreadPool) -> Vec<StringFuture> {
-        // Return nothing if all flavors are empty
-        if self.texts.iter().all(|flavor| flavor.is_empty()) {
-            return vec![];
-        }
-
-        let texts = self.texts.clone();
-        let prefixes = self.prefixes.clone();
-
-        self.texts.clear();
-        self.prefixes.clear();
-
-        let return_me = StringFuture::from_function(
-            move || {
-                let mut result = String::new();
-                for line in refiner::format(
-                    &prefixes.iter().map(String::as_ref).collect(),
-                    &texts.iter().map(String::as_ref).collect(),
-                ) {
-                    result.push_str(&line);
-                    result.push('\n');
-                }
-
-                result
-            },
-            thread_pool,
-        );
-
-        return vec![return_me];
-    }
-
     fn more_lines_expected(&self) -> bool {
         for expected_line_count in &self.expected_line_counts {
             if *expected_line_count != 0 {
