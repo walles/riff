@@ -17,21 +17,6 @@ pub(crate) struct HunkLinesHighlighter {
 }
 
 impl LinesHighlighter for HunkLinesHighlighter {
-    fn from_line(line: &str) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        if let Some(hunk_header) = HunkHeader::parse(line) {
-            return Some(HunkLinesHighlighter {
-                hunk_header: Some(hunk_header.render()),
-                expected_line_counts: hunk_header.linecounts,
-                lines_highlighter: None,
-            });
-        }
-
-        return None;
-    }
-
     fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String> {
         let mut return_me = vec![];
 
@@ -58,7 +43,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
         }
 
         if !self.more_lines_expected() {
-            if let Some(mut lines_highlighter) = self.lines_highlighter {
+            if let Some(ref mut lines_highlighter) = self.lines_highlighter {
                 let mut result = lines_highlighter.consume_eof(thread_pool)?;
                 return_me.append(&mut result);
             }
@@ -117,6 +102,24 @@ impl LinesHighlighter for HunkLinesHighlighter {
 }
 
 impl HunkLinesHighlighter {
+    /// Create a new LinesHighlighter from a line of input.
+    ///
+    /// Returns None if this line doesn't start a new LinesHighlighter.
+    pub(crate) fn from_line(line: &str) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if let Some(hunk_header) = HunkHeader::parse(line) {
+            return Some(HunkLinesHighlighter {
+                hunk_header: Some(hunk_header.render()),
+                expected_line_counts: hunk_header.linecounts,
+                lines_highlighter: None,
+            });
+        }
+
+        return None;
+    }
+
     fn decrease_expected_line_counts(&mut self, prefix: &str) -> Result<(), String> {
         if prefix.contains('+') || prefix.chars().all(|c| c == ' ') {
             // Any additions always count towards the last (additions) line
