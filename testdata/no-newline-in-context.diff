@@ -1,0 +1,7 @@
+--- /tmp/dom/apa.txt	2024-02-04 08:36:46
++++ /tmp/dom/bepa.txt	2024-02-04 08:37:13
+@@ -1,2 +1,2 @@
+-Change this line
++This line was changed
+ This line has no EOL
+\ No newline at end of file
