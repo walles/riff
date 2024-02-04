@@ -1,7 +1,6 @@
 use threadpool::ThreadPool;
 
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
-use crate::string_future::StringFuture;
 
 #[derive(Debug)]
 pub(crate) struct PlusMinusLinesHighlighter {

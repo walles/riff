@@ -45,15 +45,25 @@ impl LinesHighlighter for HunkLinesHighlighter {
         if let Some(lines_highlighter) = &mut self.lines_highlighter {
             let mut result = lines_highlighter.consume_line(line, thread_pool)?;
             return_me.append(&mut result.highlighted);
-            if result.line_accepted != LineAcceptance::AcceptedWantMore {
-                self.lines_highlighter = None;
+            match result.line_accepted {
+                LineAcceptance::AcceptedWantMore => { /* Just keep going */ }
+                LineAcceptance::AcceptedDone => {
+                    self.lines_highlighter = None;
+                }
+                LineAcceptance::RejectedDone => {
+                    todo!("Handle rejection");
+                }
             }
-        } else if line.starts_with('\\') {
-            return self.consume_nnaeof(thread_pool, return_me);
+        } else {
+            // FIXME: Handle a nnaeof line outside the + and - lines?
         }
 
         if !self.more_lines_expected() {
-            return_me.append(&mut self.drain(thread_pool));
+            if let Some(lines_highlighter) = self.lines_highlighter {
+                let result = lines_highlighter.consume_eof(thread_pool)?;
+                return_me.append(&mut result);
+            }
+
             return Ok(Response {
                 line_accepted: LineAcceptance::RejectedDone,
                 highlighted: return_me,
