@@ -96,6 +96,26 @@ impl LinesHighlighter for PlusMinusLinesHighlighter {
 }
 
 impl PlusMinusLinesHighlighter {
+    #[must_use]
+    pub(crate) fn from_line(line: &str, prefix_length: usize) -> Option<Self> {
+        if line.len() < prefix_length {
+            return None;
+        }
+
+        let (prefix, _) = line.split_at(prefix_length);
+        if !prefix.chars().any(|c| ['-', '+'].contains(&c)) {
+            // Only whitespace in the prefix, this is not us
+            return None;
+        }
+
+        return Some(PlusMinusLinesHighlighter {
+            prefix_length,
+            texts: vec![],
+            prefixes: vec![prefix.to_string()],
+            last_seen_prefix: None,
+        });
+    }
+
     /// Returns `` (the empty string) on no-current-prefix
     fn current_prefix(&self) -> &str {
         if let Some(prefix) = self.prefixes.last() {
@@ -213,7 +233,7 @@ mod tests {
             *no_eof_newline_marker = Some("\\ No newline at end of file".to_string());
         }
 
-        let mut test_me = PlusMinusLinesHighlighter::from_line("+No trailing newline").unwrap();
+        let mut test_me = PlusMinusLinesHighlighter::from_line("+No trailing newline", 1).unwrap();
         assert_eq!(test_me.expected_line_counts, vec![1, 2]);
 
         let thread_pool = ThreadPool::new(1);

@@ -38,6 +38,15 @@ impl LinesHighlighter for HunkLinesHighlighter {
                     todo!("Handle rejection");
                 }
             }
+        } else if let Some(highlighter) =
+            // The `- 1` here is because there's one line count per column, plus
+            // one for the result. So `- 1` gives us the prefix length.
+            PlusMinusLinesHighlighter::from_line(
+                line,
+                self.expected_line_counts.len() - 1,
+            )
+        {
+            self.lines_highlighter = Some(highlighter);
         } else {
             // FIXME: Handle a nnaeof line outside the + and - lines?
         }
