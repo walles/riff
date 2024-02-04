@@ -55,7 +55,12 @@ impl LinesHighlighter for HunkLinesHighlighter {
             self.hunk_header = None;
         }
 
+        // FIXME: Try consuming a plusminus line if that's where we're at.
+        // Plusminus lines are lines having + or - in their prefixes, or nnaeol
+        // lines.
+
         // "\ No newline at end of file"
+        /* else */
         if line.starts_with('\\') {
             return self.consume_nnaeof(thread_pool, return_me);
         }
@@ -77,6 +82,9 @@ impl LinesHighlighter for HunkLinesHighlighter {
         };
         self.decrease_expected_line_counts(prefix)?;
 
+        // It wasn't a plusminus line, it wasn't a nnaeof line, and we're still
+        // expecting more lines. It must be a context line.
+
         // Context lines
         if line.is_empty() || line.starts_with(&spaces_only) {
             return_me.append(&mut self.drain(thread_pool));
@@ -97,6 +105,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
             });
         }
 
+        // FIXME: Plusminus lines should already have been handled above.
         assert!(!line.is_empty()); // Handled as a plain line above
         return self.consume_plusminus_line(line, thread_pool, return_me);
     }
