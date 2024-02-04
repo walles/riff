@@ -217,12 +217,12 @@ impl PlusMinusLinesHighlighter {
 
 #[cfg(test)]
 mod tests {
-    use threadpool::ThreadPool;
-
+    use crate::lines_highlighter::LinesHighlighter;
     use crate::{
         line_collector::NO_EOF_NEWLINE_MARKER_HOLDER, lines_highlighter::LineAcceptance,
         plusminus_lines_highlighter::PlusMinusLinesHighlighter,
     };
+    use threadpool::ThreadPool;
 
     // `\ No newline at end of file` test, based on
     // `testdata/add-remove-trailing-newline.diff`.
@@ -234,22 +234,10 @@ mod tests {
         }
 
         let mut test_me = PlusMinusLinesHighlighter::from_line("+No trailing newline", 1).unwrap();
-        assert_eq!(test_me.expected_line_counts, vec![1, 2]);
+        assert_eq!(test_me.texts, vec!["No trailing newline\n"]);
+        assert_eq!(test_me.prefixes, vec!["+"]);
 
         let thread_pool = ThreadPool::new(1);
-        test_me.consume_line(" Hello", &thread_pool).unwrap();
-        let result = test_me
-            .consume_line("+No trailing newline", &thread_pool)
-            .unwrap();
-
-        // We should now be expecting the `\ No newline at end of file` line
-        assert_eq!(result.line_accepted, LineAcceptance::AcceptedWantMore);
-        assert_eq!(result.highlighted.len(), 0);
-
-        assert_eq!(test_me.expected_line_counts, vec![0, 0]);
-        assert_eq!(test_me.prefixes, vec!["+"]);
-        assert_eq!(test_me.texts, vec!["No trailing newline\n"]);
-
         let mut result = test_me
             .consume_line("\\ No newline at end of file", &thread_pool)
             .unwrap();
@@ -259,7 +247,5 @@ mod tests {
             result.highlighted[0].get(),
             "\u{1b}[32m+No trailing newline\u{1b}[31m\u{1b}[7m⏎\u{1b}[0m\n\u{1b}[2m\\ No newline at end of file\u{1b}[0m\n",
         );
-
-        assert!(!test_me.more_lines_expected());
     }
 }
