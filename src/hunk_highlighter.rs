@@ -68,12 +68,18 @@ impl LinesHighlighter for HunkLinesHighlighter {
             });
         }
 
+        let prefix_length = self.expected_line_counts.len() - 1;
+        let spaces_only = " ".repeat(prefix_length);
+        let prefix = if line.len() >= prefix_length {
+            line.split_at(prefix_length).0
+        } else {
+            spaces_only.as_str()
+        };
+        self.decrease_expected_line_counts(prefix)?;
+
         // Context lines
-        let spaces_only = " ".repeat(self.expected_line_counts.len() - 1);
         if line.is_empty() || line.starts_with(&spaces_only) {
             return_me.append(&mut self.drain(thread_pool));
-
-            self.decrease_expected_line_counts(&spaces_only)?;
 
             // FIXME: Consider whether we should be coalescing the plain lines?
             // Maybe that would improve performance? Measure and find out!
@@ -159,8 +165,6 @@ impl HunkLinesHighlighter {
         let text = self.texts.last_mut().unwrap();
         text.push_str(line);
         text.push('\n');
-
-        self.decrease_expected_line_counts(prefix)?;
 
         return Ok(Response {
             // Even if we don't expect any more lines, we could still receive a
