@@ -1,6 +1,7 @@
 use threadpool::ThreadPool;
 
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
+use crate::string_future::StringFuture;
 
 #[derive(Debug)]
 pub(crate) struct PlusMinusLinesHighlighter {
@@ -59,7 +60,10 @@ impl LinesHighlighter for PlusMinusLinesHighlighter {
             if self.current_prefix().contains('+') {
                 // Always start anew after any `+` section, there are never more
                 // than one of those.
-                return_me.extend(self.drain(thread_pool));
+                return Ok(Response {
+                    line_accepted: LineAcceptance::RejectedDone,
+                    highlighted: self.drain(thread_pool),
+                });
             }
 
             self.prefixes.push(prefix.to_string());
@@ -77,8 +81,16 @@ impl LinesHighlighter for PlusMinusLinesHighlighter {
             // Even if we don't expect any more lines, we could still receive a
             // `\ No newline at end of file` line after this one.
             line_accepted: LineAcceptance::AcceptedWantMore,
-            highlighted: return_me,
+            highlighted: vec![],
         });
+    }
+
+    fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
+        if self.last_seen_prefix.is_none() {
+            return Err("Got EOF without any lines".to_string());
+        }
+
+        return Ok(self.drain(thread_pool));
     }
 }
 
