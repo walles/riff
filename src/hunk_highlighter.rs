@@ -26,6 +26,14 @@ impl LinesHighlighter for HunkLinesHighlighter {
             self.hunk_header = None;
         }
 
+        let prefix_length = self.expected_line_counts.len() - 1;
+        let spaces_only = " ".repeat(prefix_length);
+        let prefix = if line.len() >= prefix_length {
+            line.split_at(prefix_length).0
+        } else {
+            spaces_only.as_str()
+        };
+
         if let Some(lines_highlighter) = &mut self.lines_highlighter {
             let mut result = lines_highlighter.consume_line(line, thread_pool)?;
             return_me.append(&mut result.highlighted);
@@ -38,15 +46,22 @@ impl LinesHighlighter for HunkLinesHighlighter {
                     todo!("Handle rejection");
                 }
             }
+            self.decrease_expected_line_counts(prefix)?;
+            return Ok(Response {
+                line_accepted: LineAcceptance::AcceptedWantMore,
+                highlighted: return_me,
+            });
         } else if let Some(highlighter) =
             // The `- 1` here is because there's one line count per column, plus
             // one for the result. So `- 1` gives us the prefix length.
-            PlusMinusLinesHighlighter::from_line(
-                line,
-                self.expected_line_counts.len() - 1,
-            )
+            PlusMinusLinesHighlighter::from_line(line, prefix_length)
         {
             self.lines_highlighter = Some(highlighter);
+            self.decrease_expected_line_counts(prefix)?;
+            return Ok(Response {
+                line_accepted: LineAcceptance::AcceptedWantMore,
+                highlighted: return_me,
+            });
         } else {
             // FIXME: Handle a nnaeof line outside the + and - lines?
         }
@@ -63,13 +78,6 @@ impl LinesHighlighter for HunkLinesHighlighter {
             });
         }
 
-        let prefix_length = self.expected_line_counts.len() - 1;
-        let spaces_only = " ".repeat(prefix_length);
-        let prefix = if line.len() >= prefix_length {
-            line.split_at(prefix_length).0
-        } else {
-            spaces_only.as_str()
-        };
         self.decrease_expected_line_counts(prefix)?;
 
         // It wasn't a plusminus line, it wasn't a nnaeof line, and we're still
