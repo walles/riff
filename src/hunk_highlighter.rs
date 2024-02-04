@@ -2,30 +2,19 @@ use threadpool::ThreadPool;
 
 use crate::hunk_header::HunkHeader;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
+use crate::plusminus_lines_highlighter::PlusMinusLinesHighlighter;
 use crate::refiner;
 use crate::string_future::StringFuture;
 
 #[derive(Debug)]
 pub(crate) struct HunkLinesHighlighter {
+    lines_highlighter: Option<PlusMinusLinesHighlighter>,
+
     // This will have to be rendered at the top of our returned result.
     hunk_header: Option<String>,
 
     /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
     expected_line_counts: Vec<usize>,
-
-    /// Different versions of the same text. The last version in this vector is
-    /// the end result. All versions before that are sources that this version
-    /// is based on.
-    ///
-    /// Each version's diff prefix is stored in `prefixes`.
-    texts: Vec<String>,
-
-    /// Line prefixes. Usually `-` or `+`, but could be things line ` -` or
-    /// `+++` if this is a merge diff. Each prefix corresponds to one prefix
-    /// text (stored in `texts`).
-    prefixes: Vec<String>,
-
-    last_seen_prefix: Option<String>,
 }
 
 impl LinesHighlighter for HunkLinesHighlighter {
@@ -37,9 +26,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
             return Some(HunkLinesHighlighter {
                 hunk_header: Some(hunk_header.render()),
                 expected_line_counts: hunk_header.linecounts,
-                texts: Vec::new(),
-                prefixes: Vec::new(),
-                last_seen_prefix: None,
+                lines_highlighter: None,
             });
         }
 
@@ -55,13 +42,13 @@ impl LinesHighlighter for HunkLinesHighlighter {
             self.hunk_header = None;
         }
 
-        // FIXME: Try consuming a plusminus line if that's where we're at.
-        // Plusminus lines are lines having + or - in their prefixes, or nnaeol
-        // lines.
-
-        // "\ No newline at end of file"
-        /* else */
-        if line.starts_with('\\') {
+        if let Some(lines_highlighter) = &mut self.lines_highlighter {
+            let mut result = lines_highlighter.consume_line(line, thread_pool)?;
+            return_me.append(&mut result.highlighted);
+            if result.line_accepted != LineAcceptance::AcceptedWantMore {
+                self.lines_highlighter = None;
+            }
+        } else if line.starts_with('\\') {
             return self.consume_nnaeof(thread_pool, return_me);
         }
 
@@ -105,9 +92,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
             });
         }
 
-        // FIXME: Plusminus lines should already have been handled above.
-        assert!(!line.is_empty()); // Handled as a plain line above
-        return self.consume_plusminus_line(line, thread_pool, return_me);
+        return Err("Unhandled line".to_string());
     }
 
     fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
@@ -123,66 +108,6 @@ impl LinesHighlighter for HunkLinesHighlighter {
 }
 
 impl HunkLinesHighlighter {
-    /// Expects a non-empty line as input
-    fn consume_plusminus_line(
-        &mut self,
-        line: &str,
-        thread_pool: &ThreadPool,
-        mut return_me: Vec<StringFuture>,
-    ) -> Result<Response, String> {
-        assert!(!line.is_empty());
-
-        if line.len() < self.expected_line_counts.len() - 1 {
-            // Not enough columns. For example, if we expect two line counts,
-            // one of them will have a + prefix and the other one -. So lines
-            // need to be at least 1 long in this case.
-            return Err(format!(
-                "Line too short, expected 0 or at least {} characters",
-                self.expected_line_counts.len(),
-            ));
-        }
-
-        let (prefix, line) = line.split_at(self.expected_line_counts.len() - 1);
-        if prefix.chars().any(|c| ![' ', '-', '+'].contains(&c)) {
-            return Err(format!(
-                "Unexpected character in prefix <{prefix}>, only +, - and space allowed JOHAN: {:?}",
-                self.expected_line_counts,
-            ));
-        }
-
-        self.last_seen_prefix = Some(prefix.to_string());
-
-        // Keep track of which prefix we're currently on or start a new one if
-        // needed
-        if prefix.is_empty() {
-            return Err("Hunk line must start with '-' or '+'".to_string());
-        }
-        if prefix != self.current_prefix() {
-            if self.current_prefix().contains('+') {
-                // Always start anew after any `+` section, there are never more
-                // than one of those.
-                return_me.extend(self.drain(thread_pool));
-            }
-
-            self.prefixes.push(prefix.to_string());
-            self.texts.push(String::new());
-
-            assert_eq!(prefix, self.current_prefix());
-        }
-
-        // Update the current prefix text with the new line
-        let text = self.texts.last_mut().unwrap();
-        text.push_str(line);
-        text.push('\n');
-
-        return Ok(Response {
-            // Even if we don't expect any more lines, we could still receive a
-            // `\ No newline at end of file` line after this one.
-            line_accepted: LineAcceptance::AcceptedWantMore,
-            highlighted: return_me,
-        });
-    }
-
     fn decrease_expected_line_counts(&mut self, prefix: &str) -> Result<(), String> {
         if prefix.contains('+') || prefix.chars().all(|c| c == ' ') {
             // Any additions always count towards the last (additions) line
