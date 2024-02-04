@@ -3,7 +3,6 @@ use threadpool::ThreadPool;
 use crate::hunk_header::HunkHeader;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::plusminus_lines_highlighter::PlusMinusLinesHighlighter;
-use crate::refiner;
 use crate::string_future::StringFuture;
 
 #[derive(Debug)]
@@ -84,7 +83,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
 
         // Context lines
         if line.is_empty() || line.starts_with(&spaces_only) {
-            return_me.append(&mut self.drain(thread_pool));
+            return_me.append(&mut self.drain(thread_pool)?);
 
             // FIXME: Consider whether we should be coalescing the plain lines?
             // Maybe that would improve performance? Measure and find out!
@@ -113,7 +112,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
             ));
         }
 
-        return Ok(self.drain(thread_pool));
+        return Ok(self.drain(thread_pool)?);
     }
 }
 
@@ -175,6 +174,17 @@ impl HunkLinesHighlighter {
             }
         }
         return false;
+    }
+
+    fn drain(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
+        let return_me = if let Some(lines_highlighter) = &mut self.lines_highlighter {
+            lines_highlighter.consume_eof(thread_pool)?
+        } else {
+            vec![]
+        };
+
+        self.lines_highlighter = None;
+        return Ok(return_me);
     }
 }
 
