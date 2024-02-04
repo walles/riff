@@ -226,14 +226,6 @@ impl HunkLinesHighlighter {
         });
     }
 
-    /// Returns `` (the empty string) on no-current-prefix
-    fn current_prefix(&self) -> &str {
-        if let Some(prefix) = self.prefixes.last() {
-            return prefix;
-        }
-        return "";
-    }
-
     #[must_use]
     fn drain(&mut self, thread_pool: &ThreadPool) -> Vec<StringFuture> {
         // Return nothing if all flavors are empty
