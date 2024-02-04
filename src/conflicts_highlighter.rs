@@ -145,18 +145,25 @@ impl ConflictsHighlighter {
         let footer = self.footer.clone();
         return StringFuture::from_function(
             move || {
-                let (c1_tokens, c2_tokens, _, _) = refiner::to_highlighted_tokens(&c1, &c2);
+                let c1_or_newline = if c1.is_empty() { "\n" } else { &c1 };
+                let c2_or_newline = if c2.is_empty() { "\n" } else { &c2 };
+                let (c1_tokens, c2_tokens, _, _) =
+                    refiner::to_highlighted_tokens(c1_or_newline, c2_or_newline);
                 let highlighted_c1 = token_collector::render(&LINE_STYLE_OLD, "", &c1_tokens);
                 let highlighted_c2 = token_collector::render(&LINE_STYLE_NEW, "", &c2_tokens);
 
                 let mut rendered = String::new();
                 rendered.push_str(&c1_header);
                 rendered.push('\n');
-                rendered.push_str(&highlighted_c1);
+                if !c1.is_empty() {
+                    rendered.push_str(&highlighted_c1);
+                }
 
                 rendered.push_str(&c2_header);
                 rendered.push('\n');
-                rendered.push_str(&highlighted_c2);
+                if !c2.is_empty() {
+                    rendered.push_str(&highlighted_c2);
+                }
 
                 rendered.push_str(&footer);
                 rendered.push('\n');
