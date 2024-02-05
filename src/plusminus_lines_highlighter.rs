@@ -26,7 +26,13 @@ pub(crate) struct PlusMinusLinesHighlighter {
 impl LinesHighlighter for PlusMinusLinesHighlighter {
     /// Expects a non-empty line as input
     fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String> {
-        assert!(!line.is_empty());
+        if line.is_empty() {
+            // This is a context line, we're done
+            return Ok(Response {
+                line_accepted: LineAcceptance::RejectedDone,
+                highlighted: self.drain(thread_pool),
+            });
+        }
 
         if line.starts_with('\\') {
             return self.consume_nnaeof(thread_pool);
