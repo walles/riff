@@ -38,25 +38,6 @@ pub(crate) struct ConflictsHighlighter {
 }
 
 impl LinesHighlighter for ConflictsHighlighter {
-    fn from_line(line: &str) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        if !line.starts_with(CONFLICTS_HEADER) {
-            return None;
-        }
-
-        return Some(ConflictsHighlighter {
-            c1_header: line.to_string(),
-            base_header: String::new(),
-            c2_header: String::new(),
-            footer: String::new(),
-            c1: String::new(),
-            base: None,
-            c2: String::new(),
-        });
-    }
-
     fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String> {
         if line.starts_with(BASE_HEADER) {
             if !self.c2.is_empty() {
@@ -133,6 +114,28 @@ impl LinesHighlighter for ConflictsHighlighter {
 }
 
 impl ConflictsHighlighter {
+    /// Create a new LinesHighlighter from a line of input.
+    ///
+    /// Returns None if this line doesn't start a new LinesHighlighter.
+    pub(crate) fn from_line(line: &str) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if !line.starts_with(CONFLICTS_HEADER) {
+            return None;
+        }
+
+        return Some(ConflictsHighlighter {
+            c1_header: line.to_string(),
+            base_header: String::new(),
+            c2_header: String::new(),
+            footer: String::new(),
+            c1: String::new(),
+            base: None,
+            c2: String::new(),
+        });
+    }
+
     fn render(&self, thread_pool: &ThreadPool) -> StringFuture {
         if !self.base.as_ref().unwrap_or(&"".to_string()).is_empty() {
             // We have a non-empty base

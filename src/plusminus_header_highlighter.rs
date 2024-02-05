@@ -16,22 +16,6 @@ pub(crate) struct PlusMinusHeaderHighlighter {
 }
 
 impl LinesHighlighter for PlusMinusHeaderHighlighter {
-    fn from_line(line: &str) -> Option<Self>
-    where
-        Self: Sized,
-    {
-        if !line.starts_with("--- ") {
-            return None;
-        }
-
-        let highlighter = PlusMinusHeaderHighlighter {
-            old_name: line.strip_prefix("--- ").unwrap().to_string(),
-            new_name: String::new(),
-        };
-
-        return Some(highlighter);
-    }
-
     fn consume_line(&mut self, line: &str, _thread_pool: &ThreadPool) -> Result<Response, String> {
         assert!(!self.old_name.is_empty());
         assert!(self.new_name.is_empty());
@@ -53,6 +37,25 @@ impl LinesHighlighter for PlusMinusHeaderHighlighter {
 }
 
 impl PlusMinusHeaderHighlighter {
+    /// Create a new LinesHighlighter from a line of input.
+    ///
+    /// Returns None if this line doesn't start a new LinesHighlighter.
+    pub(crate) fn from_line(line: &str) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if !line.starts_with("--- ") {
+            return None;
+        }
+
+        let highlighter = PlusMinusHeaderHighlighter {
+            old_name: line.strip_prefix("--- ").unwrap().to_string(),
+            new_name: String::new(),
+        };
+
+        return Some(highlighter);
+    }
+
     fn highlighted(&self) -> String {
         if self.old_name == "/dev/null" {
             // New file added

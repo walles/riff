@@ -30,6 +30,7 @@ mod hunk_highlighter;
 mod line_collector;
 mod lines_highlighter;
 mod plusminus_header_highlighter;
+mod plusminus_lines_highlighter;
 mod refiner;
 mod string_future;
 mod token_collector;
