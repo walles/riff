@@ -102,7 +102,7 @@ impl PlusMinusLinesHighlighter {
             return None;
         }
 
-        let (prefix, _) = line.split_at(prefix_length);
+        let (prefix, line) = line.split_at(prefix_length);
         if !prefix.chars().any(|c| ['-', '+'].contains(&c)) {
             // Only whitespace in the prefix, this is not us
             return None;
@@ -110,7 +110,7 @@ impl PlusMinusLinesHighlighter {
 
         return Some(PlusMinusLinesHighlighter {
             prefix_length,
-            texts: vec![],
+            texts: vec![line.to_string() + "\n"],
             prefixes: vec![prefix.to_string()],
             last_seen_prefix: None,
         });
