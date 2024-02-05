@@ -112,7 +112,7 @@ impl PlusMinusLinesHighlighter {
             prefix_length,
             texts: vec![line.to_string() + "\n"],
             prefixes: vec![prefix.to_string()],
-            last_seen_prefix: None,
+            last_seen_prefix: Some(prefix.to_string()),
         });
     }
 
