@@ -134,12 +134,15 @@ impl LinesHighlighter for ConflictsHighlighter {
 
 impl ConflictsHighlighter {
     fn render(&self, thread_pool: &ThreadPool) -> StringFuture {
-        if self.base.is_some() {
-            return self.render_diff3(thread_pool);
+        if let Some(base) = &self.base {
+            if !base.is_empty() {
+                return self.render_diff3(thread_pool);
+            }
         }
 
         let c1_header = self.c1_header.clone();
         let c1 = self.c1.clone();
+        let base_header = self.base_header.clone();
         let c2_header = self.c2_header.clone();
         let c2 = self.c2.clone();
         let footer = self.footer.clone();
@@ -149,7 +152,13 @@ impl ConflictsHighlighter {
                 let c2_or_newline = if c2.is_empty() { "\n" } else { &c2 };
                 let (c1_tokens, c2_tokens, _, _) =
                     refiner::to_highlighted_tokens(c1_or_newline, c2_or_newline);
-                let highlighted_c1 = token_collector::render(&LINE_STYLE_OLD, "", &c1_tokens);
+
+                let c1_style = if base_header.is_empty() {
+                    LINE_STYLE_OLD
+                } else {
+                    LINE_STYLE_NEW
+                };
+                let highlighted_c1 = token_collector::render(&c1_style, "", &c1_tokens);
                 let highlighted_c2 = token_collector::render(&LINE_STYLE_NEW, "", &c2_tokens);
 
                 let mut rendered = String::new();
@@ -157,6 +166,11 @@ impl ConflictsHighlighter {
                 rendered.push('\n');
                 if !c1.is_empty() {
                     rendered.push_str(&highlighted_c1);
+                }
+
+                if !base_header.is_empty() {
+                    rendered.push_str(&base_header);
+                    rendered.push('\n');
                 }
 
                 rendered.push_str(&c2_header);
