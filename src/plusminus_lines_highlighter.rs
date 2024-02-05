@@ -49,6 +49,14 @@ impl LinesHighlighter for PlusMinusLinesHighlighter {
         }
 
         let (prefix, line) = line.split_at(self.prefix_length);
+        if prefix.chars().all(|c| c == ' ') {
+            // This is a context line, we're done
+            return Ok(Response {
+                line_accepted: LineAcceptance::RejectedDone,
+                highlighted: self.drain(thread_pool),
+            });
+        }
+
         if prefix.chars().any(|c| ![' ', '-', '+'].contains(&c)) {
             return Err(format!(
                 "Unexpected character in prefix <{prefix}>, only +, - and space allowed: <{}>",
@@ -60,9 +68,6 @@ impl LinesHighlighter for PlusMinusLinesHighlighter {
 
         // Keep track of which prefix we're currently on or start a new one if
         // needed
-        if prefix.is_empty() {
-            return Err("Hunk line must start with '-' or '+'".to_string());
-        }
         if prefix != self.current_prefix() {
             if self.current_prefix().contains('+') {
                 // Always start anew after any `+` section, there are never more
