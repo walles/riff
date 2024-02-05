@@ -134,10 +134,9 @@ impl LinesHighlighter for ConflictsHighlighter {
 
 impl ConflictsHighlighter {
     fn render(&self, thread_pool: &ThreadPool) -> StringFuture {
-        if let Some(base) = &self.base {
-            if !base.is_empty() {
-                return self.render_diff3(thread_pool);
-            }
+        if !self.base.as_ref().unwrap_or(&"".to_string()).is_empty() {
+            // We have a non-empty base
+            return self.render_diff3(thread_pool);
         }
 
         let c1_header = self.c1_header.clone();
