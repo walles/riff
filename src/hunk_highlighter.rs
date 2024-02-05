@@ -72,7 +72,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
             ));
         }
 
-        return Ok(self.drain(thread_pool)?);
+        return self.drain(thread_pool);
     }
 }
 
