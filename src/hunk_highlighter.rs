@@ -114,7 +114,10 @@ impl HunkLinesHighlighter {
                     self.lines_highlighter = None;
                 }
                 LineAcceptance::RejectedDone => {
-                    todo!("Handle rejection");
+                    // Drop our lines_highlighter and retry the line
+                    self.lines_highlighter = None;
+                    return_me.append(&mut self.consume_line_internal(line, thread_pool)?);
+                    return Ok(return_me);
                 }
             }
             return Ok(return_me);
