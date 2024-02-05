@@ -34,36 +34,12 @@ impl LinesHighlighter for HunkLinesHighlighter {
             spaces_only.as_str()
         };
 
-        if let Some(lines_highlighter) = &mut self.lines_highlighter {
-            let mut result = lines_highlighter.consume_line(line, thread_pool)?;
-            return_me.append(&mut result.highlighted);
-            match result.line_accepted {
-                LineAcceptance::AcceptedWantMore => { /* Just keep going */ }
-                LineAcceptance::AcceptedDone => {
-                    self.lines_highlighter = None;
-                }
-                LineAcceptance::RejectedDone => {
-                    todo!("Handle rejection");
-                }
-            }
-            self.decrease_expected_line_counts(prefix)?;
+        if line.starts_with('\\') {
+            return_me.append(&mut self.consume_line_internal(line, thread_pool)?);
             return Ok(Response {
                 line_accepted: LineAcceptance::AcceptedWantMore,
                 highlighted: return_me,
             });
-        } else if let Some(highlighter) =
-            // The `- 1` here is because there's one line count per column, plus
-            // one for the result. So `- 1` gives us the prefix length.
-            PlusMinusLinesHighlighter::from_line(line, prefix_length)
-        {
-            self.lines_highlighter = Some(highlighter);
-            self.decrease_expected_line_counts(prefix)?;
-            return Ok(Response {
-                line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: return_me,
-            });
-        } else {
-            // FIXME: Handle a nnaeof line outside the + and - lines?
         }
 
         if !self.more_lines_expected() {
@@ -80,30 +56,12 @@ impl LinesHighlighter for HunkLinesHighlighter {
 
         self.decrease_expected_line_counts(prefix)?;
 
-        // It wasn't a plusminus line, it wasn't a nnaeof line, and we're still
-        // expecting more lines. It must be a context line.
-
-        // Context lines
-        if line.is_empty() || line.starts_with(&spaces_only) {
-            return_me.append(&mut self.drain(thread_pool)?);
-
-            // FIXME: Consider whether we should be coalescing the plain lines?
-            // Maybe that would improve performance? Measure and find out!
-            return_me.push(StringFuture::from_string(line.to_string() + "\n"));
-
-            let acceptance = if self.more_lines_expected() {
-                LineAcceptance::AcceptedWantMore
-            } else {
-                LineAcceptance::AcceptedDone
-            };
-
-            return Ok(Response {
-                line_accepted: acceptance,
-                highlighted: return_me,
-            });
-        }
-
-        return Err("Unhandled line".to_string());
+        // It wasn't a nnaeof line, and we're still expecting more lines.
+        return_me.append(&mut self.consume_line_internal(line, thread_pool)?);
+        return Ok(Response {
+            line_accepted: LineAcceptance::AcceptedWantMore,
+            highlighted: return_me,
+        });
     }
 
     fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
@@ -135,6 +93,57 @@ impl HunkLinesHighlighter {
         }
 
         return None;
+    }
+
+    fn consume_line_internal(
+        &mut self,
+        line: &str,
+        thread_pool: &ThreadPool,
+    ) -> Result<Vec<StringFuture>, String> {
+        let mut return_me = vec![];
+
+        let prefix_length = self.expected_line_counts.len() - 1;
+        let spaces_only = " ".repeat(prefix_length);
+
+        if let Some(lines_highlighter) = &mut self.lines_highlighter {
+            let mut result = lines_highlighter.consume_line(line, thread_pool)?;
+            return_me.append(&mut result.highlighted);
+            match result.line_accepted {
+                LineAcceptance::AcceptedWantMore => { /* Just keep going */ }
+                LineAcceptance::AcceptedDone => {
+                    self.lines_highlighter = None;
+                }
+                LineAcceptance::RejectedDone => {
+                    todo!("Handle rejection");
+                }
+            }
+            return Ok(return_me);
+        }
+
+        if let Some(highlighter) =
+            // The `- 1` here is because there's one line count per column, plus
+            // one for the result. So `- 1` gives us the prefix length.
+            PlusMinusLinesHighlighter::from_line(line, prefix_length)
+        {
+            self.lines_highlighter = Some(highlighter);
+            return Ok(return_me);
+        }
+
+        // It wasn't a plusminus line (including nnaeof lines), and we're still
+        // expecting more lines. It must be a context line.
+
+        // Context lines
+        if line.is_empty() || line.starts_with(&spaces_only) {
+            return_me.append(&mut self.drain(thread_pool)?);
+
+            // FIXME: Consider whether we should be coalescing the plain lines?
+            // Maybe that would improve performance? Measure and find out!
+            return_me.push(StringFuture::from_string(line.to_string() + "\n"));
+
+            return Ok(return_me);
+        }
+
+        return Err("Unhandled line".to_string());
     }
 
     fn decrease_expected_line_counts(&mut self, prefix: &str) -> Result<(), String> {
