@@ -254,7 +254,7 @@ mod tests {
         assert_eq!(result.highlighted.len(), 0);
 
         let mut result = test_me.consume_line(" I like pie.", &thread_pool).unwrap();
-        assert_eq!(result.line_accepted, LineAcceptance::AcceptedDone);
+        assert_eq!(result.line_accepted, LineAcceptance::AcceptedWantMore);
 
         assert_eq!(result.highlighted.len(), 2);
         assert_eq!(
@@ -265,6 +265,9 @@ mod tests {
             )
         );
         assert_eq!(result.highlighted[1].get(), " I like pie.\n");
+
+        let result = test_me.consume_eof(&thread_pool).unwrap();
+        assert!(result.is_empty());
     }
 
     #[test]
