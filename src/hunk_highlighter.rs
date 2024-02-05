@@ -1,5 +1,7 @@
 use threadpool::ThreadPool;
 
+use crate::constants::NORMAL;
+use crate::constants::NO_EOF_NEWLINE_COLOR;
 use crate::hunk_header::HunkHeader;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::plusminus_lines_highlighter::PlusMinusLinesHighlighter;
@@ -102,7 +104,10 @@ impl HunkLinesHighlighter {
     ) -> Result<Vec<StringFuture>, String> {
         let mut return_me = vec![];
 
+        // The `- 1` here is because there's one line count per column, plus
+        // one for the result. So `- 1` gives us the prefix length.
         let prefix_length = self.expected_line_counts.len() - 1;
+
         let spaces_only = " ".repeat(prefix_length);
 
         if let Some(lines_highlighter) = &mut self.lines_highlighter {
@@ -123,11 +128,7 @@ impl HunkLinesHighlighter {
             return Ok(return_me);
         }
 
-        if let Some(highlighter) =
-            // The `- 1` here is because there's one line count per column, plus
-            // one for the result. So `- 1` gives us the prefix length.
-            PlusMinusLinesHighlighter::from_line(line, prefix_length)
-        {
+        if let Some(highlighter) = PlusMinusLinesHighlighter::from_line(line, prefix_length) {
             self.lines_highlighter = Some(highlighter);
             return Ok(return_me);
         }
@@ -146,7 +147,13 @@ impl HunkLinesHighlighter {
             return Ok(return_me);
         }
 
-        return Err("Unhandled line".to_string());
+        // All other cases should have been handled above
+        assert!(line.starts_with('\\'));
+
+        return_me.push(StringFuture::from_string(format!(
+            "{NO_EOF_NEWLINE_COLOR}{line}{NORMAL}\n"
+        )));
+        return Ok(return_me);
     }
 
     fn decrease_expected_line_counts(&mut self, prefix: &str) -> Result<(), String> {
