@@ -317,7 +317,7 @@ mod tests {
         let mut result = test_me
             .consume_line("\\ No newline at end of file", &thread_pool)
             .unwrap();
-        assert_eq!(result.line_accepted, LineAcceptance::AcceptedDone);
+        assert_eq!(result.line_accepted, LineAcceptance::AcceptedWantMore);
         assert_eq!(result.highlighted.len(), 1);
         assert_eq!(
             result.highlighted[0].get(),
@@ -325,6 +325,9 @@ mod tests {
         );
 
         assert!(!test_me.more_lines_expected());
+
+        let result = test_me.consume_eof(&thread_pool).unwrap();
+        assert!(result.is_empty());
     }
 
     #[test]
