@@ -1,5 +1,6 @@
 use threadpool::ThreadPool;
 
+use crate::conflicts_highlighter::ConflictsHighlighter;
 use crate::constants::NORMAL;
 use crate::constants::NO_EOF_NEWLINE_COLOR;
 use crate::hunk_header::HunkHeader;
@@ -9,7 +10,7 @@ use crate::string_future::StringFuture;
 
 #[derive(Debug)]
 pub(crate) struct HunkLinesHighlighter {
-    lines_highlighter: Option<PlusMinusLinesHighlighter>,
+    lines_highlighter: Option<Box<dyn LinesHighlighter>>,
 
     // This will have to be rendered at the top of our returned result.
     hunk_header: Option<String>,
@@ -128,8 +129,14 @@ impl HunkLinesHighlighter {
             return Ok(return_me);
         }
 
+        if prefix_length == 2 {
+            if let Some(highlighter) = ConflictsHighlighter::from_line(line) {
+                self.lines_highlighter = Some(Box::new(highlighter));
+                return Ok(return_me);
+            }
+        }
         if let Some(highlighter) = PlusMinusLinesHighlighter::from_line(line, prefix_length) {
-            self.lines_highlighter = Some(highlighter);
+            self.lines_highlighter = Some(Box::new(highlighter));
             return Ok(return_me);
         }
 

@@ -2,13 +2,15 @@ use std::vec;
 
 use threadpool::ThreadPool;
 
+use crate::constants::{GREEN, NORMAL};
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::string_future::StringFuture;
-use crate::token_collector::LINE_STYLE_NEW;
 use crate::token_collector::LINE_STYLE_OLD;
+use crate::token_collector::{LINE_STYLE_CONFLICT_BASE, LINE_STYLE_NEW};
 use crate::{refiner, token_collector};
 
-const CONFLICTS_HEADER: &str = "<<<<<<<";
+const CONFLICTS_HEADER1: &str = "<<<<<<<";
+const CONFLICTS_HEADER2: &str = "++<<<<<<<";
 const BASE_HEADER: &str = "|||||||";
 const C2_HEADER: &str = "=======";
 const CONFLICTS_FOOTER: &str = ">>>>>>>";
@@ -17,29 +19,32 @@ pub(crate) struct ConflictsHighlighter {
     /// `<<<<<<< HEAD`, start of the whole conflict block. Followed by `c1`.
     c1_header: String,
 
-    /// `||||||| 07ffb9b`, followed by `base` if found
+    /// One of the conflicting variants. Multi line string. Always ends with a
+    /// newline.
+    c1: String,
+
+    /// `||||||| 07ffb9b`, followed by `base` if found. Empty if not found.
     base_header: String,
+
+    /// The base variant which both `c1` and `c2` are based on. Will be
+    /// non-empty only for `diff3` style conflict markers. Multi line string.
+    /// Always ends with a newline.
+    base: String,
 
     /// `=======`, followed by `c2`
     c2_header: String,
 
+    /// The other conflicting variant. Multi line string. Always ends with a
+    /// newline.
+    c2: String,
+
     /// `>>>>>>> branch`, marks the end of `c2` and the whole conflict
     footer: String,
-
-    /// One of the conflicting variants. Always ends with a newline.
-    c1: String,
-
-    /// The base variant which both `c1` and `c2` are based on. Will be
-    /// non-empty only for `diff3` style conflict markers.
-    base: String,
-
-    /// The other conflicting variant. Always ends with a newline.
-    c2: String,
 }
 
 impl LinesHighlighter for ConflictsHighlighter {
     fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String> {
-        if line.starts_with(BASE_HEADER) {
+        if self.starts_with(line, BASE_HEADER) {
             if !self.c2.is_empty() {
                 return Err(format!(
                     "Unexpected `{BASE_HEADER}` line after `{C2_HEADER}`"
@@ -59,7 +64,7 @@ impl LinesHighlighter for ConflictsHighlighter {
             });
         }
 
-        if line.starts_with(C2_HEADER) {
+        if self.starts_with(line, C2_HEADER) {
             if !self.c2.is_empty() {
                 return Err(format!(
                     "Multiple `{C2_HEADER}` lines before `{CONFLICTS_FOOTER}`"
@@ -73,7 +78,7 @@ impl LinesHighlighter for ConflictsHighlighter {
             });
         }
 
-        if line.starts_with(CONFLICTS_FOOTER) {
+        if self.starts_with(line, CONFLICTS_FOOTER) {
             self.footer = line.to_string();
             return Ok(Response {
                 line_accepted: LineAcceptance::AcceptedDone,
@@ -81,23 +86,37 @@ impl LinesHighlighter for ConflictsHighlighter {
             });
         }
 
-        let destination = if !self.c2_header.is_empty() {
-            &mut self.c2
+        let (maybe_prefix, destination) = if !self.c2_header.is_empty() {
+            ("+ ", &mut self.c2)
         } else if !self.base_header.is_empty() {
-            &mut self.base
+            ("++", &mut self.base)
         } else {
-            &mut self.c1
+            (" +", &mut self.c1)
         };
 
-        destination.push_str(line);
-        destination.push('\n');
-        return Ok(Response {
-            line_accepted: LineAcceptance::AcceptedWantMore,
-            highlighted: vec![],
-        });
+        let prefix = if self.c1_header.starts_with("++") {
+            maybe_prefix
+        } else {
+            ""
+        };
+
+        if let Some(line) = line.strip_prefix(prefix) {
+            destination.push_str(line);
+            destination.push('\n');
+            return Ok(Response {
+                line_accepted: LineAcceptance::AcceptedWantMore,
+                highlighted: vec![],
+            });
+        } else {
+            return Ok(Response {
+                line_accepted: LineAcceptance::RejectedDone,
+                highlighted: vec![self.render_plain()],
+            });
+        }
     }
 
     fn consume_eof(&mut self, _thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
+        // FIXME: Or maybe just `self.render_plain()`?
         return Err("Unexpected EOF inside a conflicts section".to_string());
     }
 }
@@ -110,7 +129,7 @@ impl ConflictsHighlighter {
     where
         Self: Sized,
     {
-        if !line.starts_with(CONFLICTS_HEADER) {
+        if !line.starts_with(CONFLICTS_HEADER1) && !line.starts_with(CONFLICTS_HEADER2) {
             return None;
         }
 
@@ -125,11 +144,29 @@ impl ConflictsHighlighter {
         });
     }
 
+    // Check if `line` starts with `prefix` or `++prefix` depending on what the
+    // `c1_header` looks like.
+    fn starts_with(&self, line: &str, prefix: &str) -> bool {
+        let prefix = if self.c1_header.starts_with("++") {
+            "++".to_string() + prefix
+        } else {
+            prefix.to_string()
+        };
+
+        return line.starts_with(&prefix);
+    }
+
     fn render(&self, thread_pool: &ThreadPool) -> StringFuture {
         if !self.base.is_empty() {
             // We have three sections
             return self.render_diff3(thread_pool);
         }
+
+        let (header_prefix, c1_prefix, c2_prefix, reset) = if self.c1_header.starts_with("++") {
+            (GREEN, " +", "+ ", NORMAL)
+        } else {
+            ("", "", "", "")
+        };
 
         let c1_header = self.c1_header.clone();
         let c1 = self.c1.clone();
@@ -149,28 +186,37 @@ impl ConflictsHighlighter {
                 } else {
                     LINE_STYLE_NEW
                 };
-                let highlighted_c1 = token_collector::render(&c1_style, "", &c1_tokens);
-                let highlighted_c2 = token_collector::render(&LINE_STYLE_NEW, "", &c2_tokens);
+                let highlighted_c1 = token_collector::render(&c1_style, c1_prefix, &c1_tokens);
+                let highlighted_c2 =
+                    token_collector::render(&LINE_STYLE_NEW, c2_prefix, &c2_tokens);
 
                 let mut rendered = String::new();
+                rendered.push_str(header_prefix);
                 rendered.push_str(&c1_header);
+                rendered.push_str(reset);
                 rendered.push('\n');
                 if !c1.is_empty() {
                     rendered.push_str(&highlighted_c1);
                 }
 
                 if !base_header.is_empty() {
+                    rendered.push_str(header_prefix);
                     rendered.push_str(&base_header);
+                    rendered.push_str(reset);
                     rendered.push('\n');
                 }
 
+                rendered.push_str(header_prefix);
                 rendered.push_str(&c2_header);
+                rendered.push_str(reset);
                 rendered.push('\n');
                 if !c2.is_empty() {
                     rendered.push_str(&highlighted_c2);
                 }
 
+                rendered.push_str(header_prefix);
                 rendered.push_str(&footer);
+                rendered.push_str(reset);
                 rendered.push('\n');
 
                 rendered
@@ -185,6 +231,13 @@ impl ConflictsHighlighter {
     ///   vs C1 or vs C2.
     /// * In section C2, we highlight additions compared to base
     fn render_diff3(&self, thread_pool: &ThreadPool) -> StringFuture {
+        let (header_prefix, c1_prefix, base_prefix, c2_prefix, reset) =
+            if self.c1_header.starts_with("++") {
+                (GREEN, " +", "++", "+ ", NORMAL)
+            } else {
+                ("", "", "", "", "")
+            };
+
         assert!(!self.base.is_empty());
         let c1_header = self.c1_header.clone();
         let c1 = self.c1.clone();
@@ -201,12 +254,14 @@ impl ConflictsHighlighter {
                 let c1_or_newline = if c1.is_empty() { "\n" } else { &c1 };
                 let (base_vs_c1_tokens, c1_tokens, _, _) =
                     refiner::to_highlighted_tokens(base_or_newline, c1_or_newline);
-                let highlighted_c1 = token_collector::render(&LINE_STYLE_NEW, "", &c1_tokens);
+                let highlighted_c1 =
+                    token_collector::render(&LINE_STYLE_NEW, c1_prefix, &c1_tokens);
 
                 let c2_or_newline = if c2.is_empty() { "\n" } else { &c2 };
                 let (base_vs_c2_tokens, c2_tokens, _, _) =
                     refiner::to_highlighted_tokens(base_or_newline, c2_or_newline);
-                let highlighted_c2 = token_collector::render(&LINE_STYLE_NEW, "", &c2_tokens);
+                let highlighted_c2 =
+                    token_collector::render(&LINE_STYLE_NEW, c2_prefix, &c2_tokens);
 
                 assert_eq!(base_vs_c1_tokens.len(), base_vs_c2_tokens.len());
 
@@ -220,33 +275,110 @@ impl ConflictsHighlighter {
                     }
                 }
 
-                let highlighted_base = token_collector::render(&LINE_STYLE_OLD, "", &base_tokens);
+                let highlighted_base =
+                    token_collector::render(&LINE_STYLE_CONFLICT_BASE, base_prefix, &base_tokens);
 
                 let mut rendered = String::new();
+                rendered.push_str(header_prefix);
                 rendered.push_str(&c1_header);
+                rendered.push_str(reset);
                 rendered.push('\n');
                 if !c1.is_empty() {
                     rendered.push_str(&highlighted_c1);
                 }
 
+                rendered.push_str(header_prefix);
                 rendered.push_str(&base_header);
+                rendered.push_str(reset);
                 rendered.push('\n');
                 if !base.is_empty() {
                     rendered.push_str(&highlighted_base);
                 }
 
+                rendered.push_str(header_prefix);
                 rendered.push_str(&c2_header);
+                rendered.push_str(reset);
                 rendered.push('\n');
                 if !c2.is_empty() {
                     rendered.push_str(&highlighted_c2);
                 }
 
+                rendered.push_str(header_prefix);
                 rendered.push_str(&footer);
+                rendered.push_str(reset);
                 rendered.push('\n');
 
                 rendered
             },
             thread_pool,
         );
+    }
+
+    // Render everything we have so far without any highlighting, even if it is
+    // incomplete
+    fn render_plain(&self) -> StringFuture {
+        let (color_prefix, reset) = if self.c1_header.starts_with("++") {
+            (GREEN, NORMAL)
+        } else {
+            ("", "")
+        };
+
+        let mut rendered = String::new();
+        rendered.push_str(color_prefix);
+        rendered.push_str(&self.c1_header);
+        rendered.push_str(reset);
+        rendered.push('\n');
+
+        if !self.c1.is_empty() {
+            self.c1.lines().for_each(|line| {
+                rendered.push_str(color_prefix);
+                rendered.push_str(" +");
+                rendered.push_str(line);
+                rendered.push_str(reset);
+                rendered.push('\n');
+            });
+        }
+
+        if self.base_header.is_empty() {
+            return StringFuture::from_string(rendered);
+        }
+        rendered.push_str(color_prefix);
+        rendered.push_str(&self.base_header);
+        rendered.push_str(reset);
+        rendered.push('\n');
+
+        if !self.base.is_empty() {
+            self.base.lines().for_each(|line| {
+                rendered.push_str(color_prefix);
+                rendered.push_str("++");
+                rendered.push_str(line);
+                rendered.push_str(reset);
+                rendered.push('\n');
+            });
+        }
+
+        if self.c2_header.is_empty() {
+            return StringFuture::from_string(rendered);
+        }
+
+        if !self.c2.is_empty() {
+            self.base.lines().for_each(|line| {
+                rendered.push_str(color_prefix);
+                rendered.push_str("+ ");
+                rendered.push_str(line);
+                rendered.push_str(reset);
+                rendered.push('\n');
+            });
+        }
+
+        if self.footer.is_empty() {
+            return StringFuture::from_string(rendered);
+        }
+        rendered.push_str(color_prefix);
+        rendered.push_str(&self.footer);
+        rendered.push_str(reset);
+        rendered.push('\n');
+
+        return StringFuture::from_string(rendered);
     }
 }

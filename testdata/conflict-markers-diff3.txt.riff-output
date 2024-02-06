@@ -3,7 +3,7 @@ This is an example of git conflict markers.
 <<<<<<< HEAD
 [32mThis line is [7mchanged[27m on the main branch.[0m
 ||||||| 07ffb9b
-[31mThis line is [7mfrom the initial commit on the main[27m branch.[0m
+[32m[31mThis line is [7mfrom the initial commit on the main[27m branch.[0m
 =======
 [32mThis line is from the [7mbranch named "[27mbranch[7m"[27m.[0m
 >>>>>>> branch
