@@ -35,3 +35,9 @@ pub(crate) trait LinesHighlighter {
     // No more lines available
     fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String>;
 }
+
+impl std::fmt::Debug for dyn LinesHighlighter {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        return write!(f, "{}", "LinesHighlighter");
+    }
+}

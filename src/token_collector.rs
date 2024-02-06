@@ -108,6 +108,26 @@ pub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
     }
 };
 
+pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
+    LineStyle {
+        prefix_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Green,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Red,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Normal,
+            color: Red,
+        },
+    }
+};
+
 pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
     LineStyle {
         prefix_style: AnsiStyle {
