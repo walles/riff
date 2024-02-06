@@ -81,31 +81,20 @@ impl LinesHighlighter for ConflictsHighlighter {
             });
         }
 
-        if !self.c2_header.is_empty() {
-            // We're in the last section
-            self.c2.push_str(line);
-            self.c2.push('\n');
-            return Ok(Response {
-                line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: vec![],
-            });
+        let destination = if !self.c2_header.is_empty() {
+            &mut self.c2
         } else if !self.base_header.is_empty() {
-            // We're in the base section
-            self.base.push_str(line);
-            self.base.push('\n');
-            return Ok(Response {
-                line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: vec![],
-            });
+            &mut self.base
         } else {
-            // We're in the first section
-            self.c1.push_str(line);
-            self.c1.push('\n');
-            return Ok(Response {
-                line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: vec![],
-            });
-        }
+            &mut self.c1
+        };
+
+        destination.push_str(line);
+        destination.push('\n');
+        return Ok(Response {
+            line_accepted: LineAcceptance::AcceptedWantMore,
+            highlighted: vec![],
+        });
     }
 
     fn consume_eof(&mut self, _thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
