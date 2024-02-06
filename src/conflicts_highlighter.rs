@@ -29,9 +29,9 @@ pub(crate) struct ConflictsHighlighter {
     /// One of the conflicting variants. Always ends with a newline.
     c1: String,
 
-    /// The base variant which both `c1` and `c2` are based on. Will be set only
-    /// for `diff3` style conflict markers.
-    base: Option<String>,
+    /// The base variant which both `c1` and `c2` are based on. Will be
+    /// non-empty only for `diff3` style conflict markers.
+    base: String,
 
     /// The other conflicting variant. Always ends with a newline.
     c2: String,
@@ -45,14 +45,14 @@ impl LinesHighlighter for ConflictsHighlighter {
                     "Unexpected `{BASE_HEADER}` line after `{C2_HEADER}`"
                 ));
             }
-            if self.base.is_some() {
+            if !self.base.is_empty() {
                 return Err(format!(
                     "Multiple `{BASE_HEADER}` lines before `{C2_HEADER}`"
                 ));
             }
 
             self.base_header = line.to_string();
-            self.base = Some(String::new());
+            self.base = String::new();
             return Ok(Response {
                 line_accepted: LineAcceptance::AcceptedWantMore,
                 highlighted: vec![],
@@ -91,8 +91,8 @@ impl LinesHighlighter for ConflictsHighlighter {
             });
         } else if !self.base_header.is_empty() {
             // We're in the base section
-            self.base.as_mut().unwrap().push_str(line);
-            self.base.as_mut().unwrap().push('\n');
+            self.base.push_str(line);
+            self.base.push('\n');
             return Ok(Response {
                 line_accepted: LineAcceptance::AcceptedWantMore,
                 highlighted: vec![],
@@ -131,14 +131,14 @@ impl ConflictsHighlighter {
             c2_header: String::new(),
             footer: String::new(),
             c1: String::new(),
-            base: None,
+            base: String::new(),
             c2: String::new(),
         });
     }
 
     fn render(&self, thread_pool: &ThreadPool) -> StringFuture {
-        if !self.base.as_ref().unwrap_or(&"".to_string()).is_empty() {
-            // We have a non-empty base
+        if !self.base.is_empty() {
+            // We have three sections
             return self.render_diff3(thread_pool);
         }
 
@@ -196,11 +196,11 @@ impl ConflictsHighlighter {
     ///   vs C1 or vs C2.
     /// * In section C2, we highlight additions compared to base
     fn render_diff3(&self, thread_pool: &ThreadPool) -> StringFuture {
-        assert!(self.base.is_some());
+        assert!(!self.base.is_empty());
         let c1_header = self.c1_header.clone();
         let c1 = self.c1.clone();
         let base_header = self.base_header.clone();
-        let base = self.base.clone().unwrap();
+        let base = self.base.clone();
         let c2_header = self.c2_header.clone();
         let c2 = self.c2.clone();
         let footer = self.footer.clone();
