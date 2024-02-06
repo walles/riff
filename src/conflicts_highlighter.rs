@@ -2,6 +2,7 @@ use std::vec;
 
 use threadpool::ThreadPool;
 
+use crate::constants::{GREEN, NORMAL};
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::string_future::StringFuture;
 use crate::token_collector::LINE_STYLE_NEW;
@@ -115,6 +116,7 @@ impl LinesHighlighter for ConflictsHighlighter {
     }
 
     fn consume_eof(&mut self, _thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
+        // FIXME: Or maybe just `self.render_plain()`?
         return Err("Unexpected EOF inside a conflicts section".to_string());
     }
 }
@@ -277,5 +279,73 @@ impl ConflictsHighlighter {
             },
             thread_pool,
         );
+    }
+
+    // Render everything we have so far without any highlighting, even if it is
+    // incomplete
+    fn render_plain(&self) -> StringFuture {
+        let (color_prefix, reset) = if self.c1_header.starts_with("++") {
+            (GREEN, NORMAL)
+        } else {
+            ("", "")
+        };
+
+        let mut rendered = String::new();
+        rendered.push_str(color_prefix);
+        rendered.push_str(&self.c1_header);
+        rendered.push_str(reset);
+        rendered.push('\n');
+
+        if !self.c1.is_empty() {
+            self.c1.lines().for_each(|line| {
+                rendered.push_str(color_prefix);
+                rendered.push_str(" +");
+                rendered.push_str(&line);
+                rendered.push_str(reset);
+                rendered.push('\n');
+            });
+        }
+
+        if self.base_header.is_empty() {
+            return StringFuture::from_string(rendered);
+        }
+        rendered.push_str(color_prefix);
+        rendered.push_str(&self.base_header);
+        rendered.push_str(reset);
+        rendered.push('\n');
+
+        if !self.base.is_empty() {
+            self.base.lines().for_each(|line| {
+                rendered.push_str(color_prefix);
+                rendered.push_str("++");
+                rendered.push_str(&line);
+                rendered.push_str(reset);
+                rendered.push('\n');
+            });
+        }
+
+        if self.c2_header.is_empty() {
+            return StringFuture::from_string(rendered);
+        }
+
+        if !self.c2.is_empty() {
+            self.base.lines().for_each(|line| {
+                rendered.push_str(color_prefix);
+                rendered.push_str("+ ");
+                rendered.push_str(&line);
+                rendered.push_str(reset);
+                rendered.push('\n');
+            });
+        }
+
+        if self.footer.is_empty() {
+            return StringFuture::from_string(rendered);
+        }
+        rendered.push_str(color_prefix);
+        rendered.push_str(&self.footer);
+        rendered.push_str(reset);
+        rendered.push('\n');
+
+        return StringFuture::from_string(rendered);
     }
 }
