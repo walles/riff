@@ -38,6 +38,6 @@ pub(crate) trait LinesHighlighter {
 
 impl std::fmt::Debug for dyn LinesHighlighter {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        return write!(f, "{}", "LinesHighlighter");
+        return write!(f, "LinesHighlighter");
     }
 }
