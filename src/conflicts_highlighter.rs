@@ -8,7 +8,8 @@ use crate::token_collector::LINE_STYLE_NEW;
 use crate::token_collector::LINE_STYLE_OLD;
 use crate::{refiner, token_collector};
 
-const CONFLICTS_HEADER: &str = "<<<<<<<";
+const CONFLICTS_HEADER1: &str = "<<<<<<<";
+const CONFLICTS_HEADER2: &str = "++<<<<<<<";
 const BASE_HEADER: &str = "|||||||";
 const C2_HEADER: &str = "=======";
 const CONFLICTS_FOOTER: &str = ">>>>>>>";
@@ -17,29 +18,32 @@ pub(crate) struct ConflictsHighlighter {
     /// `<<<<<<< HEAD`, start of the whole conflict block. Followed by `c1`.
     c1_header: String,
 
-    /// `||||||| 07ffb9b`, followed by `base` if found
+    /// One of the conflicting variants. Multi line string. Always ends with a
+    /// newline.
+    c1: String,
+
+    /// `||||||| 07ffb9b`, followed by `base` if found. Empty if not found.
     base_header: String,
+
+    /// The base variant which both `c1` and `c2` are based on. Will be
+    /// non-empty only for `diff3` style conflict markers. Multi line string.
+    /// Always ends with a newline.
+    base: String,
 
     /// `=======`, followed by `c2`
     c2_header: String,
 
+    /// The other conflicting variant. Multi line string. Always ends with a
+    /// newline.
+    c2: String,
+
     /// `>>>>>>> branch`, marks the end of `c2` and the whole conflict
     footer: String,
-
-    /// One of the conflicting variants. Always ends with a newline.
-    c1: String,
-
-    /// The base variant which both `c1` and `c2` are based on. Will be
-    /// non-empty only for `diff3` style conflict markers.
-    base: String,
-
-    /// The other conflicting variant. Always ends with a newline.
-    c2: String,
 }
 
 impl LinesHighlighter for ConflictsHighlighter {
     fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String> {
-        if line.starts_with(BASE_HEADER) {
+        if self.starts_with(line, BASE_HEADER) {
             if !self.c2.is_empty() {
                 return Err(format!(
                     "Unexpected `{BASE_HEADER}` line after `{C2_HEADER}`"
@@ -59,7 +63,7 @@ impl LinesHighlighter for ConflictsHighlighter {
             });
         }
 
-        if line.starts_with(C2_HEADER) {
+        if self.starts_with(line, C2_HEADER) {
             if !self.c2.is_empty() {
                 return Err(format!(
                     "Multiple `{C2_HEADER}` lines before `{CONFLICTS_FOOTER}`"
@@ -73,7 +77,7 @@ impl LinesHighlighter for ConflictsHighlighter {
             });
         }
 
-        if line.starts_with(CONFLICTS_FOOTER) {
+        if self.starts_with(line, CONFLICTS_FOOTER) {
             self.footer = line.to_string();
             return Ok(Response {
                 line_accepted: LineAcceptance::AcceptedDone,
@@ -81,20 +85,33 @@ impl LinesHighlighter for ConflictsHighlighter {
             });
         }
 
-        let destination = if !self.c2_header.is_empty() {
-            &mut self.c2
+        let (maybe_prefix, destination) = if !self.c2_header.is_empty() {
+            ("+ ", &mut self.c2)
         } else if !self.base_header.is_empty() {
-            &mut self.base
+            ("++", &mut self.base)
         } else {
-            &mut self.c1
+            (" +", &mut self.c1)
         };
 
-        destination.push_str(line);
-        destination.push('\n');
-        return Ok(Response {
-            line_accepted: LineAcceptance::AcceptedWantMore,
-            highlighted: vec![],
-        });
+        let prefix = if self.c1_header.starts_with("++") {
+            maybe_prefix
+        } else {
+            ""
+        };
+
+        if let Some(line) = line.strip_prefix(prefix) {
+            destination.push_str(line);
+            destination.push('\n');
+            return Ok(Response {
+                line_accepted: LineAcceptance::AcceptedWantMore,
+                highlighted: vec![],
+            });
+        } else {
+            return Ok(Response {
+                line_accepted: LineAcceptance::RejectedDone,
+                highlighted: vec![self.render_plain()],
+            });
+        }
     }
 
     fn consume_eof(&mut self, _thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
@@ -110,7 +127,7 @@ impl ConflictsHighlighter {
     where
         Self: Sized,
     {
-        if !line.starts_with(CONFLICTS_HEADER) {
+        if !line.starts_with(CONFLICTS_HEADER1) && !line.starts_with(CONFLICTS_HEADER2) {
             return None;
         }
 
@@ -123,6 +140,18 @@ impl ConflictsHighlighter {
             base: String::new(),
             c2: String::new(),
         });
+    }
+
+    // Check if `line` starts with `prefix` or `++prefix` depending on what the
+    // `c1_header` looks like.
+    fn starts_with(&self, line: &str, prefix: &str) -> bool {
+        let prefix = if self.c1_header.starts_with("++") {
+            "++".to_string() + prefix
+        } else {
+            prefix.to_string()
+        };
+
+        return line.starts_with(&prefix);
     }
 
     fn render(&self, thread_pool: &ThreadPool) -> StringFuture {
