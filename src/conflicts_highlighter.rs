@@ -162,6 +162,12 @@ impl ConflictsHighlighter {
             return self.render_diff3(thread_pool);
         }
 
+        let (header_prefix, c1_prefix, c2_prefix, reset) = if self.c1_header.starts_with("++") {
+            (GREEN, " +", "+ ", NORMAL)
+        } else {
+            ("", "", "", "")
+        };
+
         let c1_header = self.c1_header.clone();
         let c1 = self.c1.clone();
         let base_header = self.base_header.clone();
@@ -180,28 +186,37 @@ impl ConflictsHighlighter {
                 } else {
                     LINE_STYLE_NEW
                 };
-                let highlighted_c1 = token_collector::render(&c1_style, "", &c1_tokens);
-                let highlighted_c2 = token_collector::render(&LINE_STYLE_NEW, "", &c2_tokens);
+                let highlighted_c1 = token_collector::render(&c1_style, c1_prefix, &c1_tokens);
+                let highlighted_c2 =
+                    token_collector::render(&LINE_STYLE_NEW, c2_prefix, &c2_tokens);
 
                 let mut rendered = String::new();
+                rendered.push_str(header_prefix);
                 rendered.push_str(&c1_header);
+                rendered.push_str(reset);
                 rendered.push('\n');
                 if !c1.is_empty() {
                     rendered.push_str(&highlighted_c1);
                 }
 
                 if !base_header.is_empty() {
+                    rendered.push_str(header_prefix);
                     rendered.push_str(&base_header);
+                    rendered.push_str(reset);
                     rendered.push('\n');
                 }
 
+                rendered.push_str(header_prefix);
                 rendered.push_str(&c2_header);
+                rendered.push_str(reset);
                 rendered.push('\n');
                 if !c2.is_empty() {
                     rendered.push_str(&highlighted_c2);
                 }
 
+                rendered.push_str(header_prefix);
                 rendered.push_str(&footer);
+                rendered.push_str(reset);
                 rendered.push('\n');
 
                 rendered
