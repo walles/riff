@@ -33,8 +33,9 @@ fn format_simple(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
         // line.
         let draw_missing_trailing_newline = prefix.contains('+') && !prefix_text.ends_with('\n');
 
+        let last_pos = prefix_text.lines().count() - 1;
         for (pos, line) in prefix_text.lines().enumerate() {
-            let last_line = pos == prefix_text.lines().count() - 1;
+            let last_line = pos == last_pos;
 
             if last_line && draw_missing_trailing_newline {
                 lines.push(format!("{NEW}+{line}{OLD}{INVERSE_VIDEO}⏎{NORMAL}"));
@@ -292,6 +293,27 @@ mod tests {
                 "".to_string() + OLD + "-b" + NORMAL,
             ]
         );
+    }
+
+    /// `format_simple()` turned out to have quadratic complexity. If this test
+    /// hangs, that's probably what happened again.
+    #[test]
+    fn test_format_simple_complexity() {
+        // Values from whan this file was added in a single commit:
+        // https://github.com/walles/moar/blob/59270d6f8cf454f7a79fcde36a7fcf794768ced9/sample-files/large-git-log-patch.txt
+        let lines = 300_000;
+        let line_length = 50;
+        let mut text = String::new();
+        for _ in 0..lines {
+            text.push_str(&"a".repeat(line_length));
+            text.push('\n');
+        }
+
+        let prefixes = vec!["+"];
+        let texts = vec![text.as_str()];
+
+        let result = format_simple(&prefixes, &texts);
+        assert_eq!(text.lines().count(), result.len());
     }
 
     #[test]
