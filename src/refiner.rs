@@ -75,7 +75,7 @@ fn too_large_to_refine(texts: &[&str]) -> bool {
 ///
 /// `prefixes` are the prefixes to use for each `prefix_texts` text.
 #[must_use]
-pub fn format(prefixes: &Vec<&str>, prefix_texts: &Vec<&str>) -> Vec<String> {
+pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
     if prefixes.len() < 2 {
         // Nothing to compare, we can't highlight anything
         return format_simple(prefixes, prefix_texts);

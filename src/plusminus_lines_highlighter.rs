@@ -210,8 +210,8 @@ impl PlusMinusLinesHighlighter {
             move || {
                 let mut result = String::new();
                 for line in refiner::format(
-                    &prefixes.iter().map(String::as_ref).collect(),
-                    &texts.iter().map(String::as_ref).collect(),
+                    &prefixes.iter().map(String::as_str).collect::<Vec<&str>>(),
+                    &texts.iter().map(String::as_str).collect::<Vec<&str>>(),
                 ) {
                     result.push_str(&line);
                     result.push('\n');

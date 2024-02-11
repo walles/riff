@@ -227,7 +227,7 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
 
 /// Render all the tokens into a (most of the time multiline) string
 #[must_use]
-pub fn render(line_style: &LineStyle, prefix: &str, tokens: &Vec<StyledToken>) -> String {
+pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> String {
     let mut rendered = String::new();
 
     let mut current_row_start = 0;
