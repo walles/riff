@@ -11,6 +11,7 @@ extern crate lazy_static;
 use backtrace::Backtrace;
 use clap::CommandFactory;
 use clap::Parser;
+use clap::ValueEnum;
 use git_version::git_version;
 use line_collector::LineCollector;
 use std::io::{self, IsTerminal};
@@ -102,8 +103,30 @@ struct Options {
     #[arg(long)]
     no_adds_only_special: bool,
 
+    #[arg(long)]
+    color: ColorOption,
+
     #[arg(long, hide(true))]
     please_panic: bool,
+}
+
+#[derive(ValueEnum, Clone, Default)]
+enum ColorOption {
+    Yes,
+    No,
+
+    #[default]
+    Auto,
+}
+
+impl ColorOption {
+    fn bool_or(self, default: bool) -> bool {
+        match self {
+            ColorOption::Yes => true,
+            ColorOption::No => false,
+            ColorOption::Auto => default,
+        }
+    }
 }
 
 fn format_error(message: String, line_number: usize, line: &[u8]) -> Result<(), String> {
@@ -435,6 +458,7 @@ fn main() {
             &file2,
             options.ignore_space_change,
             options.no_pager,
+            options.color.bool_or(io::stdout().is_terminal()),
         );
         return;
     }
@@ -453,7 +477,11 @@ fn main() {
                 exit(1);
             }
         };
-        highlight_stream(&mut diff_file, options.no_pager);
+        highlight_stream(
+            &mut diff_file,
+            options.no_pager,
+            options.color.bool_or(io::stdout().is_terminal()),
+        );
         return;
     }
 
@@ -467,7 +495,11 @@ fn main() {
         exit(1);
     }
 
-    highlight_stream(&mut io::stdin().lock(), options.no_pager);
+    highlight_stream(
+        &mut io::stdin().lock(),
+        options.no_pager,
+        options.color.bool_or(io::stdout().is_terminal()),
+    );
 }
 
 #[cfg(test)]
