@@ -52,15 +52,15 @@ fn get_fixed_highlight(line: &str) -> Option<&str> {
 
 /// Write the string bytes to the stream.
 fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str, strip_color: bool) {
-    let text = if strip_color {
+    let result = if strip_color {
         let mut bytes = text.as_bytes().to_vec();
         remove_ansi_escape_codes(&mut bytes);
-        String::from_utf8_lossy(&bytes).to_string().as_str()
+        stream.write_all(&bytes)
     } else {
-        text
+        stream.write_all(text.as_bytes())
     };
 
-    if let Err(error) = stream.write_all(text.as_bytes()) {
+    if let Err(error) = result {
         if error.kind() == ErrorKind::BrokenPipe {
             // This is fine, somebody probably just quit their pager before it
             // was done reading our output.
