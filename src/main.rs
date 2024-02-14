@@ -72,9 +72,9 @@ const GIT_VERSION: &str = git_version!(cargo_prefix = "");
     about = "Colors diff output, highlighting the changed parts of every line.",
     after_help = HELP_TEXT_FOOTER,
     override_usage = r#"
-  diff ... | riff [--no-pager] [--no-adds-only-special]
-  riff [-b] [--no-pager] [--no-adds-only-special] <X1> <X2>
-  riff [-b] [--no-pager] [--no-adds-only-special] --file <FILE>"#
+  diff ... | riff [options...]
+  riff [-b] [options...] <X1> <X2>
+  riff [-b] [options...] --file <FILE>"#
 )]
 
 struct Options {
@@ -103,8 +103,9 @@ struct Options {
     #[arg(long)]
     no_adds_only_special: bool,
 
+    /// `auto` = color if stdout is a terminal
     #[arg(long)]
-    color: ColorOption,
+    color: Option<ColorOption>,
 
     #[arg(long, hide(true))]
     please_panic: bool,
@@ -112,8 +113,8 @@ struct Options {
 
 #[derive(ValueEnum, Clone, Default)]
 enum ColorOption {
-    Yes,
-    No,
+    On,
+    Off,
 
     #[default]
     Auto,
@@ -122,8 +123,8 @@ enum ColorOption {
 impl ColorOption {
     fn bool_or(self, default: bool) -> bool {
         match self {
-            ColorOption::Yes => true,
-            ColorOption::No => false,
+            ColorOption::On => true,
+            ColorOption::Off => false,
             ColorOption::Auto => default,
         }
     }
@@ -458,7 +459,10 @@ fn main() {
             &file2,
             options.ignore_space_change,
             options.no_pager,
-            options.color.bool_or(io::stdout().is_terminal()),
+            options
+                .color
+                .unwrap_or(ColorOption::Auto)
+                .bool_or(io::stdout().is_terminal()),
         );
         return;
     }
@@ -480,7 +484,10 @@ fn main() {
         highlight_stream(
             &mut diff_file,
             options.no_pager,
-            options.color.bool_or(io::stdout().is_terminal()),
+            options
+                .color
+                .unwrap_or(ColorOption::Auto)
+                .bool_or(io::stdout().is_terminal()),
         );
         return;
     }
@@ -498,7 +505,10 @@ fn main() {
     highlight_stream(
         &mut io::stdin().lock(),
         options.no_pager,
-        options.color.bool_or(io::stdout().is_terminal()),
+        options
+            .color
+            .unwrap_or(ColorOption::Auto)
+            .bool_or(io::stdout().is_terminal()),
     );
 }
 
