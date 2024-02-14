@@ -50,8 +50,17 @@ fn get_fixed_highlight(line: &str) -> Option<&str> {
     return None;
 }
 
-fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str) {
-    if let Err(error) = stream.write_all(text.as_bytes()) {
+/// Write the string bytes to the stream.
+fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str, strip_color: bool) {
+    let result = if strip_color {
+        let mut bytes = text.as_bytes().to_vec();
+        remove_ansi_escape_codes(&mut bytes);
+        stream.write_all(&bytes)
+    } else {
+        stream.write_all(text.as_bytes())
+    };
+
+    if let Err(error) = result {
         if error.kind() == ErrorKind::BrokenPipe {
             // This is fine, somebody probably just quit their pager before it
             // was done reading our output.
@@ -129,7 +138,7 @@ impl Drop for LineCollector {
 }
 
 impl LineCollector {
-    pub fn new<W: io::Write + Send + 'static>(output: W) -> LineCollector {
+    pub fn new<W: io::Write + Send + 'static>(output: W, color: bool) -> LineCollector {
         // This is how many entries we can look ahead. An "entry" in this case
         // being either a plain text section or an oldnew section.
         //
@@ -158,7 +167,7 @@ impl LineCollector {
                             // Secret handshake received, done!
                             break;
                         }
-                        print(&mut output, print_me.get());
+                        print(&mut output, print_me.get(), !color);
                     }
                 }
             })
