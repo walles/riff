@@ -727,6 +727,24 @@ mod tests {
             });
         }
 
+        // Test that disabling color results in no escape codes
+        let file = tempfile::NamedTempFile::new().unwrap();
+        highlight_diff(
+            &mut fs::File::open(input_file).unwrap(),
+            file.reopen().unwrap(),
+            false,
+        )
+        .unwrap();
+
+        let highlighted = fs::read_to_string(file.path()).unwrap();
+        if highlighted.contains('\x1b') {
+            return Some(ExampleFailure {
+                diagnostics: "Escape codes found in the supposedly non-colored output".to_string(),
+                actual_result: highlighted,
+                expected_result: "".to_string(),
+            });
+        }
+
         return None;
     }
 }
