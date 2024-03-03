@@ -22,7 +22,7 @@ Or if you do...
 git config --global pager.diff riff
 git config --global pager.show riff
 git config --global pager.log riff
-git config --global interactive.diffFilter riff
+git config --global interactive.diffFilter "riff --color=on"
 ```
 
 ... then all future `git diff`, `git show` and `git log --patch` output will be
@@ -78,7 +78,7 @@ cargo install riffdiff
 git config --global pager.diff riff
 git config --global pager.show riff
 git config --global pager.log riff
-git config --global interactive.diffFilter riff
+git config --global interactive.diffFilter "riff --color=on"
 ```
 
 # See Also
