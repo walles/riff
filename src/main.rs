@@ -609,9 +609,9 @@ mod tests {
         let mut failing_example_expected = vec![];
         let mut failing_example_actual = vec![];
         let mut failure_count = 0;
-        for riff_output_file in riff_output_files {
+        for expected_output_file in riff_output_files {
             let without_riff_output_extension =
-                riff_output_file.file_stem().unwrap().to_str().unwrap();
+                expected_output_file.file_stem().unwrap().to_str().unwrap();
 
             // Find the corresponding .diff file...
             let mut riff_input_file =
@@ -623,12 +623,15 @@ mod tests {
             }
             if !riff_input_file.is_file() {
                 if failing_example.is_none() {
-                    failing_example = Some(riff_output_file.to_str().unwrap().to_string());
+                    failing_example = Some(expected_output_file.to_str().unwrap().to_string());
                     failing_example_expected = vec![];
                     failing_example_actual = vec![];
                 }
 
-                println!("FAIL: No riff input file found for {:?}", riff_output_file);
+                println!(
+                    "FAIL: No riff input file found for {:?}",
+                    expected_output_file
+                );
                 failure_count += 1;
                 continue;
             }
@@ -642,43 +645,31 @@ mod tests {
                 riff_input_file.to_str().unwrap()
             );
 
-            // Run highlighting on the file into a memory buffer
-            let file = tempfile::NamedTempFile::new().unwrap();
-            if let Err(error) = highlight_diff(
-                &mut fs::File::open(&riff_input_file).unwrap(),
-                file.reopen().unwrap(),
-                true,
-            ) {
-                if failing_example.is_none() {
-                    failing_example = Some(riff_input_file.to_str().unwrap().to_string());
-                    failing_example_expected = vec![];
-                    failing_example_actual = vec![];
+            if let Some(failure) = test_testdata_example(&riff_input_file, &expected_output_file) {
+                println!("  FAILED: {}", failure.diagnostics);
+                failure_count += 1;
+
+                if failing_example.is_some() {
+                    continue;
                 }
 
-                eprintln!("  FAILED: Highlighting failed: {}", error);
-                failure_count += 1;
-                continue;
-            }
+                eprintln!("  FAILED: {}", failure.diagnostics);
 
-            let actual_result = fs::read_to_string(file.path()).unwrap();
+                failing_example = Some(riff_input_file.to_str().unwrap().to_string());
 
-            // Load the corresponding .riff-output file into a string
-            let expected_result = fs::read_to_string(riff_output_file).unwrap();
+                let actual_lines: Vec<String> = failure
+                    .actual_result
+                    .split('\n')
+                    .map(str::to_string)
+                    .collect();
+                let expected_lines: Vec<String> = failure
+                    .expected_result
+                    .split('\n')
+                    .map(str::to_string)
+                    .collect();
 
-            // Assert that the highlighting output matches the contents of .riff-output
-            let actual_lines: Vec<String> = actual_result.split('\n').map(str::to_string).collect();
-            let expected_lines: Vec<String> =
-                expected_result.split('\n').map(str::to_string).collect();
-
-            if actual_lines != expected_lines {
-                if failing_example.is_none() {
-                    failing_example = Some(riff_input_file.to_str().unwrap().to_string());
-                    failing_example_actual = actual_lines;
-                    failing_example_expected = expected_lines;
-                }
-
-                println!("  FAILED: Output mismatches!");
-                failure_count += 1;
+                failing_example_expected = expected_lines;
+                failing_example_actual = actual_lines;
             }
         }
 
@@ -697,5 +688,45 @@ mod tests {
         if !diff_files.is_empty() {
             panic!("Some .diff files were never verified: {:?}", diff_files);
         }
+    }
+
+    struct ExampleFailure {
+        diagnostics: String,
+        actual_result: String,
+        expected_result: String,
+    }
+
+    fn test_testdata_example(
+        input_file: &PathBuf,
+        expected_output_file: &PathBuf,
+    ) -> Option<ExampleFailure> {
+        // Run highlighting on the file into a memory buffer
+        let file = tempfile::NamedTempFile::new().unwrap();
+        if let Err(error) = highlight_diff(
+            &mut fs::File::open(input_file).unwrap(),
+            file.reopen().unwrap(),
+            true,
+        ) {
+            return Some(ExampleFailure {
+                diagnostics: format!("Highlighting failed: {}", error),
+                actual_result: "".to_string(),
+                expected_result: "".to_string(),
+            });
+        }
+
+        let actual_result = fs::read_to_string(file.path()).unwrap();
+
+        // Load the corresponding .riff-output file into a string
+        let expected_result = fs::read_to_string(expected_output_file).unwrap();
+
+        if actual_result != expected_result {
+            return Some(ExampleFailure {
+                diagnostics: "Output mismatches".to_string(),
+                actual_result,
+                expected_result,
+            });
+        }
+
+        return None;
     }
 }
