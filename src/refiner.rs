@@ -322,8 +322,8 @@ mod tests {
         const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
 
         let result = format(
-            &vec!["-", "+"],
-            &vec![
+            &["-", "+"],
+            &[
                 "<unchanged text between quotes>\n",
                 "[unchanged text between quotes]\n",
             ],
@@ -343,10 +343,10 @@ mod tests {
 
     #[test]
     fn test_almost_empty_changes() {
-        let result = format(&vec!["-"], &vec!["x\n"]);
+        let result = format(&["-"], &["x\n"]);
         assert_eq!(result, [format!("{OLD}-x{NORMAL}"),]);
 
-        let result = format(&vec!["+"], &vec!["x\n"]);
+        let result = format(&["+"], &["x\n"]);
         assert_eq!(result, [format!("{NEW}+x{NORMAL}"),]);
     }
 }

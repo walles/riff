@@ -75,7 +75,8 @@ impl AnsiStyle {
 }
 
 // Modifies the input so that all ANSI escape codes are removed
-pub fn remove_ansi_escape_codes(line: &mut Vec<u8>) {
+#[must_use]
+pub fn without_ansi_escape_codes(line: &[u8]) -> Vec<u8> {
     enum State {
         Normal,
         Escape,
@@ -83,21 +84,19 @@ pub fn remove_ansi_escape_codes(line: &mut Vec<u8>) {
     }
 
     let mut state = State::Normal;
-    let mut next_index_without_ansi = 0usize;
+    let mut without_ansi = Vec::with_capacity(line.len());
 
-    for index in 0..line.len() {
-        let byte = line[index];
+    for byte in line {
         match state {
             State::Normal => {
-                if byte == b'\x1b' {
+                if *byte == b'\x1b' {
                     state = State::Escape;
                 } else {
-                    line[next_index_without_ansi] = byte;
-                    next_index_without_ansi += 1;
+                    without_ansi.push(*byte);
                 }
             }
             State::Escape => {
-                if byte == b'[' {
+                if *byte == b'[' {
                     state = State::EscapeBracket;
                 } else {
                     // Not an ANSI sequence
@@ -105,14 +104,12 @@ pub fn remove_ansi_escape_codes(line: &mut Vec<u8>) {
 
                     // Push the characters that we thought were the escape
                     // sequence's opening
-                    line[next_index_without_ansi] = b'\x1b';
-                    next_index_without_ansi += 1;
-                    line[next_index_without_ansi] = byte;
-                    next_index_without_ansi += 1;
+                    without_ansi.push(b'\x1b');
+                    without_ansi.push(*byte);
                 }
             }
             State::EscapeBracket => {
-                if !byte.is_ascii_digit() && byte != b';' {
+                if !byte.is_ascii_digit() && *byte != b';' {
                     // Neither digit nor semicolon, this marks the end of the sequence
                     state = State::Normal;
                 }
@@ -120,7 +117,7 @@ pub fn remove_ansi_escape_codes(line: &mut Vec<u8>) {
         }
     }
 
-    line.truncate(next_index_without_ansi);
+    return without_ansi;
 }
 
 #[cfg(test)]
@@ -132,22 +129,19 @@ mod tests {
 
     #[test]
     fn test_non_sgr() {
-        let mut line = b"hel\x1b[0Klo".to_vec();
-        remove_ansi_escape_codes(&mut line);
-        assert_eq!(line, b"hello");
+        let line = b"hel\x1b[0Klo".to_vec();
+        assert_eq!(without_ansi_escape_codes(&line), b"hello");
     }
 
     #[test]
     fn test_sgr() {
-        let mut line = b"hel\x1b[33mlo".to_vec();
-        remove_ansi_escape_codes(&mut line);
-        assert_eq!(line, b"hello");
+        let line = b"hel\x1b[33mlo".to_vec();
+        assert_eq!(without_ansi_escape_codes(&line), b"hello");
     }
 
     #[test]
     fn test_multi_sgr() {
-        let mut line = b"hel\x1b[33;34mlo".to_vec();
-        remove_ansi_escape_codes(&mut line);
-        assert_eq!(line, b"hello");
+        let line = b"hel\x1b[33;34mlo".to_vec();
+        assert_eq!(without_ansi_escape_codes(&line), b"hello");
     }
 }

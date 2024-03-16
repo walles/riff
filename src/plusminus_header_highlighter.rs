@@ -143,7 +143,7 @@ impl PlusMinusHeaderHighlighter {
 
 #[cfg(test)]
 mod tests {
-    use crate::ansi::remove_ansi_escape_codes;
+    use crate::ansi::without_ansi_escape_codes;
 
     use super::*;
 
@@ -160,9 +160,8 @@ mod tests {
         assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
         assert_eq!(1, response.highlighted.len());
 
-        let mut highlighted = response.highlighted[0].get().to_string().into_bytes();
-        remove_ansi_escape_codes(&mut highlighted);
-        let plain = String::from_utf8(highlighted).unwrap();
+        let highlighted = response.highlighted[0].get().to_string().into_bytes();
+        let plain = String::from_utf8(without_ansi_escape_codes(&highlighted)).unwrap();
 
         assert_eq!(
             "--- x.txt                            2023-12-15 15:43:29\n\

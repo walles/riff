@@ -1,0 +1,5 @@
+* [33m97f653d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;33mtag: [m[1;33m3.0.0[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m Bump version number to 3.0.0
+* [33m2760ae6[m Suggest forcing color for git's interactive mode
+* [33mea6d5e9[m Verify disabling color
+* [33m77fb627[m Extract single file testing into a function
+* [33m09c13be[m[33m ([m[1;33mtag: [m[1;33m2.32.0[m[33m)[m Bump version number to 2.32.0

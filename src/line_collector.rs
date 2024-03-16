@@ -1,4 +1,4 @@
-use crate::ansi::remove_ansi_escape_codes;
+use crate::ansi::without_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
 use crate::conflicts_highlighter::ConflictsHighlighter;
 use crate::hunk_highlighter::HunkLinesHighlighter;
@@ -53,8 +53,8 @@ fn get_fixed_highlight(line: &str) -> Option<&str> {
 /// Write the string bytes to the stream.
 fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str, strip_color: bool) {
     let result = if strip_color {
-        let mut bytes = text.as_bytes().to_vec();
-        remove_ansi_escape_codes(&mut bytes);
+        let bytes = text.as_bytes().to_vec();
+        let bytes = without_ansi_escape_codes(&bytes);
         stream.write_all(&bytes)
     } else {
         stream.write_all(text.as_bytes())
@@ -212,11 +212,11 @@ impl LineCollector {
     /// The line parameter is expected *not* to end in a newline.
     ///
     /// Returns an error message on trouble.
-    pub fn consume_line(&mut self, line: &mut Vec<u8>) -> Result<(), String> {
+    pub fn consume_line(&mut self, raw_line: &[u8]) -> Result<(), String> {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
-        remove_ansi_escape_codes(line);
-        let line = String::from_utf8_lossy(line).to_string();
+        let line = without_ansi_escape_codes(raw_line);
+        let line = String::from_utf8_lossy(&line).to_string();
 
         if line.starts_with('\\') {
             {
@@ -303,7 +303,7 @@ impl LineCollector {
             return Ok(());
         }
 
-        self.consume_plain_line(&line);
+        self.consume_plain_line(String::from_utf8_lossy(raw_line).as_ref());
         return Ok(());
     }
 }

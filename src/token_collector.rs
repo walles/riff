@@ -529,7 +529,7 @@ mod tests {
         let rendered = render(
             &LINE_STYLE_NEW,
             "+",
-            &vec![
+            &[
                 StyledToken {
                     token: "hej".to_string(),
                     style: Style::Plain,
@@ -585,7 +585,7 @@ mod tests {
         let actual = render(
             &LINE_STYLE_OLD,
             "-",
-            &vec![StyledToken::new(" ".to_string(), Style::Plain)],
+            &[StyledToken::new(" ".to_string(), Style::Plain)],
         );
 
         assert_eq!(actual, format!("{OLD}- {NORMAL}"));
@@ -649,7 +649,7 @@ mod tests {
         let actual = render(
             &LINE_STYLE_OLD,
             "-",
-            &vec![
+            &[
                 StyledToken::new("x".to_string(), Style::Plain),
                 StyledToken::new("\t".to_string(), Style::Plain),
             ],

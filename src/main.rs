@@ -176,7 +176,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(
             // End of stream
             if !line.is_empty() {
                 // Stuff found on the last line without a trailing newline
-                if let Err(message) = line_collector.consume_line(&mut line) {
+                if let Err(message) = line_collector.consume_line(&line) {
                     return format_error(message, line_number, &line);
                 }
             }
@@ -196,7 +196,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(
             }
 
             // Line finished, consume it!
-            if let Err(message) = line_collector.consume_line(&mut line) {
+            if let Err(message) = line_collector.consume_line(&line) {
                 return format_error(message, line_number, &line);
             }
             line.clear();
