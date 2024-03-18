@@ -73,8 +73,8 @@ const GIT_VERSION: &str = git_version!(cargo_prefix = "");
     after_help = HELP_TEXT_FOOTER,
     override_usage = r#"
   diff ... | riff [options...]
-  riff [-b] [options...] <X1> <X2>
-  riff [-b] [options...] --file <FILE>"#
+  riff [-b] [-w] [options...] <X1> <X2>
+  riff [-b] [-w] [options...] --file <FILE>"#
 )]
 
 struct Options {
@@ -91,8 +91,12 @@ struct Options {
     file: Option<PathBuf>,
 
     /// Ignore changes in amount of whitespace
-    #[arg(short('b'))]
+    #[arg(long, short('b'), conflicts_with_all = ["ignore_all_space"])]
     ignore_space_change: bool,
+
+    /// Ignore all whitespace
+    #[arg(long, short('w'), conflicts_with_all = ["ignore_space_change"])]
+    ignore_all_space: bool,
 
     /// Don't page the result
     #[arg(long)]
@@ -338,6 +342,7 @@ fn exec_diff_highlight(
     path1: &str,
     path2: &str,
     ignore_space_change: bool,
+    ignore_all_space: bool,
     no_pager: bool,
     color: bool,
 ) {
@@ -366,6 +371,10 @@ fn exec_diff_highlight(
 
     if ignore_space_change {
         command = command.arg("-b");
+    }
+
+    if ignore_all_space {
+        command = command.arg("-w");
     }
 
     let command = command
@@ -458,6 +467,7 @@ fn main() {
             &file1,
             &file2,
             options.ignore_space_change,
+            options.ignore_all_space,
             options.no_pager,
             options
                 .color
