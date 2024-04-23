@@ -1,0 +1,66 @@
+diff --cc ansible/roles/zfsbootmenu/tasks/main.yaml
+index 73fa864,08648fa..0000000
+--- a/ansible/roles/zfsbootmenu/tasks/main.yaml
++++ b/ansible/roles/zfsbootmenu/tasks/main.yaml
+@@@ -6,6 -6,60 +6,60 @@@
+        - zfsbootmenu
+      state: present
+  
+++<<<<<<< HEAD
+++=======
++ - name: Create ESP mdadm config
++   template:
++     src: mdadm.conf.j2
++     dest: /etc/mdadm.conf
++     owner: root
++     group: root
++     mode: 0644
++   when: esp_mdadm_array is defined
++ 
++ - name: Install dropbear
++   xbps:
++     pkg:
++       - dropbear
++       - mkinitcpio-dropbear
++     state: present
++ 
++ - name: Create dropbear directory
++   file:
++     path: /etc/dropbear
++     owner: root
++     group: root
++     mode: 0755
++     state: directory
++ 
++ - name: Create dropbear keys
++   command:
++     cmd: /usr/bin/dropbearkey -t {{ item }} -f /etc/dropbear/dropbear_{{ item }}_host_key
++     creates: /etc/dropbear/dropbear_{{ item }}_host_key
++   loop:
++     - rsa
++     - ecdsa
++     - ed25519
++ 
++ - name: Create dropbear authorised keys
++   template:
++     src: authorized_keys.j2
++     dest: /etc/dropbear/root_key
++     owner: root
++     group: root
++     mode: 0644
++     lstrip_blocks: true
++ 
++ - name: Create dropbear config
++   template:
++     src: dropbear.conf.j2
++     dest: /etc/dropbear/dropbear.conf
++     owner: root
++     group: root
++     mode: 0644
++     lstrip_blocks: true
++ 
+++>>>>>>> 8eec118 (fixup! ansible/roles/zfsbootmenu: add role)
+  - name: Create zfsbootmenu config
+    template:
+      src: config.yaml.j2
+* Unmerged path ansible/host_vars/foo.yaml
