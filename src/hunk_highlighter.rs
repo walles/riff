@@ -70,8 +70,8 @@ impl LinesHighlighter for HunkLinesHighlighter {
     fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
         if self.more_lines_expected() {
             return Err(format!(
-                "Still expecting more lines, but got EOF: {:?}",
-                self.expected_line_counts
+                "Still expecting more lines, but got EOF: {}",
+                self.describe_expected_line_counts()
             ));
         }
 
@@ -211,6 +211,32 @@ impl HunkLinesHighlighter {
         }
 
         return Ok(());
+    }
+
+    /// Return something along the lines of `[<± > done, < ±> 3 more expected, <++> 1 more expected]`
+    fn describe_expected_line_counts(&self) -> String {
+        let mut return_me = String::new();
+        for (pos, expected_line_count) in self.expected_line_counts.iter().enumerate() {
+            let prefix = if pos == 0 { "" } else { ", " };
+
+            let description = if pos == self.expected_line_counts.len() - 1 {
+                "+".repeat(self.expected_line_counts.len() - 1)
+            } else {
+                let before = " ".repeat(pos);
+                let after = " ".repeat(self.expected_line_counts.len() - pos - 2);
+                format!("{before}±{after}")
+            };
+
+            let expectation = if *expected_line_count == 0 {
+                "done".to_string()
+            } else {
+                // One or more additional lines expected
+                format!("{} more expected", expected_line_count)
+            };
+
+            return_me.push_str(&format!("{prefix}<{description}> {expectation}"));
+        }
+        return format!("[{return_me}]");
     }
 
     fn more_lines_expected(&self) -> bool {
