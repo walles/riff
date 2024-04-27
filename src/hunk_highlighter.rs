@@ -155,7 +155,11 @@ impl HunkLinesHighlighter {
         }
 
         // All other cases should have been handled above
-        assert!(line.starts_with('\\'));
+        assert!(
+            line.starts_with('\\'),
+            "Expected line to start with \"\\\\\": {:?}",
+            line
+        );
 
         return_me.push(StringFuture::from_string(format!(
             "{NO_EOF_NEWLINE_COLOR}{line}{NORMAL}\n"
