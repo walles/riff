@@ -15,7 +15,10 @@ pub(crate) struct HunkLinesHighlighter {
     // This will have to be rendered at the top of our returned result.
     hunk_header: Option<String>,
 
-    /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
+    /// Calculated by HunkHeader::parse()
+    initial_line_counts: Vec<usize>,
+
+    /// We'll count these values down as we consume lines.
     remaining_line_counts: Vec<usize>,
 }
 
@@ -90,7 +93,8 @@ impl HunkLinesHighlighter {
         if let Some(hunk_header) = HunkHeader::parse(line) {
             return Some(HunkLinesHighlighter {
                 hunk_header: Some(hunk_header.render()),
-                remaining_line_counts: hunk_header.linecounts,
+                remaining_line_counts: hunk_header.linecounts.clone(),
+                initial_line_counts: hunk_header.linecounts,
                 lines_highlighter: None,
             });
         }
@@ -232,14 +236,13 @@ impl HunkLinesHighlighter {
                 format!("{before}±{after}")
             };
 
-            let expectation = if *remaining_line_count == 0 {
-                "done".to_string()
-            } else {
-                // One or more additional lines expected
-                format!("{} more expected", remaining_line_count)
-            };
+            let done = format!(
+                "{}/{} done",
+                self.initial_line_counts[pos] - remaining_line_count,
+                self.initial_line_counts[pos]
+            );
 
-            return_me.push_str(&format!("{prefix}<{description}> {expectation}"));
+            return_me.push_str(&format!("{prefix}<{description}> {done}"));
         }
         return format!("[{return_me}]");
     }
