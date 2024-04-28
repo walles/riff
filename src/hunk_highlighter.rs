@@ -16,7 +16,7 @@ pub(crate) struct HunkLinesHighlighter {
     hunk_header: Option<String>,
 
     /// Calculated by HunkHeader::parse(). We'll count this value down as we consume lines.
-    expected_line_counts: Vec<usize>,
+    remaining_line_counts: Vec<usize>,
 }
 
 impl LinesHighlighter for HunkLinesHighlighter {
@@ -29,7 +29,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
             self.hunk_header = None;
         }
 
-        let prefix_length = self.expected_line_counts.len() - 1;
+        let prefix_length = self.remaining_line_counts.len() - 1;
         let spaces_only = " ".repeat(prefix_length);
         let prefix = if line.len() >= prefix_length {
             line.split_at(prefix_length).0
@@ -57,7 +57,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
             });
         }
 
-        self.decrease_expected_line_counts(prefix)?;
+        self.decrease_remaining_line_counts(prefix)?;
 
         // It wasn't a nnaeof line, and we're still expecting more lines.
         return_me.append(&mut self.consume_line_internal(line, thread_pool)?);
@@ -71,7 +71,7 @@ impl LinesHighlighter for HunkLinesHighlighter {
         if self.more_lines_expected() {
             return Err(format!(
                 "Still expecting more lines, but got EOF: {}",
-                self.describe_expected_line_counts()
+                self.describe_remaining_line_counts()
             ));
         }
 
@@ -90,7 +90,7 @@ impl HunkLinesHighlighter {
         if let Some(hunk_header) = HunkHeader::parse(line) {
             return Some(HunkLinesHighlighter {
                 hunk_header: Some(hunk_header.render()),
-                expected_line_counts: hunk_header.linecounts,
+                remaining_line_counts: hunk_header.linecounts,
                 lines_highlighter: None,
             });
         }
@@ -107,7 +107,7 @@ impl HunkLinesHighlighter {
 
         // The `- 1` here is because there's one line count per column, plus
         // one for the result. So `- 1` gives us the prefix length.
-        let prefix_length = self.expected_line_counts.len() - 1;
+        let prefix_length = self.remaining_line_counts.len() - 1;
 
         let spaces_only = " ".repeat(prefix_length);
 
@@ -158,7 +158,7 @@ impl HunkLinesHighlighter {
             // All other cases should have been handled above
             return Err(format!(
                 "Expected line at {} to start with \"\\\\\"",
-                self.describe_expected_line_counts()
+                self.describe_remaining_line_counts()
             ));
         }
 
@@ -168,31 +168,31 @@ impl HunkLinesHighlighter {
         return Ok(return_me);
     }
 
-    fn decrease_expected_line_counts(&mut self, prefix: &str) -> Result<(), String> {
+    fn decrease_remaining_line_counts(&mut self, prefix: &str) -> Result<(), String> {
         if prefix.contains('+') || prefix.chars().all(|c| c == ' ') {
             // Any additions always count towards the last (additions) line
             // count. Context lines (space only) also count towards the last
             // count.
-            let expected_line_count = self.expected_line_counts.last_mut().unwrap();
-            if *expected_line_count == 0 {
+            let remaining_line_count = self.remaining_line_counts.last_mut().unwrap();
+            if *remaining_line_count == 0 {
                 return Err("Got more + lines than expected".to_string());
             }
-            *expected_line_count -= 1;
+            *remaining_line_count -= 1;
 
             for (pos, plus_or_space) in prefix.chars().enumerate() {
                 if plus_or_space != ' ' {
                     continue;
                 }
 
-                let expected_line_count = &mut self.expected_line_counts[pos];
-                if *expected_line_count == 0 {
+                let remaining_line_count = &mut self.remaining_line_counts[pos];
+                if *remaining_line_count == 0 {
                     return Err(format!(
                         "Got more lines than expected for version (+ context column) {:?}",
                         pos + 1,
                     ));
                 }
 
-                *expected_line_count -= 1;
+                *remaining_line_count -= 1;
             }
 
             return Ok(());
@@ -204,39 +204,39 @@ impl HunkLinesHighlighter {
                 continue;
             }
 
-            let expected_line_count = &mut self.expected_line_counts[pos];
-            if *expected_line_count == 0 {
+            let remaining_line_count = &mut self.remaining_line_counts[pos];
+            if *remaining_line_count == 0 {
                 return Err(format!(
                     "Got more lines than expected for version (minus / space column) {:?}",
                     pos + 1,
                 ));
             }
 
-            *expected_line_count -= 1;
+            *remaining_line_count -= 1;
         }
 
         return Ok(());
     }
 
     /// Return something along the lines of `[<± > done, < ±> 3 more expected, <++> 1 more expected]`
-    fn describe_expected_line_counts(&self) -> String {
+    fn describe_remaining_line_counts(&self) -> String {
         let mut return_me = String::new();
-        for (pos, expected_line_count) in self.expected_line_counts.iter().enumerate() {
+        for (pos, remaining_line_count) in self.remaining_line_counts.iter().enumerate() {
             let prefix = if pos == 0 { "" } else { ", " };
 
-            let description = if pos == self.expected_line_counts.len() - 1 {
-                "+".repeat(self.expected_line_counts.len() - 1)
+            let description = if pos == self.remaining_line_counts.len() - 1 {
+                "+".repeat(self.remaining_line_counts.len() - 1)
             } else {
                 let before = " ".repeat(pos);
-                let after = " ".repeat(self.expected_line_counts.len() - pos - 2);
+                let after = " ".repeat(self.remaining_line_counts.len() - pos - 2);
                 format!("{before}±{after}")
             };
 
-            let expectation = if *expected_line_count == 0 {
+            let expectation = if *remaining_line_count == 0 {
                 "done".to_string()
             } else {
                 // One or more additional lines expected
-                format!("{} more expected", expected_line_count)
+                format!("{} more expected", remaining_line_count)
             };
 
             return_me.push_str(&format!("{prefix}<{description}> {expectation}"));
@@ -245,8 +245,8 @@ impl HunkLinesHighlighter {
     }
 
     fn more_lines_expected(&self) -> bool {
-        for expected_line_count in &self.expected_line_counts {
-            if *expected_line_count != 0 {
+        for remaining_line_count in &self.remaining_line_counts {
+            if *remaining_line_count != 0 {
                 return true;
             }
         }
@@ -316,20 +316,20 @@ mod tests {
     }
 
     #[test]
-    fn test_decrease_expected_line_count() {
+    fn test_decrease_remaining_line_count() {
         let mut test_me = HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@").unwrap();
-        assert_eq!(test_me.expected_line_counts, vec![2, 2]);
+        assert_eq!(test_me.remaining_line_counts, vec![2, 2]);
 
-        test_me.decrease_expected_line_counts("+").unwrap();
+        test_me.decrease_remaining_line_counts("+").unwrap();
         assert_eq!(
-            test_me.expected_line_counts,
+            test_me.remaining_line_counts,
             vec![2, 1],
             "With a + line, we should decrease the last line count"
         );
 
-        test_me.decrease_expected_line_counts("-").unwrap();
+        test_me.decrease_remaining_line_counts("-").unwrap();
         assert_eq!(
-            test_me.expected_line_counts,
+            test_me.remaining_line_counts,
             vec![1, 1],
             "With a - line, we should decrease the first line count"
         );
@@ -345,7 +345,7 @@ mod tests {
         }
 
         let mut test_me = HunkLinesHighlighter::from_line("@@ -1,1 +1,2 @@").unwrap();
-        assert_eq!(test_me.expected_line_counts, vec![1, 2]);
+        assert_eq!(test_me.remaining_line_counts, vec![1, 2]);
 
         let thread_pool = ThreadPool::new(1);
         test_me.consume_line(" Hello", &thread_pool).unwrap();
@@ -357,7 +357,7 @@ mod tests {
         assert_eq!(result.line_accepted, LineAcceptance::AcceptedWantMore);
         assert_eq!(result.highlighted.len(), 0);
 
-        assert_eq!(test_me.expected_line_counts, vec![0, 0]);
+        assert_eq!(test_me.remaining_line_counts, vec![0, 0]);
 
         let mut result = test_me
             .consume_line("\\ No newline at end of file", &thread_pool)
@@ -376,48 +376,48 @@ mod tests {
     }
 
     #[test]
-    fn test_decrease_expected_line_count_merge() {
+    fn test_decrease_remaining_line_count_merge() {
         let mut test_me = HunkLinesHighlighter::from_line("@@@ -1,5 -1,5 +1,5 @@@").unwrap();
-        assert_eq!(test_me.expected_line_counts, vec![5, 5, 5]);
+        assert_eq!(test_me.remaining_line_counts, vec![5, 5, 5]);
 
-        test_me.decrease_expected_line_counts(" -").unwrap();
+        test_me.decrease_remaining_line_counts(" -").unwrap();
         assert_eq!(
-            test_me.expected_line_counts,
+            test_me.remaining_line_counts,
             vec![5, 4, 5],
             "Minus counts should have gone down"
         );
 
-        test_me.decrease_expected_line_counts("- ").unwrap();
+        test_me.decrease_remaining_line_counts("- ").unwrap();
         assert_eq!(
-            test_me.expected_line_counts,
+            test_me.remaining_line_counts,
             vec![4, 4, 5],
             "Minus counts should have gone down"
         );
 
-        test_me.decrease_expected_line_counts("--").unwrap();
+        test_me.decrease_remaining_line_counts("--").unwrap();
         assert_eq!(
-            test_me.expected_line_counts,
+            test_me.remaining_line_counts,
             vec![3, 3, 5],
             "Minus and space counts should have gone down"
         );
 
-        test_me.decrease_expected_line_counts("++").unwrap();
+        test_me.decrease_remaining_line_counts("++").unwrap();
         assert_eq!(
-            test_me.expected_line_counts,
+            test_me.remaining_line_counts,
             vec![3, 3, 4],
             "With a + line, we should decrease the last line count"
         );
 
-        test_me.decrease_expected_line_counts(" +").unwrap();
+        test_me.decrease_remaining_line_counts(" +").unwrap();
         assert_eq!(
-            test_me.expected_line_counts,
+            test_me.remaining_line_counts,
             vec![2, 3, 3],
             "First count should have gone down because of the space in its column. Last count should have gone down because of the + in its column."
         );
 
-        test_me.decrease_expected_line_counts("  ").unwrap();
+        test_me.decrease_remaining_line_counts("  ").unwrap();
         assert_eq!(
-            test_me.expected_line_counts,
+            test_me.remaining_line_counts,
             vec![1, 2, 2],
             "All counts should drop on context (space only) lines"
         );
