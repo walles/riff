@@ -157,7 +157,8 @@ impl HunkLinesHighlighter {
         // All other cases should have been handled above
         assert!(
             line.starts_with('\\'),
-            "Expected line to start with \"\\\\\": {:?}",
+            "Expected line at {} to start with \"\\\\\": {:?}",
+            self.describe_expected_line_counts(),
             line
         );
 
