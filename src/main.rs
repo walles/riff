@@ -14,6 +14,7 @@ use clap::Parser;
 use clap::ValueEnum;
 use git_version::git_version;
 use line_collector::LineCollector;
+use logging::init_logger;
 use std::io::{self, IsTerminal};
 use std::panic;
 use std::path::{self, PathBuf};
@@ -30,6 +31,7 @@ mod hunk_header;
 mod hunk_highlighter;
 mod line_collector;
 mod lines_highlighter;
+mod logging;
 mod plusminus_header_highlighter;
 mod plusminus_lines_highlighter;
 mod refiner;
@@ -433,6 +435,8 @@ fn main() {
         panic_handler(panic_info);
     }));
 
+    let logger = init_logger().unwrap();
+
     let options = Options::try_parse_from(env_and_command_line());
     if let Err(e) = options {
         let _ = e.print();
@@ -520,6 +524,11 @@ fn main() {
             .unwrap_or(ColorOption::Auto)
             .bool_or(io::stdout().is_terminal()),
     );
+
+    let logs = logger.get_logs();
+    if !logs.is_empty() {
+        eprintln!("{}", logs);
+    }
 }
 
 #[cfg(test)]
