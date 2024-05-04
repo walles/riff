@@ -209,17 +209,33 @@ impl LineCollector {
         self.plain_text.push_str(linepart);
     }
 
+    fn emit_error_lines(&mut self) {
+        FIXME: Color all error lines yellow and send them to the pager
+    }
+
     /// The line parameter is expected *not* to end in a newline.
     ///
     /// Returns an error message on trouble.
     pub fn consume_line(&mut self, raw_line: &[u8]) -> Result<(), String> {
-        // FIXME: If line_collector is set, collect this line in an error-lines
-        // buffer before calling consume_line_internal()
+        // Strip out incoming ANSI formatting. This enables us to highlight
+        // already-colored input.
+        let line = without_ansi_escape_codes(raw_line);
+        let line = String::from_utf8_lossy(&line).to_string();
+
+        if self.lines_highlighter.is_some() {
+            // FIXME: Collect this line in an error-lines buffer before calling
+            // consume_line_internal()
+        }
 
         let result = self.consume_line_internal(raw_line);
 
-        // FIXME: If the result is an error, color all error lines yellow and
-        // send them to the pager
+        if result.is_err() {
+            self.emit_error_lines();
+
+            // FIXME: Start over with the error lines buffer
+
+            return result;
+        }
 
         // FIXME: If this was not an error, but the line_collector has now
         // changed, start over with the error lines buffer. Consider what should
@@ -229,12 +245,7 @@ impl LineCollector {
         return result;
     }
 
-    fn consume_line_internal(&mut self, raw_line: &[u8]) -> Result<(), String> {
-        // Strip out incoming ANSI formatting. This enables us to highlight
-        // already-colored input.
-        let line = without_ansi_escape_codes(raw_line);
-        let line = String::from_utf8_lossy(&line).to_string();
-
+    fn consume_line_internal(&mut self, line: &str) -> Result<(), String> {
         if line.starts_with('\\') {
             {
                 // Store the "\ No newline at end of file" string however it is
