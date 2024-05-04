@@ -16,7 +16,10 @@ impl log::Log for BufferLogger {
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let mut buffer = self.buffer.lock().unwrap();
-            writeln!(&mut *buffer, "{} - {}", record.level(), record.args()).unwrap();
+            if buffer.len() > 0 {
+                writeln!(&mut *buffer, "").unwrap();
+            }
+            write!(&mut *buffer, "{} - {}", record.level(), record.args()).unwrap();
         }
     }
 
