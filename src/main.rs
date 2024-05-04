@@ -14,6 +14,7 @@ use clap::Parser;
 use clap::ValueEnum;
 use git_version::git_version;
 use line_collector::LineCollector;
+use log::error;
 use logging::init_logger;
 use std::io::{self, IsTerminal};
 use std::panic;
@@ -136,14 +137,14 @@ impl ColorOption {
     }
 }
 
-fn format_error(message: String, line_number: usize, line: &[u8]) -> Result<(), String> {
-    return Err(format!(
-        "ERROR on line {}: {}\n         Line {}: {}",
+fn format_error(message: String, line_number: usize, line: &[u8]) -> String {
+    return format!(
+        "On line {}: {}\n  Line {}: {}",
         line_number,
         message,
         line_number,
         String::from_utf8_lossy(line),
-    ));
+    );
 }
 
 fn highlight_diff_or_exit<W: io::Write + Send + 'static>(
@@ -183,7 +184,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(
             if !line.is_empty() {
                 // Stuff found on the last line without a trailing newline
                 if let Err(message) = line_collector.consume_line(&line) {
-                    return format_error(message, line_number, &line);
+                    error!("{}", format_error(message, line_number, &line));
                 }
             }
             break;
@@ -203,7 +204,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(
 
             // Line finished, consume it!
             if let Err(message) = line_collector.consume_line(&line) {
-                return format_error(message, line_number, &line);
+                error!("{}", format_error(message, line_number, &line));
             }
             line.clear();
             line_number += 1;
@@ -527,6 +528,8 @@ fn main() {
 
     let logs = logger.get_logs();
     if !logs.is_empty() {
+        // FIXME: Print version number and some error reporting header? With
+        // links to the GitHub issue tracker?
         eprintln!("{}", logs);
     }
 }
