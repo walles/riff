@@ -213,6 +213,23 @@ impl LineCollector {
     ///
     /// Returns an error message on trouble.
     pub fn consume_line(&mut self, raw_line: &[u8]) -> Result<(), String> {
+        // FIXME: If line_collector is set, collect this line in an error-lines
+        // buffer before calling consume_line_internal()
+
+        let result = self.consume_line_internal(raw_line);
+
+        // FIXME: If the result is an error, color all error lines yellow and
+        // send them to the pager
+
+        // FIXME: If this was not an error, but the line_collector has now
+        // changed, start over with the error lines buffer. Consider what should
+        // happen both when we go from one collector to another as well as when
+        // we go from a collector to no collector.
+
+        return result;
+    }
+
+    fn consume_line_internal(&mut self, raw_line: &[u8]) -> Result<(), String> {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
         let line = without_ansi_escape_codes(raw_line);
