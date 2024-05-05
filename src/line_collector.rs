@@ -83,11 +83,15 @@ The not-diff-lines blocks will be enqueued for printing by the printing thread.
 The diff lines blocks will also be enqueued for printing, but the actual diffing
 will happen in background threads.
 */
-pub struct LineCollector {
+pub(crate) struct LineCollector {
     lines_highlighter: Option<Box<dyn LinesHighlighter>>,
 
     /// Headers and stuff that we just want printed, not part of a diff
     plain_text: String,
+
+    /// Lines passed to the current lines_highlighter. If it errors out, we'll
+    /// highlight these in yellow.
+    error_lines: Vec<String>,
 
     /// Set to true when we see the first diff line. The second diff line and
     /// onwards will come with highlighted backgrounds, based on this value.
@@ -176,6 +180,7 @@ impl LineCollector {
         return LineCollector {
             lines_highlighter: None,
             plain_text: String::from(""),
+            error_lines: Vec::new(),
             diff_seen: false,
 
             consumer_thread: Some(consumer),
@@ -223,16 +228,16 @@ impl LineCollector {
         let line = String::from_utf8_lossy(&line).to_string();
 
         if self.lines_highlighter.is_some() {
-            // FIXME: Collect this line in an error-lines buffer before calling
+            // Collect this line in an error-lines buffer before calling
             // consume_line_internal()
+            self.error_lines.push(line.clone());
         }
 
-        let result = self.consume_line_internal(raw_line);
+        let result = self.consume_line_internal(&line);
 
         if result.is_err() {
             self.emit_error_lines();
-
-            // FIXME: Start over with the error lines buffer
+            self.error_lines.clear();
 
             return result;
         }
