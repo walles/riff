@@ -214,8 +214,23 @@ impl LineCollector {
         self.plain_text.push_str(linepart);
     }
 
-    fn emit_error_lines(&mut self) {
-        FIXME: Color all error lines yellow and send them to the pager
+    /// Color all error lines yellow and send them to the pager
+    fn drain_error_lines(&mut self) {
+        self.drain_plain();
+
+        // Color all error lines yellow and put newlines in between
+        let all_lines = self
+            .error_lines
+            .iter()
+            .map(|line| format!("{}{}{}", PARSE_ERROR, line, NORMAL))
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        self.error_lines.clear();
+
+        self.print_queue_putter
+            .send(StringFuture::from_string(all_lines))
+            .unwrap();
     }
 
     /// The line parameter is expected *not* to end in a newline.
@@ -236,16 +251,20 @@ impl LineCollector {
         let result = self.consume_line_internal(&line);
 
         if result.is_err() {
-            self.emit_error_lines();
-            self.error_lines.clear();
+            self.drain_error_lines();
 
             return result;
         }
 
-        // FIXME: If this was not an error, but the line_collector has now
-        // changed, start over with the error lines buffer. Consider what should
-        // happen both when we go from one collector to another as well as when
-        // we go from a collector to no collector.
+        // Invariant: This was not an error
+
+        if self.lines_highlighter.is_none() {
+            // Any futureerrors are not related to the old lines highlighter
+            self.error_lines.clear();
+            return result;
+        }
+
+        FIXME: If the line_collector is new, start over with the error lines
 
         return result;
     }

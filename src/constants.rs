@@ -1,5 +1,6 @@
 pub const OLD: &str = "\x1b[31m"; // Red
 pub const NEW: &str = "\x1b[32m"; // Green
+pub const PARSE_ERROR: &str = "\x1b[33m"; // Yellow
 
 pub const INVERSE_VIDEO: &str = "\x1b[7m";
 
