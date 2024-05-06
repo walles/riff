@@ -246,6 +246,7 @@ impl LineCollector {
         // already-colored input.
         let line = without_ansi_escape_codes(raw_line);
         let line = String::from_utf8_lossy(&line).to_string();
+        let line_with_original_highlighting = String::from_utf8_lossy(raw_line).to_string();
 
         if self.lines_highlighter.is_some() {
             // Collect this line in an error-lines buffer before calling
@@ -254,7 +255,7 @@ impl LineCollector {
         }
 
         let lines_highlighter_set_count = self.lines_highlighter_set_count;
-        let result = self.consume_line_internal(&line);
+        let result = self.consume_line_internal(&line, &line_with_original_highlighting);
 
         if result.is_err() {
             self.drain_error_lines();
@@ -272,7 +273,11 @@ impl LineCollector {
         return result;
     }
 
-    fn consume_line_internal(&mut self, line: &str) -> Result<(), String> {
+    fn consume_line_internal(
+        &mut self,
+        line: &str,
+        line_with_original_highlighting: &str,
+    ) -> Result<(), String> {
         if line.starts_with('\\') {
             {
                 // Store the "\ No newline at end of file" string however it is
