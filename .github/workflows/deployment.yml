@@ -2,7 +2,7 @@ name: Continuous Delivery
 
 on:
   release:
-    types: [created]
+    types: [released]
 
 jobs:
   homebrew:
