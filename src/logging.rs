@@ -19,7 +19,7 @@ impl log::Log for BufferLogger {
         if self.enabled(record.metadata()) {
             let mut buffer = self.buffer.lock().unwrap();
             if buffer.len() > 0 {
-                writeln!(&mut *buffer, "").unwrap();
+                writeln!(&mut *buffer).unwrap();
             }
             write!(
                 &mut *buffer,

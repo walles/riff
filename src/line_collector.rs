@@ -262,7 +262,7 @@ impl LineCollector {
         }
 
         if let Some(lines_highlighter) = self.lines_highlighter.as_mut() {
-            let result = lines_highlighter.consume_line(&line, &self.thread_pool);
+            let result = lines_highlighter.consume_line(line, &self.thread_pool);
             if let Err(error) = result {
                 self.lines_highlighter = None;
                 return Err(error);
@@ -287,19 +287,19 @@ impl LineCollector {
             }
         }
 
-        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line) {
+        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(());
         }
 
-        if let Some(plusminus_header_highlighter) = PlusMinusHeaderHighlighter::from_line(&line) {
+        if let Some(plusminus_header_highlighter) = PlusMinusHeaderHighlighter::from_line(line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
             return Ok(());
         }
 
-        if let Some(conflicts_highlighter) = ConflictsHighlighter::from_line(&line) {
+        if let Some(conflicts_highlighter) = ConflictsHighlighter::from_line(line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(conflicts_highlighter));
             return Ok(());
@@ -309,15 +309,15 @@ impl LineCollector {
             self.diff_seen = true;
         }
 
-        if let Some(fixed_highlight) = get_fixed_highlight(&line) {
+        if let Some(fixed_highlight) = get_fixed_highlight(line) {
             self.consume_plain_linepart(fixed_highlight);
-            self.consume_plain_linepart(&line);
+            self.consume_plain_linepart(line);
             self.consume_plain_line(NORMAL); // consume_plain_line() will add a linefeed to the output
             return Ok(());
         }
 
         if line.starts_with("commit") {
-            self.consume_plain_line(&format_commit_line(&line, self.diff_seen));
+            self.consume_plain_line(&format_commit_line(line, self.diff_seen));
             return Ok(());
         }
 
