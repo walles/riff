@@ -531,6 +531,7 @@ fn main() {
         // FIXME: Print version number and some error reporting header? With
         // links to the GitHub issue tracker?
         eprintln!("{}", logs);
+        exit(1);
     }
 }
 
