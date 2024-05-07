@@ -213,13 +213,7 @@ impl LineCollector {
     ///
     /// Returns an error message on trouble.
     pub fn consume_line(&mut self, raw_line: &[u8]) -> Result<(), String> {
-        // Strip out incoming ANSI formatting. This enables us to highlight
-        // already-colored input.
-        let line = without_ansi_escape_codes(raw_line);
-        let line = String::from_utf8_lossy(&line).to_string();
-        let line_with_original_highlighting = String::from_utf8_lossy(raw_line).to_string();
-
-        let result = self.consume_line_internal(&line, &line_with_original_highlighting);
+        let result = self.consume_line_internal(raw_line);
 
         if result.is_err() {
             self.drain_plain();
@@ -227,6 +221,8 @@ impl LineCollector {
             // This one just failed, so it's out
             self.lines_highlighter = None;
 
+            let line = without_ansi_escape_codes(raw_line);
+            let line = String::from_utf8_lossy(&line).to_string();
             self.print_queue_putter
                 .send(StringFuture::from_string(format!(
                     "{}{}{}",
@@ -242,11 +238,12 @@ impl LineCollector {
         return result;
     }
 
-    fn consume_line_internal(
-        &mut self,
-        line: &str,
-        line_with_original_highlighting: &str,
-    ) -> Result<(), String> {
+    fn consume_line_internal(&mut self, raw_line: &[u8]) -> Result<(), String> {
+        // Strip out incoming ANSI formatting. This enables us to highlight
+        // already-colored input.
+        let line = without_ansi_escape_codes(raw_line);
+        let line = String::from_utf8_lossy(&line).to_string();
+
         if line.starts_with('\\') {
             {
                 // Store the "\ No newline at end of file" string however it is
@@ -262,7 +259,7 @@ impl LineCollector {
         }
 
         if let Some(lines_highlighter) = self.lines_highlighter.as_mut() {
-            let result = lines_highlighter.consume_line(line, &self.thread_pool);
+            let result = lines_highlighter.consume_line(&line, &self.thread_pool);
             if let Err(error) = result {
                 self.lines_highlighter = None;
                 return Err(error);
@@ -287,19 +284,19 @@ impl LineCollector {
             }
         }
 
-        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(line) {
+        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(());
         }
 
-        if let Some(plusminus_header_highlighter) = PlusMinusHeaderHighlighter::from_line(line) {
+        if let Some(plusminus_header_highlighter) = PlusMinusHeaderHighlighter::from_line(&line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
             return Ok(());
         }
 
-        if let Some(conflicts_highlighter) = ConflictsHighlighter::from_line(line) {
+        if let Some(conflicts_highlighter) = ConflictsHighlighter::from_line(&line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(conflicts_highlighter));
             return Ok(());
@@ -309,15 +306,15 @@ impl LineCollector {
             self.diff_seen = true;
         }
 
-        if let Some(fixed_highlight) = get_fixed_highlight(line) {
+        if let Some(fixed_highlight) = get_fixed_highlight(&line) {
             self.consume_plain_linepart(fixed_highlight);
-            self.consume_plain_linepart(line);
+            self.consume_plain_linepart(&line);
             self.consume_plain_line(NORMAL); // consume_plain_line() will add a linefeed to the output
             return Ok(());
         }
 
         if line.starts_with("commit") {
-            self.consume_plain_line(&format_commit_line(line, self.diff_seen));
+            self.consume_plain_line(&format_commit_line(&line, self.diff_seen));
             return Ok(());
         }
 
@@ -332,7 +329,7 @@ impl LineCollector {
             return Ok(());
         }
 
-        self.consume_plain_line(line_with_original_highlighting);
+        self.consume_plain_line(String::from_utf8_lossy(raw_line).as_ref());
         return Ok(());
     }
 }
