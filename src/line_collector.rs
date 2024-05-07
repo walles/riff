@@ -214,26 +214,25 @@ impl LineCollector {
     /// Returns an error message on trouble.
     pub fn consume_line(&mut self, raw_line: &[u8]) -> Result<(), String> {
         let result = self.consume_line_internal(raw_line);
-
-        if result.is_err() {
-            self.drain_plain();
-
-            // This one just failed, so it's out
-            self.lines_highlighter = None;
-
-            let line = without_ansi_escape_codes(raw_line);
-            let line = String::from_utf8_lossy(&line).to_string();
-            self.print_queue_putter
-                .send(StringFuture::from_string(format!(
-                    "{}{}{}",
-                    PARSE_ERROR, line, NORMAL
-                )))
-                .unwrap();
-
+        if result.is_ok() {
             return result;
         }
 
-        // Invariant: This was not an error
+        // Invariant: This was an error
+
+        self.drain_plain();
+
+        // This one just failed, so it's out
+        self.lines_highlighter = None;
+
+        let line = without_ansi_escape_codes(raw_line);
+        let line = String::from_utf8_lossy(&line).to_string();
+        self.print_queue_putter
+            .send(StringFuture::from_string(format!(
+                "{}{}{}",
+                PARSE_ERROR, line, NORMAL
+            )))
+            .unwrap();
 
         return result;
     }
