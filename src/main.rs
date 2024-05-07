@@ -14,6 +14,8 @@ use clap::Parser;
 use clap::ValueEnum;
 use git_version::git_version;
 use line_collector::LineCollector;
+use log::error;
+use logging::init_logger;
 use std::io::{self, IsTerminal};
 use std::panic;
 use std::path::{self, PathBuf};
@@ -30,6 +32,7 @@ mod hunk_header;
 mod hunk_highlighter;
 mod line_collector;
 mod lines_highlighter;
+mod logging;
 mod plusminus_header_highlighter;
 mod plusminus_lines_highlighter;
 mod refiner;
@@ -134,14 +137,14 @@ impl ColorOption {
     }
 }
 
-fn format_error(message: String, line_number: usize, line: &[u8]) -> Result<(), String> {
-    return Err(format!(
-        "ERROR on line {}: {}\n         Line {}: {}",
+fn format_error(message: String, line_number: usize, line: &[u8]) -> String {
+    return format!(
+        "On line {}: {}\n  Line {}: {}",
         line_number,
         message,
         line_number,
         String::from_utf8_lossy(line),
-    ));
+    );
 }
 
 fn highlight_diff_or_exit<W: io::Write + Send + 'static>(
@@ -181,7 +184,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(
             if !line.is_empty() {
                 // Stuff found on the last line without a trailing newline
                 if let Err(message) = line_collector.consume_line(&line) {
-                    return format_error(message, line_number, &line);
+                    error!("{}", format_error(message, line_number, &line));
                 }
             }
             break;
@@ -201,7 +204,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(
 
             // Line finished, consume it!
             if let Err(message) = line_collector.consume_line(&line) {
-                return format_error(message, line_number, &line);
+                error!("{}", format_error(message, line_number, &line));
             }
             line.clear();
             line_number += 1;
@@ -433,6 +436,8 @@ fn main() {
         panic_handler(panic_info);
     }));
 
+    let logger = init_logger().unwrap();
+
     let options = Options::try_parse_from(env_and_command_line());
     if let Err(e) = options {
         let _ = e.print();
@@ -520,6 +525,14 @@ fn main() {
             .unwrap_or(ColorOption::Auto)
             .bool_or(io::stdout().is_terminal()),
     );
+
+    let logs = logger.get_logs();
+    if !logs.is_empty() {
+        // FIXME: Print version number and some error reporting header? With
+        // links to the GitHub issue tracker?
+        eprintln!("{}", logs);
+        exit(1);
+    }
 }
 
 #[cfg(test)]

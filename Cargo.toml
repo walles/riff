@@ -1,7 +1,7 @@
 # See also .cargo/config
 
 [package]
-name = "riffdiff"  # Actually "riff", but that was already taken on crates.io
+name = "riffdiff"                                             # Actually "riff", but that was already taken on crates.io
 version = "3.1.0"
 authors = ["Johan Walles <johan.walles@gmail.com>"]
 edition = "2018"
@@ -36,6 +36,7 @@ num_cpus = "1.13.0"
 threadpool = "1.8.1"
 itertools = "0.10.1"
 clap = { version = "4.4.2", features = ["derive"] }
+log = { version = "0.4", features = ["std"] }
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
@@ -43,7 +44,7 @@ tempfile = "3.4.0"
 
 # See: https://doc.rust-lang.org/cargo/reference/profiles.html
 [profile.release]
-debug = 1  # 1 = Line number information only
+debug = 1 # 1 = Line number information only
 
 # Benchmark execution times with different lto settings (lower is better):
 # "off" : 67.5ms
@@ -57,4 +58,4 @@ lto = "thin"
 # See: https://doc.rust-lang.org/cargo/reference/profiles.html
 # Configure dependencies of the release profile
 [profile.release.package."*"]
-debug = 0  # 0 = No debug info
+debug = 0 # 0 = No debug info

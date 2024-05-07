@@ -1,0 +1,66 @@
+[2mdiff --cc ansible/roles/zfsbootmenu/tasks/main.yaml[0m
+[2mindex 73fa864,08648fa..0000000[0m
+[1m--- [22m[2ma/[22m[1mansible/roles/zfsbootmenu/tasks/main.yaml[0m
+[1m+++ [22m[2mb/[22m[1mansible/roles/zfsbootmenu/tasks/main.yaml[0m
+[36m@@@ -6,6 -6,60 +6,60 @@@[0m
+        - zfsbootmenu
+      state: present
+  
+[32m++<<<<<<< HEAD[0m
+[32m++=======[0m
+[32m+ - name: Create ESP mdadm config[0m
+[32m+   template:[0m
+[32m+     src: mdadm.conf.j2[0m
+[32m+     dest: /etc/mdadm.conf[0m
+[32m+     owner: root[0m
+[32m+     group: root[0m
+[32m+     mode: 0644[0m
+[32m+   when: esp_mdadm_array is defined[0m
+[32m+ [0m
+[32m+ - name: Install dropbear[0m
+[32m+   xbps:[0m
+[32m+     pkg:[0m
+[32m+       - dropbear[0m
+[32m+       - mkinitcpio-dropbear[0m
+[32m+     state: present[0m
+[32m+ [0m
+[32m+ - name: Create dropbear directory[0m
+[32m+   file:[0m
+[32m+     path: /etc/dropbear[0m
+[32m+     owner: root[0m
+[32m+     group: root[0m
+[32m+     mode: 0755[0m
+[32m+     state: directory[0m
+[32m+ [0m
+[32m+ - name: Create dropbear keys[0m
+[32m+   command:[0m
+[32m+     cmd: /usr/bin/dropbearkey -t {{ item }} -f /etc/dropbear/dropbear_{{ item }}_host_key[0m
+[32m+     creates: /etc/dropbear/dropbear_{{ item }}_host_key[0m
+[32m+   loop:[0m
+[32m+     - rsa[0m
+[32m+     - ecdsa[0m
+[32m+     - ed25519[0m
+[32m+ [0m
+[32m+ - name: Create dropbear authorised keys[0m
+[32m+   template:[0m
+[32m+     src: authorized_keys.j2[0m
+[32m+     dest: /etc/dropbear/root_key[0m
+[32m+     owner: root[0m
+[32m+     group: root[0m
+[32m+     mode: 0644[0m
+[32m+     lstrip_blocks: true[0m
+[32m+ [0m
+[32m+ - name: Create dropbear config[0m
+[32m+   template:[0m
+[32m+     src: dropbear.conf.j2[0m
+[32m+     dest: /etc/dropbear/dropbear.conf[0m
+[32m+     owner: root[0m
+[32m+     group: root[0m
+[32m+     mode: 0644[0m
+[32m+     lstrip_blocks: true[0m
+[32m+ [0m
+[32m++>>>>>>> 8eec118 (fixup! ansible/roles/zfsbootmenu: add role)[0m
+  - name: Create zfsbootmenu config
+    template:
+      src: config.yaml.j2
+[33m[7m* Unmerged path ansible/host_vars/foo.yaml[0m

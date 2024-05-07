@@ -83,7 +83,7 @@ The not-diff-lines blocks will be enqueued for printing by the printing thread.
 The diff lines blocks will also be enqueued for printing, but the actual diffing
 will happen in background threads.
 */
-pub struct LineCollector {
+pub(crate) struct LineCollector {
     lines_highlighter: Option<Box<dyn LinesHighlighter>>,
 
     /// Headers and stuff that we just want printed, not part of a diff
@@ -213,6 +213,31 @@ impl LineCollector {
     ///
     /// Returns an error message on trouble.
     pub fn consume_line(&mut self, raw_line: &[u8]) -> Result<(), String> {
+        let result = self.consume_line_internal(raw_line);
+        if result.is_ok() {
+            return result;
+        }
+
+        // Invariant: This was an error
+
+        self.drain_plain();
+
+        // This one just failed, so it's out
+        self.lines_highlighter = None;
+
+        let line = without_ansi_escape_codes(raw_line);
+        let line = String::from_utf8_lossy(&line).to_string();
+        self.print_queue_putter
+            .send(StringFuture::from_string(format!(
+                "{}{}{}",
+                PARSE_ERROR, line, NORMAL
+            )))
+            .unwrap();
+
+        return result;
+    }
+
+    fn consume_line_internal(&mut self, raw_line: &[u8]) -> Result<(), String> {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
         let line = without_ansi_escape_codes(raw_line);
