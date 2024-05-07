@@ -86,15 +86,8 @@ will happen in background threads.
 pub(crate) struct LineCollector {
     lines_highlighter: Option<Box<dyn LinesHighlighter>>,
 
-    /// How many times has `lines_highlighter` been assigned?
-    lines_highlighter_set_count: usize,
-
     /// Headers and stuff that we just want printed, not part of a diff
     plain_text: String,
-
-    /// Lines passed to the current lines_highlighter. If it errors out, we'll
-    /// highlight these in yellow.
-    error_lines: Vec<String>,
 
     /// Set to true when we see the first diff line. The second diff line and
     /// onwards will come with highlighted backgrounds, based on this value.
@@ -123,7 +116,6 @@ impl Drop for LineCollector {
                 .consume_eof(&self.thread_pool);
             if let Err(error) = result {
                 self.lines_highlighter = None;
-                self.lines_highlighter_set_count += 1;
                 eprintln!("ERROR at end of input: {}", error);
                 process::exit(1);
             }
@@ -183,9 +175,7 @@ impl LineCollector {
 
         return LineCollector {
             lines_highlighter: None,
-            lines_highlighter_set_count: 0,
             plain_text: String::from(""),
-            error_lines: Vec::new(),
             diff_seen: false,
 
             consumer_thread: Some(consumer),
@@ -219,25 +209,6 @@ impl LineCollector {
         self.plain_text.push_str(linepart);
     }
 
-    /// Color all error lines yellow and send them to the pager
-    fn drain_error_lines(&mut self) {
-        self.drain_plain();
-
-        // Color all error lines yellow and put newlines in between
-        let all_lines = self
-            .error_lines
-            .iter()
-            .map(|line| format!("{}{}{}", PARSE_ERROR, line, NORMAL))
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        self.error_lines.clear();
-
-        self.print_queue_putter
-            .send(StringFuture::from_string(all_lines))
-            .unwrap();
-    }
-
     /// The line parameter is expected *not* to end in a newline.
     ///
     /// Returns an error message on trouble.
@@ -248,27 +219,25 @@ impl LineCollector {
         let line = String::from_utf8_lossy(&line).to_string();
         let line_with_original_highlighting = String::from_utf8_lossy(raw_line).to_string();
 
-        if self.lines_highlighter.is_some() {
-            // Collect this line in an error-lines buffer before calling
-            // consume_line_internal()
-            self.error_lines.push(line.clone());
-        }
-
-        let lines_highlighter_set_count = self.lines_highlighter_set_count;
         let result = self.consume_line_internal(&line, &line_with_original_highlighting);
 
         if result.is_err() {
-            self.drain_error_lines();
+            self.drain_plain();
+
+            // This one just failed, so it's out
+            self.lines_highlighter = None;
+
+            self.print_queue_putter
+                .send(StringFuture::from_string(format!(
+                    "{}{}{}",
+                    PARSE_ERROR, line, NORMAL
+                )))
+                .unwrap();
 
             return result;
         }
 
         // Invariant: This was not an error
-
-        if self.lines_highlighter_set_count > lines_highlighter_set_count {
-            // The line_collector is new or just cleared, start over with the error lines
-            self.error_lines.clear();
-        }
 
         return result;
     }
@@ -296,7 +265,6 @@ impl LineCollector {
             let result = lines_highlighter.consume_line(&line, &self.thread_pool);
             if let Err(error) = result {
                 self.lines_highlighter = None;
-                self.lines_highlighter_set_count += 1;
                 return Err(error);
             }
 
@@ -309,12 +277,10 @@ impl LineCollector {
                 LineAcceptance::AcceptedWantMore => return Ok(()),
                 LineAcceptance::AcceptedDone => {
                     self.lines_highlighter = None;
-                    self.lines_highlighter_set_count += 1;
                     return Ok(());
                 }
                 LineAcceptance::RejectedDone => {
                     self.lines_highlighter = None;
-                    self.lines_highlighter_set_count += 1;
 
                     // Do not return, fall back to the no-handler code below
                 }
@@ -324,21 +290,18 @@ impl LineCollector {
         if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(hunk_highlighter));
-            self.lines_highlighter_set_count += 1;
             return Ok(());
         }
 
         if let Some(plusminus_header_highlighter) = PlusMinusHeaderHighlighter::from_line(&line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
-            self.lines_highlighter_set_count += 1;
             return Ok(());
         }
 
         if let Some(conflicts_highlighter) = ConflictsHighlighter::from_line(&line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(conflicts_highlighter));
-            self.lines_highlighter_set_count += 1;
             return Ok(());
         }
 
