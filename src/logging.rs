@@ -1,3 +1,5 @@
+use crate::constants::NORMAL;
+use crate::constants::PARSE_ERROR;
 use std::fmt::Write;
 extern crate log;
 
@@ -19,7 +21,13 @@ impl log::Log for BufferLogger {
             if buffer.len() > 0 {
                 writeln!(&mut *buffer, "").unwrap();
             }
-            write!(&mut *buffer, "{} - {}", record.level(), record.args()).unwrap();
+            write!(
+                &mut *buffer,
+                "{PARSE_ERROR}{}{NORMAL}: {}",
+                record.level(),
+                record.args()
+            )
+            .unwrap();
         }
     }
 
