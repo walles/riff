@@ -1,0 +1,84 @@
+diff --cc m/search.go
+index 5b67346,e5b580f..0000000
+--- m/search.go
++++ m/search.go
+@@@ -10,45 -6,9 +10,79 @@@ import 
+  	"github.com/walles/moar/m/linenumbers"
+  )
+  
+++<<<<<<< HEAD
+ +func (p *Pager) scrollToSearchHits() {
+ +	if p.searchPattern == nil {
+ +		// This is not a search
+ +		return
+ +	}
+ +
+ +	lineNumber := p.scrollPosition.lineNumber(p)
+ +	if lineNumber == nil {
+ +		// No lines to search
+ +		return
+ +	}
+ +
+ +	firstHitPosition := p.findFirstHit(*lineNumber, nil, false)
+ +	if firstHitPosition == nil && (*lineNumber != linenumbers.LineNumber{}) {
+ +		// Try again from the top
+ +		firstHitPosition = p.findFirstHit(linenumbers.LineNumber{}, lineNumber, false)
+ +	}
+ +	if firstHitPosition == nil {
+ +		// No match, give up
+ +		return
+ +	}
+ +
+ +	if firstHitPosition.isVisible(p) {
+ +		// Already on-screen, never mind
+ +		return
+ +	}
+ +
+ +	p.scrollPosition = *firstHitPosition
+ +}
+ +
+ +// NOTE: When we search, we do that by looping over the *input lines*, not the
+ +// screen lines. That's why startPosition is a LineNumber rather than a
+ +// scrollPosition.
+ +//
+ +// The `beforePosition` parameter is exclusive, meaning that line will not be
+ +// searched.
+ +//
+ +// For the actual searching, this method will call _findFirstHit() in parallel
+ +// on multiple cores, to help large file search performance.
+++||||||| parent of b835e9a (Fix the warnings)
+++func (p *Pager) scrollToSearchHits() {
+++	if p.searchPattern == nil {
+++		// This is not a search
+++		return
+++	}
+++
+++	firstHitPosition := p.findFirstHit(*p.scrollPosition.lineNumber(p), nil, false)
+++	if firstHitPosition == nil {
+++		// Try again from the top
+++		firstHitPosition = p.findFirstHit(linenumbers.LineNumber{}, p.scrollPosition.lineNumber(p), false)
+++	}
+++	if firstHitPosition == nil {
+++		// No match, give up
+++		return
+++	}
+++
+++	if firstHitPosition.isVisible(p) {
+++		// Already on-screen, never mind
+++		return
+++	}
+++
+++	p.scrollPosition = *firstHitPosition
+++}
+++
++ // NOTE: When we search, we do that by looping over the *input lines*, not
++ // the screen lines. That's why we're using a line number rather than a
++ // scrollPosition for searching.
+++=======
+++// NOTE: When we search, we do that by looping over the *input lines*, not
+++// the screen lines. That's why we're using a line number rather than a
+++// scrollPosition for searching.
+++>>>>>>> b835e9a (Fix the warnings)
+  //
+  // FIXME: We should take startPosition.deltaScreenLines into account as well!
+  func (p *Pager) findFirstHit(startPosition linenumbers.LineNumber, beforePosition *linenumbers.LineNumber, backwards bool) *scrollPosition {
