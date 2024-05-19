@@ -86,33 +86,42 @@ impl LinesHighlighter for ConflictsHighlighter {
             });
         }
 
-        let (maybe_prefix, destination) = if !self.c2_header.is_empty() {
-            ("+ ", &mut self.c2)
+        //
+        // All header lines handled, this is a content line
+        //
+
+        let destination = if !self.c2_header.is_empty() {
+            &mut self.c2
         } else if !self.base_header.is_empty() {
-            ("++", &mut self.base)
+            &mut self.base
         } else {
-            (" +", &mut self.c1)
+            &mut self.c1
         };
 
-        let prefix = if self.c1_header.starts_with("++") {
-            maybe_prefix
+        let prefixes = if self.c1_header.starts_with("++") {
+            // Possible content line prefixes when doing "git diff"
+            vec!["+ ", "++", " +"]
         } else {
-            ""
+            vec![""]
         };
 
-        if let Some(line) = line.strip_prefix(prefix) {
-            destination.push_str(line);
-            destination.push('\n');
-            return Ok(Response {
-                line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: vec![],
-            });
-        } else {
-            return Ok(Response {
-                line_accepted: LineAcceptance::RejectedDone,
-                highlighted: vec![self.render_plain()],
-            });
+        for prefix in prefixes {
+            if let Some(line) = line.strip_prefix(prefix) {
+                // Handle the context line
+                destination.push_str(line);
+                destination.push('\n');
+                return Ok(Response {
+                    line_accepted: LineAcceptance::AcceptedWantMore,
+                    highlighted: vec![],
+                });
+            }
         }
+
+        // Not a context line, just give up and do a simple render
+        return Ok(Response {
+            line_accepted: LineAcceptance::RejectedDone,
+            highlighted: vec![self.render_plain()],
+        });
     }
 
     fn consume_eof(&mut self, _thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
