@@ -1,0 +1,84 @@
+[2mdiff --cc m/search.go[0m
+[2mindex 5b67346,e5b580f..0000000[0m
+[1m--- m/search.go[0m
+[1m+++ m/search.go[0m
+[36m@@@ -10,45 -6,9 +10,79 @@@ [1mimport [0m
+  	"github.com/walles/moar/m/linenumbers"
+  )
+
+[32m++<<<<<<< HEAD[0m
+[32m +func (p *Pager) scrollToSearchHits() {[0m
+[32m +	if p.searchPattern == nil {[0m
+[32m +		// This is not a search[0m
+[32m +		return[0m
+[32m +	}[0m
+[32m +[0m
+[32m +	lineNumber := p.scrollPosition.lineNumber(p)[0m
+[32m +	if lineNumber == nil {[0m
+[32m +		// No lines to search[0m
+[32m +		return[0m
+[32m +	}[0m
+[32m +[0m
+[32m +	firstHitPosition := p.findFirstHit(*lineNumber, nil, false)[0m
+[32m +	if firstHitPosition == nil && (*lineNumber != linenumbers.LineNumber{}) {[0m
+[32m +		// Try again from the top[0m
+[32m +		firstHitPosition = p.findFirstHit(linenumbers.LineNumber{}, lineNumber, false)[0m
+[32m +	}[0m
+[32m +	if firstHitPosition == nil {[0m
+[32m +		// No match, give up[0m
+[32m +		return[0m
+[32m +	}[0m
+[32m +[0m
+[32m +	if firstHitPosition.isVisible(p) {[0m
+[32m +		// Already on-screen, never mind[0m
+[32m +		return[0m
+[32m +	}[0m
+[32m +[0m
+[32m +	p.scrollPosition = *firstHitPosition[0m
+[32m +}[0m
+[32m +[0m
+[32m +// NOTE: When we search, we do that by looping over the *input lines*, not the[0m
+[32m +// screen lines. That's why startPosition is a LineNumber rather than a[0m
+[32m +// scrollPosition.[0m
+[32m +//[0m
+[32m +// The `beforePosition` parameter is exclusive, meaning that line will not be[0m
+[32m +// searched.[0m
+[32m +//[0m
+[32m +// For the actual searching, this method will call _findFirstHit() in parallel[0m
+[32m +// on multiple cores, to help large file search performance.[0m
+[32m++||||||| parent of b835e9a (Fix the warnings)[0m
+[32m++func (p *Pager) scrollToSearchHits() {[0m
+[32m++	if p.searchPattern == nil {[0m
+[32m++		// This is not a search[0m
+[32m++		return[0m
+[32m++	}[0m
+[32m++[0m
+[32m++	firstHitPosition := p.findFirstHit(*p.scrollPosition.lineNumber(p), nil, false)[0m
+[32m++	if firstHitPosition == nil {[0m
+[32m++		// Try again from the top[0m
+[32m++		firstHitPosition = p.findFirstHit(linenumbers.LineNumber{}, p.scrollPosition.lineNumber(p), false)[0m
+[32m++	}[0m
+[32m++	if firstHitPosition == nil {[0m
+[32m++		// No match, give up[0m
+[32m++		return[0m
+[32m++	}[0m
+[32m++[0m
+[32m++	if firstHitPosition.isVisible(p) {[0m
+[32m++		// Already on-screen, never mind[0m
+[32m++		return[0m
+[32m++	}[0m
+[32m++[0m
+[32m++	p.scrollPosition = *firstHitPosition[0m
+[32m++}[0m
+[32m++[0m
+[32m+ // NOTE: When we search, we do that by looping over the *input lines*, not[0m
+[32m+ // the screen lines. That's why we're using a line number rather than a[0m
+[32m+ // scrollPosition for searching.[0m
+[32m++=======[0m
+[32m++[39m// NOTE: When we search, we do that by looping over the *input lines*, not[0m
+[32m++[39m// the screen lines. That's why we're using a line number rather than a[0m
+[32m++[39m// scrollPosition for searching.[0m
+[32m++>>>>>>> b835e9a (Fix the warnings)[0m
+  //
+  // FIXME: We should take startPosition.deltaScreenLines into account as well!
+  func (p *Pager) findFirstHit(startPosition linenumbers.LineNumber, beforePosition *linenumbers.LineNumber, backwards bool) *scrollPosition {
