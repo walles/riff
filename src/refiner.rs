@@ -228,6 +228,7 @@ pub fn to_highlighted_tokens(
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
     unhighlight_noisy_rows(&mut old_tokens);
 
+    contextualize_unhighlighted_lines(&mut new_tokens);
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
     let new_unhighlighted = unhighlight_noisy_rows(&mut new_tokens);
     highlight_trailing_whitespace(&mut new_tokens);
