@@ -172,7 +172,7 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
 pub fn to_highlighted_tokens(
     old_text: &str,
     new_text: &str,
-    is_conflict: bool,
+    is_three_way_conflict: bool,
 ) -> (Vec<StyledToken>, Vec<StyledToken>, bool, bool) {
     // Find diffs between adds and removals
     let mut old_tokens = Vec::new();
@@ -231,7 +231,7 @@ pub fn to_highlighted_tokens(
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
     unhighlight_noisy_rows(&mut old_tokens);
 
-    if is_conflict {
+    if is_three_way_conflict {
         contextualize_unhighlighted_lines(&mut new_tokens);
     }
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
