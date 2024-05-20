@@ -108,7 +108,7 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
             new_tokens_internal,
             old_highlights_internal,
             new_unhighlighted_internal,
-        ) = to_highlighted_tokens(old_text, new_text);
+        ) = to_highlighted_tokens(old_text, new_text, false);
 
         old_tokens.push(old_tokens_internal);
         old_highlights |= old_highlights_internal;
@@ -167,9 +167,12 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
 /// `old_text` and `new_text` are multi lines strings. Having or not having
 /// trailing newlines will affect tokenization. The lines are not expected to
 /// have any prefixes like `+` or `-`.
+///
+/// Conflict diffs are highlighted somewhat differently from regular diffs.
 pub fn to_highlighted_tokens(
     old_text: &str,
     new_text: &str,
+    is_three_way_conflict: bool,
 ) -> (Vec<StyledToken>, Vec<StyledToken>, bool, bool) {
     // Find diffs between adds and removals
     let mut old_tokens = Vec::new();
@@ -228,6 +231,9 @@ pub fn to_highlighted_tokens(
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
     unhighlight_noisy_rows(&mut old_tokens);
 
+    if is_three_way_conflict {
+        contextualize_unhighlighted_lines(&mut new_tokens);
+    }
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
     let new_unhighlighted = unhighlight_noisy_rows(&mut new_tokens);
     highlight_trailing_whitespace(&mut new_tokens);
