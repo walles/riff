@@ -1,7 +1,7 @@
 [2mdiff --cc ansible/roles/zfsbootmenu/tasks/main.yaml[0m
 [2mindex 73fa864,08648fa..0000000[0m
-[1m--- [22m[2ma/[22m[1mansible/roles/zfsbootmenu/tasks/main.yaml[0m
-[1m+++ [22m[2mb/[22m[1mansible/roles/zfsbootmenu/tasks/main.yaml[0m
+[1m--- [22m[2ma/[0mansible/roles/zfsbootmenu/tasks/[1mmain.yaml[0m
+[1m+++ [22m[2mb/[0mansible/roles/zfsbootmenu/tasks/[1mmain.yaml[0m
 [36m@@@ -6,6 -6,60 +6,60 @@@[0m
         - zfsbootmenu
       state: present

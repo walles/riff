@@ -164,7 +164,7 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
 /// there were any highlights found in the old text. The second bool is true if
 /// any highlights were removed for readability in the new text.
 ///
-/// `old_text` and `new_text` are multi lines strings. Having or not having
+/// `old_text` and `new_text` are multi line strings. Having or not having
 /// trailing newlines will affect tokenization. The lines are not expected to
 /// have any prefixes like `+` or `-`.
 ///

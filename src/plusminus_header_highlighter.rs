@@ -6,8 +6,8 @@ use crate::lines_highlighter::{LinesHighlighter, Response};
 use crate::refiner::to_highlighted_tokens;
 use crate::string_future::StringFuture;
 use crate::token_collector::{
-    align_tabs, lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,
-    LINE_STYLE_OLD_FILENAME,
+    align_tabs, brighten_filename, lowlight_timestamp, render, unhighlight_git_prefix,
+    LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
 };
 
 pub(crate) struct PlusMinusHeaderHighlighter {
@@ -120,6 +120,9 @@ impl PlusMinusHeaderHighlighter {
         let (mut old_tokens, mut new_tokens, _, _) =
             to_highlighted_tokens(&self.old_name, &self.new_name, false);
 
+        brighten_filename(&mut old_tokens);
+        brighten_filename(&mut new_tokens);
+
         lowlight_timestamp(&mut old_tokens);
         lowlight_timestamp(&mut new_tokens);
 
@@ -147,6 +150,9 @@ mod tests {
 
     use super::*;
 
+    const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
+    const DEFAULT_COLOR: &str = "\x1b[39m";
+
     #[test]
     fn test_align_timestamps() {
         let mut test_me =
@@ -167,6 +173,66 @@ mod tests {
             "--- x.txt                            2023-12-15 15:43:29\n\
             +++ /Users/johan/src/riff/README.md  2024-01-29 14:56:40\n",
             plain.as_str()
+        );
+    }
+
+    #[test]
+    fn test_brighten_filename() {
+        let mut test_me = PlusMinusHeaderHighlighter::from_line("--- a/x/y/z.txt").unwrap();
+        let mut response = test_me
+            .consume_line("+++ b/x/y/z.txt", &ThreadPool::new(1))
+            .unwrap();
+        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
+        assert_eq!(1, response.highlighted.len());
+
+        let highlighted = response.highlighted[0].get().to_string();
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- {NORMAL_INTENSITY}{FAINT}a/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n\
+                {BOLD}+++ {NORMAL_INTENSITY}{FAINT}b/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
+
+    #[test]
+    fn test_brighten_filename_without_path() {
+        let mut test_me = PlusMinusHeaderHighlighter::from_line("--- z.txt").unwrap();
+        let mut response = test_me
+            .consume_line("+++ z.txt", &ThreadPool::new(1))
+            .unwrap();
+        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
+        assert_eq!(1, response.highlighted.len());
+
+        let highlighted = response.highlighted[0].get().to_string();
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- z.txt{NORMAL}\n\
+                {BOLD}+++ z.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
+
+    #[test]
+    fn test_brighten_file_rename() {
+        let mut test_me = PlusMinusHeaderHighlighter::from_line("--- x.txt").unwrap();
+        let mut response = test_me
+            .consume_line("+++ y.txt", &ThreadPool::new(1))
+            .unwrap();
+        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
+        assert_eq!(1, response.highlighted.len());
+
+        let highlighted = response.highlighted[0].get().to_string();
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- {INVERSE_VIDEO}{NORMAL_INTENSITY}{OLD}x{NOT_INVERSE_VIDEO}{BOLD}{DEFAULT_COLOR}.txt{NORMAL}\n\
+                {BOLD}+++ {INVERSE_VIDEO}{NORMAL_INTENSITY}{NEW}y{NOT_INVERSE_VIDEO}{BOLD}{DEFAULT_COLOR}.txt{NORMAL}\n"
+            ),
+            highlighted
         );
     }
 }

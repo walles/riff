@@ -12,6 +12,9 @@ pub(crate) enum Style {
     Lowlighted,
     Context,
     Plain,
+    /// Brightened up, but not a highlighted difference
+    Bright,
+    /// A difference to be highlighted
     Highlighted,
     Error,
 }
@@ -136,11 +139,7 @@ pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
             weight: Weight::Bold,
             color: Default,
         },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Bold,
-            color: Default,
-        },
+        plain_style: ANSI_STYLE_NORMAL,
         highlighted_style: AnsiStyle {
             inverse: true,
             weight: Weight::Normal,
@@ -156,11 +155,7 @@ pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
             weight: Weight::Bold,
             color: Default,
         },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Bold,
-            color: Default,
-        },
+        plain_style: ANSI_STYLE_NORMAL,
         highlighted_style: AnsiStyle {
             inverse: true,
             weight: Weight::Normal,
@@ -209,6 +204,11 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
             Style::Lowlighted => AnsiStyle {
                 inverse: false,
                 weight: Weight::Faint,
+                color: Default,
+            },
+            Style::Bright => AnsiStyle {
+                inverse: false,
+                weight: Weight::Bold,
                 color: Default,
             },
             Style::Plain => line_style.plain_style,
@@ -528,6 +528,32 @@ pub fn unhighlight_git_prefix(row: &mut [StyledToken]) {
     if (row[0].token == "a" || row[0].token == "b") && row[1].token == "/" {
         row[0].style = Style::Lowlighted;
         row[1].style = Style::Lowlighted;
+    }
+}
+
+/// If we get "x/y/z.txt", make "z.txt" bright.
+///
+/// As an exception, if the file name is already highlighted, don't brighten it.
+pub fn brighten_filename(row: &mut [StyledToken]) {
+    let mut last_slash_index = None;
+    for (i, token) in row.iter().enumerate() {
+        if token.token == "/" {
+            last_slash_index = Some(i);
+        }
+    }
+
+    let to_brighten: &mut [StyledToken];
+    if let Some(last_slash_index) = last_slash_index {
+        to_brighten = &mut row[last_slash_index + 1..];
+    } else {
+        to_brighten = row;
+    }
+
+    for token in to_brighten {
+        if token.style == Style::Highlighted {
+            continue;
+        }
+        token.style = Style::Bright;
     }
 }
 
