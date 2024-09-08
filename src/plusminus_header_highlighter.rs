@@ -120,11 +120,11 @@ impl PlusMinusHeaderHighlighter {
         let (mut old_tokens, mut new_tokens, _, _) =
             to_highlighted_tokens(&self.old_name, &self.new_name, false);
 
-        lowlight_timestamp(&mut old_tokens);
-        lowlight_timestamp(&mut new_tokens);
-
         brighten_filename(&mut old_tokens);
         brighten_filename(&mut new_tokens);
+
+        lowlight_timestamp(&mut old_tokens);
+        lowlight_timestamp(&mut new_tokens);
 
         align_tabs(&mut old_tokens, &mut new_tokens);
 
