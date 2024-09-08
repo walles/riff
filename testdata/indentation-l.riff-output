@@ -6,8 +6,8 @@ Date:   Wed May 6 21:52:51 2015 +0200
 
 [2mdiff --git a/bin/riff b/bin/riff[0m
 [2mindex 17ded03..92a771a 100755[0m
-[1m--- [22m[2ma/[22m[1mbin/riff[0m
-[1m+++ [22m[2mb/[22m[1mbin/riff[0m
+[1m--- [22m[2ma/[0mbin/[1mriff[0m
+[1m+++ [22m[2mb/[0mbin/[1mriff[0m
 [36m@@ -1,15 +1,23 @@[0m
  #!/usr/bin/env ruby
 

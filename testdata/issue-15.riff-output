@@ -1,7 +1,7 @@
 [2mdiff --git tools/bump-buildfarm-to-latest.sh tools/bump-buildfarm-to-latest.sh[0m
 [2mindex 591347e..1e68cdf 100755[0m
-[1m--- tools/bump-buildfarm-to-latest.sh[0m
-[1m+++ tools/bump-buildfarm-to-latest.sh[0m
+[1m--- [0mtools/[1mbump-buildfarm-to-latest.sh[0m
+[1m+++ [0mtools/[1mbump-buildfarm-to-latest.sh[0m
 [36m@@ -122,7 +122,7 @@ [1mEOM[0m
 
  after_rebase() {
