@@ -1,7 +1,7 @@
 [2mdiff --cc m/search.go[0m
 [2mindex 5b67346,e5b580f..0000000[0m
-[1m--- m/search.go[0m
-[1m+++ m/search.go[0m
+[1m--- [0mm/[1msearch.go[0m
+[1m+++ [0mm/[1msearch.go[0m
 [36m@@@ -10,45 -6,9 +10,79 @@@ [1mimport [0m
   	"github.com/walles/moar/m/linenumbers"
   )
