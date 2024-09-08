@@ -537,7 +537,9 @@ pub fn unhighlight_git_prefix(row: &mut [StyledToken]) {
     }
 }
 
-/// If we get "x/y/z.txt", make "z.txt" bright
+/// If we get "x/y/z.txt", make "z.txt" bright.
+///
+/// As an exception, if the file name is already highlighted, don't brighten it.
 pub fn brighten_filename(row: &mut [StyledToken]) {
     let mut last_slash_index = 0;
     for (i, token) in row.iter().enumerate() {
@@ -547,6 +549,9 @@ pub fn brighten_filename(row: &mut [StyledToken]) {
     }
 
     for token in &mut row[last_slash_index + 1..] {
+        if token.style == Style::Highlighted {
+            continue;
+        }
         token.style = Style::Bright;
     }
 }
