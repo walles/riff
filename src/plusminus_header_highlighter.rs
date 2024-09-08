@@ -177,7 +177,7 @@ mod tests {
     }
 
     #[test]
-    fn test_highlight_filename() {
+    fn test_brighten_filename() {
         let mut test_me = PlusMinusHeaderHighlighter::from_line("--- a/x/y/z.txt").unwrap();
         let mut response = test_me
             .consume_line("+++ b/x/y/z.txt", &ThreadPool::new(1))
@@ -197,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    fn test_highlight_filename_without_path() {
+    fn test_brighten_filename_without_path() {
         let mut test_me = PlusMinusHeaderHighlighter::from_line("--- z.txt").unwrap();
         let mut response = test_me
             .consume_line("+++ z.txt", &ThreadPool::new(1))
@@ -217,7 +217,7 @@ mod tests {
     }
 
     #[test]
-    fn test_highlight_file_rename() {
+    fn test_brighten_file_rename() {
         let mut test_me = PlusMinusHeaderHighlighter::from_line("--- x.txt").unwrap();
         let mut response = test_me
             .consume_line("+++ y.txt", &ThreadPool::new(1))

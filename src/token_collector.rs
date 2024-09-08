@@ -12,7 +12,9 @@ pub(crate) enum Style {
     Lowlighted,
     Context,
     Plain,
+    /// Brightened up, but not a highlighted difference
     Bright,
+    /// A difference to be highlighted
     Highlighted,
     Error,
 }
