@@ -6,8 +6,8 @@ use crate::lines_highlighter::{LinesHighlighter, Response};
 use crate::refiner::to_highlighted_tokens;
 use crate::string_future::StringFuture;
 use crate::token_collector::{
-    align_tabs, lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,
-    LINE_STYLE_OLD_FILENAME,
+    align_tabs, brighten_filename, lowlight_timestamp, render, unhighlight_git_prefix,
+    LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
 };
 
 pub(crate) struct PlusMinusHeaderHighlighter {
@@ -122,6 +122,9 @@ impl PlusMinusHeaderHighlighter {
 
         lowlight_timestamp(&mut old_tokens);
         lowlight_timestamp(&mut new_tokens);
+
+        brighten_filename(&mut old_tokens);
+        brighten_filename(&mut new_tokens);
 
         align_tabs(&mut old_tokens, &mut new_tokens);
 

@@ -12,6 +12,7 @@ pub(crate) enum Style {
     Lowlighted,
     Context,
     Plain,
+    Bright,
     Highlighted,
     Error,
 }
@@ -138,7 +139,7 @@ pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
         },
         plain_style: AnsiStyle {
             inverse: false,
-            weight: Weight::Bold,
+            weight: Weight::Normal,
             color: Default,
         },
         highlighted_style: AnsiStyle {
@@ -158,7 +159,7 @@ pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
         },
         plain_style: AnsiStyle {
             inverse: false,
-            weight: Weight::Bold,
+            weight: Weight::Normal,
             color: Default,
         },
         highlighted_style: AnsiStyle {
@@ -209,6 +210,11 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
             Style::Lowlighted => AnsiStyle {
                 inverse: false,
                 weight: Weight::Faint,
+                color: Default,
+            },
+            Style::Bright => AnsiStyle {
+                inverse: false,
+                weight: Weight::Bold,
                 color: Default,
             },
             Style::Plain => line_style.plain_style,
@@ -528,6 +534,20 @@ pub fn unhighlight_git_prefix(row: &mut [StyledToken]) {
     if (row[0].token == "a" || row[0].token == "b") && row[1].token == "/" {
         row[0].style = Style::Lowlighted;
         row[1].style = Style::Lowlighted;
+    }
+}
+
+/// If we get "x/y/z.txt", make "z.txt" bright
+pub fn brighten_filename(row: &mut [StyledToken]) {
+    let mut last_slash_index = 0;
+    for (i, token) in row.iter().enumerate() {
+        if token.token == "/" {
+            last_slash_index = i;
+        }
+    }
+
+    for token in &mut row[last_slash_index + 1..] {
+        token.style = Style::Bright;
     }
 }
 
