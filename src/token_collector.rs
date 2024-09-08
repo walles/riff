@@ -137,11 +137,7 @@ pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
             weight: Weight::Bold,
             color: Default,
         },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Default,
-        },
+        plain_style: ANSI_STYLE_NORMAL,
         highlighted_style: AnsiStyle {
             inverse: true,
             weight: Weight::Normal,
@@ -157,11 +153,7 @@ pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
             weight: Weight::Bold,
             color: Default,
         },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Default,
-        },
+        plain_style: ANSI_STYLE_NORMAL,
         highlighted_style: AnsiStyle {
             inverse: true,
             weight: Weight::Normal,
@@ -548,16 +540,16 @@ pub fn brighten_filename(row: &mut [StyledToken]) {
         }
     }
 
-    let to_highlight: &mut [StyledToken];
+    let to_brighten: &mut [StyledToken];
     if let Some(last_slash_index) = last_slash_index {
-        to_highlight = &mut row[last_slash_index + 1..];
+        to_brighten = &mut row[last_slash_index + 1..];
     } else {
-        to_highlight = row;
+        to_brighten = row;
     }
 
-    for token in to_highlight {
+    for token in to_brighten {
         if token.style == Style::Highlighted {
-            return;
+            continue;
         }
         token.style = Style::Bright;
     }

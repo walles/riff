@@ -150,6 +150,9 @@ mod tests {
 
     use super::*;
 
+    const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
+    const DEFAULT_COLOR: &str = "\x1b[39m";
+
     #[test]
     fn test_align_timestamps() {
         let mut test_me =
@@ -208,6 +211,26 @@ mod tests {
                 "\
                 {BOLD}--- z.txt{NORMAL}\n\
                 {BOLD}+++ z.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
+
+    #[test]
+    fn test_highlight_file_rename() {
+        let mut test_me = PlusMinusHeaderHighlighter::from_line("--- x.txt").unwrap();
+        let mut response = test_me
+            .consume_line("+++ y.txt", &ThreadPool::new(1))
+            .unwrap();
+        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
+        assert_eq!(1, response.highlighted.len());
+
+        let highlighted = response.highlighted[0].get().to_string();
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- {INVERSE_VIDEO}{NORMAL_INTENSITY}{OLD}x{NOT_INVERSE_VIDEO}{BOLD}{DEFAULT_COLOR}.txt{NORMAL}\n\
+                {BOLD}+++ {INVERSE_VIDEO}{NORMAL_INTENSITY}{NEW}y{NOT_INVERSE_VIDEO}{BOLD}{DEFAULT_COLOR}.txt{NORMAL}\n"
             ),
             highlighted
         );
