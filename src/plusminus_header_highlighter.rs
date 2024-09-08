@@ -192,4 +192,24 @@ mod tests {
             highlighted
         );
     }
+
+    #[test]
+    fn test_highlight_filename_without_path() {
+        let mut test_me = PlusMinusHeaderHighlighter::from_line("--- z.txt").unwrap();
+        let mut response = test_me
+            .consume_line("+++ z.txt", &ThreadPool::new(1))
+            .unwrap();
+        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
+        assert_eq!(1, response.highlighted.len());
+
+        let highlighted = response.highlighted[0].get().to_string();
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- z.txt{NORMAL}\n\
+                {BOLD}+++ z.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
 }

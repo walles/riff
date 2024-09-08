@@ -541,16 +541,23 @@ pub fn unhighlight_git_prefix(row: &mut [StyledToken]) {
 ///
 /// As an exception, if the file name is already highlighted, don't brighten it.
 pub fn brighten_filename(row: &mut [StyledToken]) {
-    let mut last_slash_index = 0;
+    let mut last_slash_index = None;
     for (i, token) in row.iter().enumerate() {
         if token.token == "/" {
-            last_slash_index = i;
+            last_slash_index = Some(i);
         }
     }
 
-    for token in &mut row[last_slash_index + 1..] {
+    let to_highlight: &mut [StyledToken];
+    if let Some(last_slash_index) = last_slash_index {
+        to_highlight = &mut row[last_slash_index + 1..];
+    } else {
+        to_highlight = row;
+    }
+
+    for token in to_highlight {
         if token.style == Style::Highlighted {
-            continue;
+            return;
         }
         token.style = Style::Bright;
     }
