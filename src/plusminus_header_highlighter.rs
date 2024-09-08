@@ -182,7 +182,9 @@ mod tests {
         let highlighted = response.highlighted[0].get().to_string();
         assert_eq!(
             format!(
-                "{BOLD}+++ {NORMAL_INTENSITY}{FAINT}a/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n{BOLD}--- {NORMAL_INTENSITY}{FAINT}b/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n"
+                "\
+                {BOLD}--- {NORMAL_INTENSITY}{FAINT}a/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n\
+                {BOLD}+++ {NORMAL_INTENSITY}{FAINT}b/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n"
             ),
             highlighted
         );
