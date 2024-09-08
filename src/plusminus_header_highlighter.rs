@@ -169,4 +169,22 @@ mod tests {
             plain.as_str()
         );
     }
+
+    #[test]
+    fn test_highlight_filename() {
+        let mut test_me = PlusMinusHeaderHighlighter::from_line("--- a/x/y/z.txt").unwrap();
+        let mut response = test_me
+            .consume_line("+++ b/x/y/z.txt", &ThreadPool::new(1))
+            .unwrap();
+        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
+        assert_eq!(1, response.highlighted.len());
+
+        let highlighted = response.highlighted[0].get().to_string();
+        assert_eq!(
+            format!(
+                "{BOLD}+++ {NORMAL_INTENSITY}{FAINT}a/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n{BOLD}--- {NORMAL_INTENSITY}{FAINT}b/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
 }
