@@ -238,6 +238,7 @@ pub fn to_highlighted_tokens(
     let new_unhighlighted = unhighlight_noisy_rows(&mut new_tokens);
     highlight_trailing_whitespace(&mut new_tokens);
     highlight_nonleading_tabs(&mut new_tokens);
+    unhighlight_leading_whitespace(&mut new_tokens);
 
     return (old_tokens, new_tokens, old_highlights, new_unhighlighted);
 }

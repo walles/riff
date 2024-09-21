@@ -339,6 +339,25 @@ pub fn highlight_nonleading_tabs(tokens: &mut [StyledToken]) {
     }
 }
 
+pub fn unhighlight_leading_whitespace(tokens: &mut [StyledToken]) {
+    let mut in_leading = true;
+    for token in tokens.iter_mut() {
+        if token.token == "\n" {
+            in_leading = true;
+            continue;
+        }
+
+        if in_leading && token.is_whitespace() {
+            if token.style == Style::Highlighted {
+                token.style = Style::Plain;
+            }
+            continue;
+        }
+
+        in_leading = false;
+    }
+}
+
 pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
     let old_tab_index_token = old.iter().position(|token| token.token == "\t");
     if old_tab_index_token.is_none() {
