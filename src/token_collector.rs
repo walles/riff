@@ -252,13 +252,38 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
 ///
 /// Returns true if something was unhighlighted, false otherwise.
 pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
-    fn maybe_unhighlight_row(row: &mut [StyledToken], highlighted_tokens_count: usize) -> bool {
-        if row.is_empty() {
+    fn maybe_unhighlight_row(row: &mut [StyledToken]) -> bool {
+        // Count highlighted and not highlighted tokens, ignoring leading whitespace
+        let mut in_indentation = true;
+        let mut highlighted_chars_count = 0;
+        let mut all_chars_count = 0;
+        let mut highlighted_tokens_count = 0;
+        let mut all_tokens_count = 0;
+        for token in row.iter() {
+            if in_indentation {
+                if token.is_whitespace() {
+                    // Ignore indentation when counting the highlighting percentage
+                    continue;
+                }
+                in_indentation = false;
+            }
+
+            if token.style == Style::Highlighted {
+                highlighted_chars_count += token.token.chars().count();
+                highlighted_tokens_count += 1;
+            }
+            all_chars_count += token.token.chars().count();
+            all_tokens_count += 1;
+        }
+
+        if all_chars_count == 0 {
             return false;
         }
 
-        let highlighted_percentage = (100 * highlighted_tokens_count) / row.len();
-        if highlighted_percentage <= 70 {
+        let highlighted_chars_percentage = (100 * highlighted_chars_count) / all_chars_count;
+        let highlighted_tokens_percentage = (100 * highlighted_tokens_count) / all_tokens_count;
+        if highlighted_chars_percentage < 70 || highlighted_tokens_percentage < 50 {
+            // Little enough of the line is highlighted, this is fine
             return false;
         }
 
@@ -269,7 +294,6 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
         return true;
     }
 
-    let mut highlighted_tokens_count = 0;
     let mut line_start_index = 0;
     let mut changed = false;
 
@@ -277,22 +301,16 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
         let token = &tokens[i];
         if token.token == "\n" {
             // End of line, evaluate!
-            changed |=
-                maybe_unhighlight_row(&mut tokens[line_start_index..i], highlighted_tokens_count);
+            changed |= maybe_unhighlight_row(&mut tokens[line_start_index..i]);
 
             // Reset for the next row
             line_start_index = i + 1;
-            highlighted_tokens_count = 0;
             continue;
-        }
-
-        if token.style == Style::Highlighted {
-            highlighted_tokens_count += 1;
         }
     }
 
     // Handle the last row
-    changed |= maybe_unhighlight_row(&mut tokens[line_start_index..], highlighted_tokens_count);
+    changed |= maybe_unhighlight_row(&mut tokens[line_start_index..]);
 
     return changed;
 }

@@ -6,5 +6,5 @@
 [32m+[0m
 [32m+        // FIXME: Maybe do highlight_space_between_words() before this one? And[0m
 [32m+        // not do that for each line?[0m
-[32m+        [7mcancel_multiline_highlights(&mut [27mtokens);[0m
+[32m+        cancel_multiline_highlights(&mut tokens);[0m
 [32m+[0m

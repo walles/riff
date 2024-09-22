@@ -19,7 +19,7 @@
 [32m +		return[0m
 [32m +	}[0m
 [32m +[0m
-[32m +	[7mfirstHitPosition := p.findFirstHit(*lineNumber[27m, nil, false)[0m
+[32m +	firstHitPosition := p.findFirstHit(*lineNumber, nil, false)[0m
 [32m +	if firstHitPosition == nil[7m && (*lineNumber != linenumbers.LineNumber{})[27m {[0m
 [32m +[0m		// Try again from the top
 [32m +[0m		firstHitPosition = p.findFirstHit(linenumbers.LineNumber{}, lineNumber, false)
