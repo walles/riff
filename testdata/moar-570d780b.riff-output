@@ -15,8 +15,8 @@
 [32m+func NewReaderFromStream(name string, reader io.Reader) *Reader {[0m
     mReader := newReaderFromStream(reader, nil)
 [31m-   mReader.lock.Lock()[0m
-[31m-   mReader.name = name[0m
-[31m-   mReader.lock.Unlock()[0m
+[31m-[7m   [27mmReader.name = name[0m
+[31m-[7m   [27mmReader.lock.Unlock()[0m
 [32m+[0m
 [32m+   if len(name) > 0 {[0m
 [32m+       mReader.lock.Lock()[0m

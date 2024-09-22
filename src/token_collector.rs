@@ -169,16 +169,9 @@ impl StyledToken {
         return StyledToken { token, style };
     }
 
+    // Are all characters in this token whitespace?
     pub fn is_whitespace(&self) -> bool {
-        let mut chars_iterator = self.token.chars();
-        let first_char = chars_iterator.next().unwrap();
-        if chars_iterator.next().is_some() {
-            // Multiple chars found in this token, but whitespace will only be
-            // one per token.
-            return false;
-        }
-
-        return first_char.is_whitespace();
+        return self.token.chars().all(|c| c.is_whitespace());
     }
 }
 
@@ -507,7 +500,6 @@ pub fn lowlight_timestamp(row: &mut [StyledToken]) {
     #[derive(PartialEq)]
     enum State {
         Initial,
-        FoundOneSpace,
         InTimestamp,
     }
 
@@ -517,15 +509,8 @@ pub fn lowlight_timestamp(row: &mut [StyledToken]) {
             State::Initial => {
                 if token.token == "\t" {
                     state = State::InTimestamp;
-                } else if token.token == " " {
-                    state = State::FoundOneSpace;
-                }
-            }
-            State::FoundOneSpace => {
-                if token.token == " " {
+                } else if token.token.len() > 1 && token.token.chars().all(|c| c == ' ') {
                     state = State::InTimestamp;
-                } else {
-                    state = State::Initial;
                 }
             }
             State::InTimestamp => {
