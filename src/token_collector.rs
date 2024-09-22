@@ -304,7 +304,7 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
     return changed;
 }
 
-pub fn highlight_trailing_whitespace(tokens: &mut [StyledToken]) {
+pub fn errorlight_trailing_whitespace(tokens: &mut [StyledToken]) {
     let mut in_trailer = true;
     for token in tokens.iter_mut().rev() {
         if token.token == "\n" {
@@ -321,7 +321,7 @@ pub fn highlight_trailing_whitespace(tokens: &mut [StyledToken]) {
     }
 }
 
-pub fn highlight_nonleading_tabs(tokens: &mut [StyledToken]) {
+pub fn errorlight_nonleading_tabs(tokens: &mut [StyledToken]) {
     let mut leading = true;
     for token in tokens.iter_mut() {
         if token.token == "\n" {
@@ -587,7 +587,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     #[test]
-    fn test_highlight_nonleading_tabs() {
+    fn test_errorlight_nonleading_tabs() {
         let mut tokens = vec![
             StyledToken::new("\t".to_string(), Style::Plain),
             StyledToken::new("\t".to_string(), Style::Plain),
@@ -596,7 +596,7 @@ mod tests {
             StyledToken::new("two".to_string(), Style::Plain),
             StyledToken::new("\t".to_string(), Style::Plain),
         ];
-        highlight_nonleading_tabs(&mut tokens);
+        errorlight_nonleading_tabs(&mut tokens);
 
         assert_eq!(
             tokens,
@@ -631,10 +631,10 @@ mod tests {
     }
 
     #[test]
-    fn test_add_trailing_whitespace() {
+    fn test_errorlight_trailing_whitespace() {
         // Just a whitespace
         let mut row = [StyledToken::new(" ".to_string(), Style::Plain)];
-        highlight_trailing_whitespace(&mut row);
+        errorlight_trailing_whitespace(&mut row);
         assert_eq!(row, [StyledToken::new(" ".to_string(), Style::Error)]);
 
         // Trailing whitespace
@@ -642,7 +642,7 @@ mod tests {
             StyledToken::new("x".to_string(), Style::Plain),
             StyledToken::new(" ".to_string(), Style::Plain),
         ];
-        highlight_trailing_whitespace(&mut row);
+        errorlight_trailing_whitespace(&mut row);
         assert_eq!(
             row,
             [
@@ -656,7 +656,7 @@ mod tests {
             StyledToken::new(" ".to_string(), Style::Plain),
             StyledToken::new("x".to_string(), Style::Plain),
         ];
-        highlight_trailing_whitespace(&mut row);
+        errorlight_trailing_whitespace(&mut row);
         assert_eq!(
             row,
             [
@@ -685,7 +685,7 @@ mod tests {
             StyledToken::new("x".to_string(), Style::Plain),
             StyledToken::new("\t".to_string(), Style::Plain),
         ];
-        highlight_nonleading_tabs(&mut row);
+        errorlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
@@ -700,7 +700,7 @@ mod tests {
             StyledToken::new("\t".to_string(), Style::Plain),
             StyledToken::new("y".to_string(), Style::Plain),
         ];
-        highlight_nonleading_tabs(&mut row);
+        errorlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
@@ -715,7 +715,7 @@ mod tests {
             StyledToken::new("\t".to_string(), Style::Plain),
             StyledToken::new("x".to_string(), Style::Plain),
         ];
-        highlight_nonleading_tabs(&mut row);
+        errorlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
@@ -726,7 +726,7 @@ mod tests {
 
         // Single TAB (don't highlight because it is leading)
         let mut row = [StyledToken::new("\t".to_string(), Style::Plain)];
-        highlight_nonleading_tabs(&mut row);
+        errorlight_nonleading_tabs(&mut row);
         assert_eq!(row, [StyledToken::new("\t".to_string(), Style::Plain),]);
     }
 
