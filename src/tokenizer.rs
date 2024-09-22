@@ -15,9 +15,10 @@ pub fn tokenize(input: &str) -> Vec<&str> {
         if let (Some(start_index), Some(start_char)) = (run_start_byte_index, run_start_char) {
             let current_is_word_part = (character == '_') || character.is_alphanumeric();
             let last_was_word_part = (start_char == '_') || start_char.is_alphanumeric();
-            if current_is_word_part && last_was_word_part {
-                still_in_run = true;
-            } else if start_char.is_whitespace() && start_char != '\n' && character == start_char {
+            let still_in_word = current_is_word_part && last_was_word_part;
+            let still_in_whitespace =
+                start_char.is_whitespace() && start_char != '\n' && character == start_char;
+            if still_in_word || still_in_whitespace {
                 still_in_run = true;
             } else {
                 run_start_byte_index = None;

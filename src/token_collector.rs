@@ -525,9 +525,8 @@ pub fn lowlight_timestamp(row: &mut [StyledToken]) {
     for token in row.iter_mut() {
         match state {
             State::Initial => {
-                if token.token == "\t" {
-                    state = State::InTimestamp;
-                } else if token.token.len() > 1 && token.token.chars().all(|c| c == ' ') {
+                let is_multispace = token.token.len() > 1 && token.token.chars().all(|c| c == ' ');
+                if token.token == "\t" || is_multispace {
                     state = State::InTimestamp;
                 }
             }
