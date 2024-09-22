@@ -230,17 +230,18 @@ pub fn to_highlighted_tokens(
 
     // Refine old tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
+    unhighlight_leading_whitespace(&mut old_tokens);
     unhighlight_noisy_rows(&mut old_tokens);
 
     // Refine new tokens highlighting
+    bridge_consecutive_highlighted_tokens(&mut new_tokens);
+    let mut new_unhighlighted = unhighlight_leading_whitespace(&mut new_tokens);
     if is_three_way_conflict {
         contextualize_unhighlighted_lines(&mut new_tokens);
     }
-    bridge_consecutive_highlighted_tokens(&mut new_tokens);
-    let new_unhighlighted = unhighlight_noisy_rows(&mut new_tokens);
+    new_unhighlighted |= unhighlight_noisy_rows(&mut new_tokens);
     errorlight_trailing_whitespace(&mut new_tokens);
     errorlight_nonleading_tabs(&mut new_tokens);
-    unhighlight_leading_whitespace(&mut new_tokens);
 
     return (old_tokens, new_tokens, old_highlights, new_unhighlighted);
 }

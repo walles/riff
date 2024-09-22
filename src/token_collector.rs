@@ -339,7 +339,9 @@ pub fn errorlight_nonleading_tabs(tokens: &mut [StyledToken]) {
     }
 }
 
-pub fn unhighlight_leading_whitespace(tokens: &mut [StyledToken]) {
+/// Returns true if something was unhighlighted, false otherwise.
+pub fn unhighlight_leading_whitespace(tokens: &mut [StyledToken]) -> bool {
+    let mut i_did_it = false;
     let mut in_leading = true;
     for token in tokens.iter_mut() {
         if token.token == "\n" {
@@ -350,12 +352,15 @@ pub fn unhighlight_leading_whitespace(tokens: &mut [StyledToken]) {
         if in_leading && token.is_whitespace() {
             if token.style == Style::Highlighted {
                 token.style = Style::Plain;
+                i_did_it = true;
             }
             continue;
         }
 
         in_leading = false;
     }
+
+    return i_did_it;
 }
 
 pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
