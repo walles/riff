@@ -458,49 +458,15 @@ pub fn contextualize_unhighlighted_lines(tokens: &mut [StyledToken]) {
 
 /// Highlight single space between two highlighted tokens
 pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
-    enum FoundState {
-        Nothing,
-        HighlightedWord,
-        WordSpace,
-    }
-
-    let mut found_state = FoundState::Nothing;
-    let mut previous_token: Option<&mut StyledToken> = None;
-    for token in tokens.iter_mut() {
-        match found_state {
-            FoundState::Nothing => {
-                if token.style == Style::Highlighted {
-                    // Found "Monkey"
-                    found_state = FoundState::HighlightedWord;
-                }
-            }
-
-            FoundState::HighlightedWord => {
-                if token.token.len() == 1 {
-                    // Found "Monkey " (note trailing space)
-                    found_state = FoundState::WordSpace;
-                } else if token.style == Style::Highlighted {
-                    found_state = FoundState::HighlightedWord;
-                } else {
-                    found_state = FoundState::Nothing;
-                }
-            }
-
-            FoundState::WordSpace => {
-                if token.style == Style::Highlighted {
-                    // Found "Monkey Dance"
-                    if let Some(whitespace) = previous_token {
-                        whitespace.style = Style::Highlighted;
-                    }
-
-                    found_state = FoundState::HighlightedWord;
-                } else {
-                    found_state = FoundState::Nothing;
-                }
+    for i in 1..tokens.len() {
+        if tokens[i].token.len() == 1 {
+            if tokens[i - 1].style == Style::Highlighted
+                && tokens[i + 1].style == Style::Highlighted
+                && tokens[i].style == Style::Plain
+            {
+                tokens[i].style = Style::Highlighted;
             }
         }
-
-        previous_token = Some(token);
     }
 }
 
