@@ -269,7 +269,9 @@ pub fn unhighlight_complete_rows(tokens: &mut [StyledToken]) -> bool {
                 is_in_indentation = false;
             }
 
-            if token.style == Style::Plain {
+            // A plain trailing newline won't be visible to the user, so we
+            // ignore those when considering whether a row is fully highlighted.
+            if token.token != "\n" && token.style == Style::Plain {
                 // This line is not fully highlighted, don't unhighlight it
                 return false;
             }
