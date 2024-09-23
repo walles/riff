@@ -805,4 +805,26 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn test_four_tokens_highlighting() {
+        let mut row = [
+            StyledToken::new("\n".to_string(), Style::Highlighted),
+            StyledToken::new("*".to_string(), Style::Highlighted),
+            StyledToken::new(" ".to_string(), Style::Plain),
+            StyledToken::new("Hello".to_string(), Style::Highlighted),
+        ];
+
+        bridge_consecutive_highlighted_tokens(&mut row);
+
+        assert_eq!(
+            row,
+            [
+                StyledToken::new("\n".to_string(), Style::Highlighted),
+                StyledToken::new("*".to_string(), Style::Highlighted),
+                StyledToken::new(" ".to_string(), Style::Highlighted),
+                StyledToken::new("Hello".to_string(), Style::Highlighted),
+            ]
+        );
+    }
 }
