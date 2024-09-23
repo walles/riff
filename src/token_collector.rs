@@ -459,13 +459,12 @@ pub fn contextualize_unhighlighted_lines(tokens: &mut [StyledToken]) {
 /// Highlight single space between two highlighted tokens
 pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     for i in 1..tokens.len() {
-        if tokens[i].token.len() == 1 {
-            if tokens[i - 1].style == Style::Highlighted
-                && tokens[i + 1].style == Style::Highlighted
-                && tokens[i].style == Style::Plain
-            {
-                tokens[i].style = Style::Highlighted;
-            }
+        if tokens[i].token.len() == 1
+            && tokens[i].style == Style::Plain
+            && tokens[i - 1].style == Style::Highlighted
+            && tokens[i + 1].style == Style::Highlighted
+        {
+            tokens[i].style = Style::Highlighted;
         }
     }
 }
