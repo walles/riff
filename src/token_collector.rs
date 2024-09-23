@@ -289,7 +289,7 @@ pub fn unhighlight_complete_rows(tokens: &mut [StyledToken]) -> bool {
         let token = &tokens[i];
         if token.token == "\n" {
             // End of line, evaluate!
-            changed |= maybe_unhighlight_row(&mut tokens[line_start_index..i]);
+            changed |= maybe_unhighlight_row(&mut tokens[line_start_index..(i + 1)]);
 
             // Reset for the next row
             line_start_index = i + 1;
