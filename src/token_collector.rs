@@ -253,11 +253,29 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
 /// Returns true if something was unhighlighted, false otherwise.
 pub fn unhighlight_complete_rows(tokens: &mut [StyledToken]) -> bool {
     fn maybe_unhighlight_row(row: &mut [StyledToken]) -> bool {
-        if row.iter().any(|token| token.style != Style::Highlighted) {
+        if row.is_empty() {
             return false;
         }
 
-        // Unhighlight the current row
+        // Check whether the row is fully highlighted (ignoring indentation)
+        let mut is_in_indentation = true;
+        for token in row.iter() {
+            if is_in_indentation {
+                if token.is_whitespace() {
+                    // Ignore indentation when deciding whether or not a row is
+                    // fully highlighted
+                    continue;
+                }
+                is_in_indentation = false;
+            }
+
+            if token.style == Style::Plain {
+                // This line is not fully highlighted, don't unhighlight it
+                return false;
+            }
+        }
+
+        // Line is fully highlighted, unhighlight it!
         for token in row.iter_mut() {
             token.style = Style::Plain;
         }
