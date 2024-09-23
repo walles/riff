@@ -251,39 +251,9 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
 /// Unhighlight rows that have too much highlighting.
 ///
 /// Returns true if something was unhighlighted, false otherwise.
-pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
+pub fn unhighlight_complete_rows(tokens: &mut [StyledToken]) -> bool {
     fn maybe_unhighlight_row(row: &mut [StyledToken]) -> bool {
-        // Count highlighted and not highlighted tokens, ignoring leading whitespace
-        let mut in_indentation = true;
-        let mut highlighted_chars_count = 0;
-        let mut all_chars_count = 0;
-        let mut highlighted_tokens_count = 0;
-        let mut all_tokens_count = 0;
-        for token in row.iter() {
-            if in_indentation {
-                if token.is_whitespace() {
-                    // Ignore indentation when counting the highlighting percentage
-                    continue;
-                }
-                in_indentation = false;
-            }
-
-            if token.style == Style::Highlighted {
-                highlighted_chars_count += token.token.chars().count();
-                highlighted_tokens_count += 1;
-            }
-            all_chars_count += token.token.chars().count();
-            all_tokens_count += 1;
-        }
-
-        if all_chars_count == 0 {
-            return false;
-        }
-
-        let highlighted_chars_percentage = (100 * highlighted_chars_count) / all_chars_count;
-        let highlighted_tokens_percentage = (100 * highlighted_tokens_count) / all_tokens_count;
-        if highlighted_chars_percentage < 70 || highlighted_tokens_percentage < 50 {
-            // Little enough of the line is highlighted, this is fine
+        if row.iter().any(|token| token.style != Style::Highlighted) {
             return false;
         }
 
@@ -313,6 +283,32 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
     changed |= maybe_unhighlight_row(&mut tokens[line_start_index..]);
 
     return changed;
+}
+
+/// Unhighlight the whole diff if it has more than five runs of highlighted tokens
+pub fn unhighlight_by_count(tokens: &mut [StyledToken]) -> bool {
+    let mut highlighted_runs = 0;
+    let mut in_run = false;
+    for token in tokens.iter() {
+        if token.style == Style::Highlighted {
+            if !in_run {
+                // Found a new run
+                in_run = true;
+                highlighted_runs += 1;
+            }
+        } else {
+            in_run = false;
+        }
+    }
+
+    if highlighted_runs > 5 {
+        for token in tokens.iter_mut() {
+            token.style = Style::Plain;
+        }
+        return true;
+    }
+
+    return false;
 }
 
 pub fn errorlight_trailing_whitespace(tokens: &mut [StyledToken]) {
