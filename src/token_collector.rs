@@ -257,9 +257,10 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
 /// The rule is that if the longest highlighted part is too long, we unhighlight
 /// the row.
 fn unhighlight_noisy_row(tokens: &mut [StyledToken]) -> bool {
-    let mut longest_highlighted = 0;
-    let mut current_highlighted = 0;
+    let mut max_highlight_run_length = 0;
+    let mut current_highlight_run_length = 0;
     let mut chars_count = 0;
+    let mut highlighted_chars_count = 0;
     let mut in_highlighted = false;
     let mut i_did_it = false;
     let mut in_indentation = true;
@@ -278,24 +279,31 @@ fn unhighlight_noisy_row(tokens: &mut [StyledToken]) -> bool {
         // any trailing newline?
         if token.style == Style::Highlighted {
             // This token is highlighted
-            current_highlighted += token.token.chars().count();
+            current_highlight_run_length += token.token.chars().count();
+            highlighted_chars_count += token.token.chars().count();
             in_highlighted = true;
         } else if in_highlighted {
             // The previous token was highlighted
-            if current_highlighted > longest_highlighted {
-                longest_highlighted = current_highlighted;
+            if current_highlight_run_length > max_highlight_run_length {
+                max_highlight_run_length = current_highlight_run_length;
             }
-            current_highlighted = 0;
+            current_highlight_run_length = 0;
             in_highlighted = false;
         }
     }
-    if current_highlighted > longest_highlighted {
-        longest_highlighted = current_highlighted;
+    if current_highlight_run_length > max_highlight_run_length {
+        max_highlight_run_length = current_highlight_run_length;
     }
 
-    let max_highlighted_allowed = cmp::max(2, (chars_count * 2) / 3);
+    // We don't want any single highlight part of a line to be too long
+    let max_highligh_run_length_allowed = (chars_count * 2) / 3;
 
-    if longest_highlighted > max_highlighted_allowed {
+    // We don't want too many highlighted characters in the same line
+    let max_highlighted_chars_count_allowed = (chars_count * 4) / 5;
+
+    if max_highlight_run_length > max_highligh_run_length_allowed
+        || highlighted_chars_count > max_highlighted_chars_count_allowed
+    {
         for token in tokens.iter_mut() {
             if token.style == Style::Highlighted {
                 token.style = Style::Plain;
@@ -819,7 +827,7 @@ mod tests {
         }
 
         // <    }>
-        assert_keep_highlight("   *", true);
+        assert_keep_highlight("   *", false);
 
         // <        panic!("Error writing diff to pager: {:?}", error);>
         assert_keep_highlight(
@@ -835,5 +843,11 @@ mod tests {
         assert_keep_highlight("****_____************", true);
         assert_keep_highlight("_____****************", false);
         assert_keep_highlight("****************_____", false);
+
+        // <// For the actual searching, this method will call _findFirstHit() in parallel>
+        assert_keep_highlight(
+            "***************** searching******************************************************",
+            false,
+        );
     }
 }
