@@ -248,14 +248,15 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
     return rendered;
 }
 
-/// Unhighlight rows that have too much highlighting.
+/// Unhighlight a row if it has too much highlighting.
 ///
 /// Returns true if something was unhighlighted, false otherwise.
 ///
 /// Indentation is not counted as part of the row in this function.
 ///
-/// If the longest highlighted part is too long, unhighlight the row.
-pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
+/// The rule is that if the longest highlighted part is too long, we unhighlight
+/// the row.
+fn unhighlight_noisy_row(tokens: &mut [StyledToken]) -> bool {
     let mut longest_highlighted = 0;
     let mut current_highlighted = 0;
     let mut chars_count = 0;
@@ -301,6 +302,25 @@ pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
                 i_did_it = true;
             }
         }
+    }
+
+    return i_did_it;
+}
+
+pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
+    let mut i_did_it = false;
+
+    let mut current_row_start = 0;
+    for i in 0..tokens.len() {
+        let token = &tokens[i];
+        if token.token == "\n" {
+            i_did_it |= unhighlight_noisy_row(&mut tokens[current_row_start..i]);
+            current_row_start = i + 1;
+        }
+    }
+
+    if current_row_start < tokens.len() {
+        i_did_it |= unhighlight_noisy_row(&mut tokens[current_row_start..]);
     }
 
     return i_did_it;
@@ -771,7 +791,7 @@ mod tests {
     }
 
     #[test]
-    fn test_unhighlight_noisy_rows() {
+    fn test_unhighlight_noisy_row() {
         /// The input string contains " " for indentation, "*" for highlighted
         /// characters and "_" for non-highlighted characters.
         fn assert_keep_highlight(text: &str, highlight_kept: bool) {
@@ -793,7 +813,7 @@ mod tests {
             let mut tokens = tokens;
             assert_eq!(
                 !highlight_kept,
-                unhighlight_noisy_rows(tokens.as_mut()),
+                unhighlight_noisy_row(tokens.as_mut()),
                 "<{text}>"
             );
         }
