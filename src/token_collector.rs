@@ -256,7 +256,7 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
 ///
 /// The rule is that if the longest highlighted part is too long, we unhighlight
 /// the row.
-fn unhighlight_noisy_row(tokens: &mut [StyledToken]) -> bool {
+fn unhighlight_noisy_row(row: &mut [StyledToken]) -> bool {
     let mut max_highlight_run_length = 0;
     let mut current_highlight_run_length = 0;
     let mut chars_count = 0;
@@ -265,9 +265,10 @@ fn unhighlight_noisy_row(tokens: &mut [StyledToken]) -> bool {
     let mut i_did_it = false;
     let mut in_indentation = true;
 
-    for token in tokens.iter() {
+    for token in row.iter() {
         if in_indentation {
             if token.is_whitespace() {
+                // Ignore indentation when counting the highlighting percentage
                 continue;
             }
             in_indentation = false;
@@ -301,20 +302,25 @@ fn unhighlight_noisy_row(tokens: &mut [StyledToken]) -> bool {
     // We don't want too many highlighted characters in the same line
     let max_highlighted_chars_count_allowed = (chars_count * 4) / 5;
 
-    if max_highlight_run_length > max_highligh_run_length_allowed
-        || highlighted_chars_count > max_highlighted_chars_count_allowed
+    if max_highlight_run_length <= max_highligh_run_length_allowed
+        && highlighted_chars_count <= max_highlighted_chars_count_allowed
     {
-        for token in tokens.iter_mut() {
-            if token.style == Style::Highlighted {
-                token.style = Style::Plain;
-                i_did_it = true;
-            }
+        // Little enough of the line is highlighted, this is fine
+        return false;
+    }
+
+    // Unhighlight the current row
+    for token in row.iter_mut() {
+        if token.style == Style::Highlighted {
+            token.style = Style::Plain;
+            i_did_it = true;
         }
     }
 
     return i_did_it;
 }
 
+/// Unhighlight rows that have too much highlighting.
 pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
     let mut i_did_it = false;
 
