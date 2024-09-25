@@ -362,4 +362,47 @@ mod tests {
         let result = format(&["+"], &["x\n"]);
         assert_eq!(result, [format!("{NEW}+x{NORMAL}"),]);
     }
+
+    #[test]
+    fn test_keep_highlights() {
+        /// The input string contains " " for indentation, "*" for highlighted
+        /// characters and "_" for non-highlighted characters.
+        fn assert_keep_highlight(text: &str, highlight_kept: bool) {
+            // Convert text to a vector of StyledToken:s
+            let tokens: Vec<StyledToken> = text
+                .chars()
+                .map(|c| {
+                    StyledToken::new(
+                        c.to_string(),
+                        if c == '*' {
+                            Style::Highlighted
+                        } else {
+                            Style::Plain
+                        },
+                    )
+                })
+                .collect();
+
+            let mut tokens = tokens;
+            assert_eq!(
+                !highlight_kept,
+                unhighlight_complete_rows(tokens.as_mut()),
+                "<{text}>"
+            );
+        }
+
+        // <    }>
+        assert_keep_highlight("   *", true);
+
+        // <        panic!("Error writing diff to pager: {:?}", error);>
+        assert_keep_highlight(
+            "        *************************************************__",
+            false,
+        );
+
+        // <This line was changed>
+        assert_keep_highlight("****_____************", true);
+        assert_keep_highlight("_____****************", false);
+        assert_keep_highlight("****************_____", false);
+    }
 }
