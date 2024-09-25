@@ -296,7 +296,7 @@ fn unhighlight_noisy_row(tokens: &mut [StyledToken]) -> bool {
     }
 
     // We don't want any single highlight part of a line to be too long
-    let max_highligh_run_length_allowed = (chars_count * 2) / 3;
+    let max_highligh_run_length_allowed = cmp::max((chars_count * 2) / 3, 12);
 
     // We don't want too many highlighted characters in the same line
     let max_highlighted_chars_count_allowed = (chars_count * 4) / 5;
@@ -838,6 +838,9 @@ mod tests {
             "        ***************************************************",
             false,
         );
+
+        // <Change this line>
+        assert_keep_highlight("*********** line", true);
 
         // <This line was changed>
         assert_keep_highlight("****_____************", true);
