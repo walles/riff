@@ -305,32 +305,6 @@ pub fn unhighlight_complete_rows(tokens: &mut [StyledToken]) -> bool {
     return changed;
 }
 
-/// Unhighlight the whole diff if it has more than five runs of highlighted tokens
-pub fn unhighlight_by_count(tokens: &mut [StyledToken]) -> bool {
-    let mut highlighted_runs = 0;
-    let mut in_run = false;
-    for token in tokens.iter() {
-        if token.style == Style::Highlighted {
-            if !in_run {
-                // Found a new run
-                in_run = true;
-                highlighted_runs += 1;
-            }
-        } else {
-            in_run = false;
-        }
-    }
-
-    if highlighted_runs > 5 {
-        for token in tokens.iter_mut() {
-            token.style = Style::Plain;
-        }
-        return true;
-    }
-
-    return false;
-}
-
 pub fn errorlight_trailing_whitespace(tokens: &mut [StyledToken]) {
     let mut in_trailer = true;
     for token in tokens.iter_mut().rev() {
