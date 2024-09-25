@@ -230,7 +230,7 @@ pub fn to_highlighted_tokens(
 
     // Refine old tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
-    unhighlight_complete_rows(&mut old_tokens);
+    unhighlight_noisy_rows(&mut old_tokens);
     unhighlight_leading_whitespace(&mut old_tokens);
 
     // Refine new tokens highlighting
@@ -239,7 +239,7 @@ pub fn to_highlighted_tokens(
     if is_three_way_conflict {
         contextualize_unhighlighted_lines(&mut new_tokens);
     }
-    new_unhighlighted |= unhighlight_complete_rows(&mut new_tokens);
+    new_unhighlighted |= unhighlight_noisy_rows(&mut new_tokens);
     new_unhighlighted |= unhighlight_leading_whitespace(&mut new_tokens);
     errorlight_trailing_whitespace(&mut new_tokens);
     errorlight_nonleading_tabs(&mut new_tokens);
@@ -359,48 +359,5 @@ mod tests {
 
         let result = format(&["+"], &["x\n"]);
         assert_eq!(result, [format!("{NEW}+x{NORMAL}"),]);
-    }
-
-    #[test]
-    fn test_keep_highlights() {
-        /// The input string contains " " for indentation, "*" for highlighted
-        /// characters and "_" for non-highlighted characters.
-        fn assert_keep_highlight(text: &str, highlight_kept: bool) {
-            // Convert text to a vector of StyledToken:s
-            let tokens: Vec<StyledToken> = text
-                .chars()
-                .map(|c| {
-                    StyledToken::new(
-                        c.to_string(),
-                        if c == '*' {
-                            Style::Highlighted
-                        } else {
-                            Style::Plain
-                        },
-                    )
-                })
-                .collect();
-
-            let mut tokens = tokens;
-            assert_eq!(
-                !highlight_kept,
-                unhighlight_complete_rows(tokens.as_mut()),
-                "<{text}>"
-            );
-        }
-
-        // <    }>
-        assert_keep_highlight("   *", true);
-
-        // <        panic!("Error writing diff to pager: {:?}", error);>
-        assert_keep_highlight(
-            "        *************************************************__",
-            false,
-        );
-
-        // <This line was changed>
-        assert_keep_highlight("****_____************", true);
-        assert_keep_highlight("_____****************", false);
-        assert_keep_highlight("****************_____", false);
     }
 }

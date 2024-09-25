@@ -251,58 +251,59 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
 /// Unhighlight rows that have too much highlighting.
 ///
 /// Returns true if something was unhighlighted, false otherwise.
-pub fn unhighlight_complete_rows(tokens: &mut [StyledToken]) -> bool {
-    fn maybe_unhighlight_row(row: &mut [StyledToken]) -> bool {
-        if row.is_empty() {
-            return false;
-        }
+///
+/// Indentation is not counted as part of the row in this function.
+///
+/// If the longest highlighted part is too long, unhighlight the row.
+pub fn unhighlight_noisy_rows(tokens: &mut [StyledToken]) -> bool {
+    let mut longest_highlighted = 0;
+    let mut current_highlighted = 0;
+    let mut chars_count = 0;
+    let mut in_highlighted = false;
+    let mut i_did_it = false;
+    let mut in_indentation = true;
 
-        // Check whether the row is fully highlighted (ignoring indentation)
-        let mut is_in_indentation = true;
-        for token in row.iter() {
-            if is_in_indentation {
-                if token.is_whitespace() {
-                    // Ignore indentation when deciding whether or not a row is
-                    // fully highlighted
-                    continue;
-                }
-                is_in_indentation = false;
+    for token in tokens.iter() {
+        if in_indentation {
+            if token.is_whitespace() {
+                continue;
             }
+            in_indentation = false;
+        }
 
-            // A plain trailing newline won't be visible to the user, so we
-            // ignore those when considering whether a row is fully highlighted.
-            if token.token != "\n" && token.style == Style::Plain {
-                // This line is not fully highlighted, don't unhighlight it
-                return false;
+        chars_count += token.token.chars().count();
+
+        // FIXME: In this calculation, should we ignore the highlightedness of
+        // any trailing newline?
+        if token.style == Style::Highlighted {
+            // This token is highlighted
+            current_highlighted += token.token.chars().count();
+            in_highlighted = true;
+        } else if in_highlighted {
+            // The previous token was highlighted
+            if current_highlighted > longest_highlighted {
+                longest_highlighted = current_highlighted;
             }
-        }
-
-        // Line is fully highlighted, unhighlight it!
-        for token in row.iter_mut() {
-            token.style = Style::Plain;
-        }
-        return true;
-    }
-
-    let mut line_start_index = 0;
-    let mut changed = false;
-
-    for i in 0..tokens.len() {
-        let token = &tokens[i];
-        if token.token == "\n" {
-            // End of line, evaluate!
-            changed |= maybe_unhighlight_row(&mut tokens[line_start_index..(i + 1)]);
-
-            // Reset for the next row
-            line_start_index = i + 1;
-            continue;
+            current_highlighted = 0;
+            in_highlighted = false;
         }
     }
+    if current_highlighted > longest_highlighted {
+        longest_highlighted = current_highlighted;
+    }
 
-    // Handle the last row
-    changed |= maybe_unhighlight_row(&mut tokens[line_start_index..]);
+    let max_highlighted_allowed = cmp::max(2, (chars_count * 2) / 3);
 
-    return changed;
+    if longest_highlighted > max_highlighted_allowed {
+        for token in tokens.iter_mut() {
+            if token.style == Style::Highlighted {
+                token.style = Style::Plain;
+                i_did_it = true;
+            }
+        }
+    }
+
+    return i_did_it;
 }
 
 pub fn errorlight_trailing_whitespace(tokens: &mut [StyledToken]) {
@@ -767,5 +768,52 @@ mod tests {
                 StyledToken::new("Hello".to_string(), Style::Highlighted),
             ]
         );
+    }
+
+    #[test]
+    fn test_unhighlight_noisy_rows() {
+        /// The input string contains " " for indentation, "*" for highlighted
+        /// characters and "_" for non-highlighted characters.
+        fn assert_keep_highlight(text: &str, highlight_kept: bool) {
+            // Convert text to a vector of StyledToken:s
+            let tokens: Vec<StyledToken> = text
+                .chars()
+                .map(|c| {
+                    StyledToken::new(
+                        c.to_string(),
+                        if c == '*' {
+                            Style::Highlighted
+                        } else {
+                            Style::Plain
+                        },
+                    )
+                })
+                .collect();
+
+            let mut tokens = tokens;
+            assert_eq!(
+                !highlight_kept,
+                unhighlight_noisy_rows(tokens.as_mut()),
+                "<{text}>"
+            );
+        }
+
+        // <    }>
+        assert_keep_highlight("   *", true);
+
+        // <        panic!("Error writing diff to pager: {:?}", error);>
+        assert_keep_highlight(
+            "        *************************************************__",
+            false,
+        );
+        assert_keep_highlight(
+            "        ***************************************************",
+            false,
+        );
+
+        // <This line was changed>
+        assert_keep_highlight("****_____************", true);
+        assert_keep_highlight("_____****************", false);
+        assert_keep_highlight("****************_____", false);
     }
 }
