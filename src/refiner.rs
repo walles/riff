@@ -160,6 +160,15 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
     return highlighted_lines;
 }
 
+fn push_changed_tokens(destination: &mut Vec<StyledToken>, tokens: &Vec<String>) {
+    // FIXME: Decide the style based on the token contents
+    let style = Style::Highlighted;
+
+    for token in tokens {
+        destination.push(StyledToken::new(token.to_string(), style));
+    }
+}
+
 /// Returns two vectors for old and new sections. The first bool is true if
 /// there were any highlights found in the old text. The second bool is true if
 /// any highlights were removed for readability in the new text.
@@ -211,21 +220,11 @@ pub fn to_highlighted_tokens(
                     match edit {
                         collection::Edit::Copy(token) => {
                             if let Some(xinserts) = &inserts {
-                                xinserts.iter().for_each(|insert| {
-                                    new_tokens.push(StyledToken::new(
-                                        insert.to_string(),
-                                        Style::Highlighted,
-                                    ));
-                                });
+                                push_changed_tokens(&mut new_tokens, xinserts);
                                 inserts = None;
                             }
                             if let Some(xremoves) = &removes {
-                                xremoves.iter().for_each(|remove| {
-                                    old_tokens.push(StyledToken::new(
-                                        remove.to_string(),
-                                        Style::Highlighted,
-                                    ));
-                                });
+                                push_changed_tokens(&mut old_tokens, xremoves);
                                 removes = None;
                             }
                             old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
@@ -252,14 +251,10 @@ pub fn to_highlighted_tokens(
                 .for_each(drop);
 
             if let Some(xinserts) = &inserts {
-                xinserts.iter().for_each(|insert| {
-                    new_tokens.push(StyledToken::new(insert.to_string(), Style::Highlighted));
-                });
+                push_changed_tokens(&mut new_tokens, xinserts);
             }
             if let Some(xremoves) = &removes {
-                xremoves.iter().for_each(|remove| {
-                    old_tokens.push(StyledToken::new(remove.to_string(), Style::Highlighted));
-                });
+                push_changed_tokens(&mut old_tokens, xremoves);
             }
         }
     }
