@@ -161,8 +161,16 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
 }
 
 fn push_changed_tokens(destination: &mut Vec<StyledToken>, tokens: &Vec<String>) {
-    // FIXME: Decide the style based on the token contents
-    let style = Style::Highlighted;
+    let contains_only_whitespace = tokens
+        .iter()
+        .all(|token| token.chars().all(char::is_whitespace));
+    let contains_any_newline = tokens.iter().any(|token| token.contains('\n'));
+
+    let style = if contains_only_whitespace || contains_any_newline {
+        Style::Plain
+    } else {
+        Style::Highlighted
+    };
 
     for token in tokens {
         destination.push(StyledToken::new(token.to_string(), style));
