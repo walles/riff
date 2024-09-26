@@ -203,20 +203,45 @@ pub fn to_highlighted_tokens(
             }
         }
         edit::Edit::Change(diff) => {
+            let mut inserts: Option<Vec<String>> = None;
+            let mut removes: Option<Vec<String>> = None;
+
             diff.into_iter()
                 .map(|edit| {
                     match edit {
                         collection::Edit::Copy(token) => {
+                            if let Some(xinserts) = &inserts {
+                                xinserts.iter().for_each(|insert| {
+                                    new_tokens.push(StyledToken::new(
+                                        insert.to_string(),
+                                        Style::Highlighted,
+                                    ));
+                                });
+                                inserts = None;
+                            }
+                            if let Some(xremoves) = &removes {
+                                xremoves.iter().for_each(|remove| {
+                                    old_tokens.push(StyledToken::new(
+                                        remove.to_string(),
+                                        Style::Highlighted,
+                                    ));
+                                });
+                                removes = None;
+                            }
                             old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
                             new_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
                         }
                         collection::Edit::Insert(token) => {
-                            new_tokens
-                                .push(StyledToken::new(token.to_string(), Style::Highlighted));
+                            if inserts.is_none() {
+                                inserts = Some(Vec::new());
+                            }
+                            inserts.as_mut().unwrap().push(token.to_string());
                         }
                         collection::Edit::Remove(token) => {
-                            old_tokens
-                                .push(StyledToken::new(token.to_string(), Style::Highlighted));
+                            if removes.is_none() {
+                                removes = Some(Vec::new());
+                            }
+                            removes.as_mut().unwrap().push(token.to_string());
                             old_highlights = true;
                         }
                         collection::Edit::Change(_) => {
@@ -225,6 +250,17 @@ pub fn to_highlighted_tokens(
                     };
                 })
                 .for_each(drop);
+
+            if let Some(xinserts) = &inserts {
+                xinserts.iter().for_each(|insert| {
+                    new_tokens.push(StyledToken::new(insert.to_string(), Style::Highlighted));
+                });
+            }
+            if let Some(xremoves) = &removes {
+                xremoves.iter().for_each(|remove| {
+                    old_tokens.push(StyledToken::new(remove.to_string(), Style::Highlighted));
+                });
+            }
         }
     }
 
