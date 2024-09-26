@@ -173,7 +173,14 @@ fn push_changed_tokens(destination: &mut Vec<StyledToken>, tokens: &Vec<String>)
     };
 
     for token in tokens {
-        destination.push(StyledToken::new(token.to_string(), style));
+        destination.push(StyledToken::new(
+            token.to_string(),
+            if token == "⏎" {
+                Style::Highlighted
+            } else {
+                style
+            },
+        ));
     }
 }
 
