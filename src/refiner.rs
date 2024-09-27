@@ -231,7 +231,6 @@ pub fn to_highlighted_tokens(
     // Refine old tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
     denoise(&mut old_tokens);
-    unhighlight_leading_whitespace(&mut old_tokens);
 
     // Refine new tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
@@ -240,7 +239,6 @@ pub fn to_highlighted_tokens(
         contextualize_unhighlighted_lines(&mut new_tokens);
     }
     new_unhighlighted |= denoise(&mut new_tokens);
-    new_unhighlighted |= unhighlight_leading_whitespace(&mut new_tokens);
     errorlight_trailing_whitespace(&mut new_tokens);
     errorlight_nonleading_tabs(&mut new_tokens);
 

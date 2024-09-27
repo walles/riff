@@ -344,30 +344,6 @@ pub fn errorlight_nonleading_tabs(tokens: &mut [StyledToken]) {
     }
 }
 
-/// Returns true if something was unhighlighted, false otherwise.
-pub fn unhighlight_leading_whitespace(tokens: &mut [StyledToken]) -> bool {
-    let mut i_did_it = false;
-    let mut in_leading = true;
-    for token in tokens.iter_mut() {
-        if token.token == "\n" {
-            in_leading = true;
-            continue;
-        }
-
-        if in_leading && token.is_whitespace() {
-            if token.style == Style::Highlighted {
-                token.style = Style::Plain;
-                i_did_it = true;
-            }
-            continue;
-        }
-
-        in_leading = false;
-    }
-
-    return i_did_it;
-}
-
 pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
     let old_tab_index_token = old.iter().position(|token| token.token == "\t");
     if old_tab_index_token.is_none() {
@@ -440,6 +416,7 @@ pub fn contextualize_unhighlighted_lines(tokens: &mut [StyledToken]) {
 pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     for i in 1..(tokens.len() - 1) {
         if tokens[i].token.len() == 1
+            && tokens[i].token != "\n"
             && tokens[i].style == Style::Plain
             && tokens[i - 1].style == Style::Highlighted
             && tokens[i + 1].style == Style::Highlighted
