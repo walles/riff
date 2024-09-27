@@ -259,7 +259,7 @@ pub fn denoise(tokens: &mut [StyledToken]) -> bool {
     fn maybe_unhighlight_run(run: &mut [StyledToken]) -> bool {
         let whitespace_only = run.iter().all(|token| token.is_whitespace());
         let contains_newline = run.iter().any(|token| token.token == "\n");
-        let is_newline_marker = run.len() == 1 && run[0].token == "⏎";
+        let is_newline_marker = run.len() == 2 && run[0].token == "⏎" && run[1].token == "\n";
 
         if is_newline_marker {
             return false;
