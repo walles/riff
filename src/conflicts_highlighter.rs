@@ -5,7 +5,7 @@ use threadpool::ThreadPool;
 use crate::constants::{GREEN, NORMAL};
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::string_future::StringFuture;
-use crate::token_collector::LINE_STYLE_OLD;
+use crate::token_collector::{Style, LINE_STYLE_OLD};
 use crate::token_collector::{LINE_STYLE_CONFLICT_BASE, LINE_STYLE_NEW};
 use crate::{refiner, token_collector};
 
@@ -258,17 +258,35 @@ impl ConflictsHighlighter {
 
         return StringFuture::from_function(
             move || {
+                // FIXME: If base is empty, we should show the diff between c1 and c2, both in green
+
                 let base_or_newline = if base.is_empty() { "\n" } else { &base };
 
                 let c1_or_newline = if c1.is_empty() { "\n" } else { &c1 };
-                let (base_vs_c1_tokens, c1_tokens, _, _) =
+                let (mut base_vs_c1_tokens, c1_tokens, _, _) =
                     refiner::to_highlighted_tokens(base_or_newline, c1_or_newline, true);
+                if c1.is_empty() {
+                    // In the base, show only diffs vs c2
+                    base_vs_c1_tokens.iter_mut().for_each(|token| {
+                        if token.style == Style::Highlighted {
+                            token.style = Style::Plain;
+                        }
+                    });
+                }
                 let highlighted_c1 =
                     token_collector::render(&LINE_STYLE_NEW, c1_prefix, &c1_tokens);
 
                 let c2_or_newline = if c2.is_empty() { "\n" } else { &c2 };
-                let (base_vs_c2_tokens, c2_tokens, _, _) =
+                let (mut base_vs_c2_tokens, c2_tokens, _, _) =
                     refiner::to_highlighted_tokens(base_or_newline, c2_or_newline, true);
+                if c2.is_empty() {
+                    // In the base, show only diffs vs c1
+                    base_vs_c2_tokens.iter_mut().for_each(|token| {
+                        if token.style == Style::Highlighted {
+                            token.style = Style::Plain;
+                        }
+                    });
+                }
                 let highlighted_c2 =
                     token_collector::render(&LINE_STYLE_NEW, c2_prefix, &c2_tokens);
 

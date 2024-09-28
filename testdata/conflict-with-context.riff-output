@@ -39,7 +39,7 @@
 [32m +[0m
 [32m +// NOTE: When we search, we do that by looping over the *input lines*, not[7m the[0m
 [32m +// screen lines. That's why [7mstartPosition is[27m a [7mLineNumber[27m rather than a[0m
-[32m +// scrollPosition[7m.[0m
+[32m +// scrollPosition.[0m
 [32m +//[0m
 [32m +// The `beforePosition` parameter is exclusive, meaning that line will not be[0m
 [32m +// searched.[0m
