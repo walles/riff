@@ -1,12 +1,10 @@
+use similar::capture_diff_slices;
+
 use crate::constants::*;
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::token_collector::*;
 use crate::tokenizer;
 use crate::NO_ADDS_ONLY_SPECIAL;
-use diffus::{
-    edit::{self, collection},
-    Diffable,
-};
 
 /// Like format!(), but faster for our special case
 fn format_simple_line(old_new: &str, plus_minus: &str, contents: &str) -> String {
@@ -189,42 +187,58 @@ pub fn to_highlighted_tokens(
         tokenized_new.insert(tokenized_new.len() - 1, "⏎");
     }
 
-    let diff = tokenized_old.diff(&tokenized_new);
+    let diff = capture_diff_slices(similar::Algorithm::Patience, &tokenized_old, &tokenized_new);
     let mut old_highlights = false;
-    match diff {
-        edit::Edit::Copy(tokens) => {
-            for &token in tokens {
-                // FIXME: "Copy" means that old and new are the same, why was
-                // format_split() called on this non-difference?
-                //
-                // Get here using "git show 686f3d7ae | cargo run" with git 2.35.1
-                old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
-                new_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
+    for change in diff.iter() {
+        match change {
+            similar::DiffOp::Equal {
+                old_index,
+                new_index,
+                len,
+            } => {
+                for token in tokenized_old.iter().skip(*old_index).take(*len) {
+                    old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
+                }
+                for token in tokenized_new.iter().skip(*new_index).take(*len) {
+                    new_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
+                }
             }
-        }
-        edit::Edit::Change(diff) => {
-            diff.into_iter()
-                .map(|edit| {
-                    match edit {
-                        collection::Edit::Copy(token) => {
-                            old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
-                            new_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
-                        }
-                        collection::Edit::Insert(token) => {
-                            new_tokens
-                                .push(StyledToken::new(token.to_string(), Style::Highlighted));
-                        }
-                        collection::Edit::Remove(token) => {
-                            old_tokens
-                                .push(StyledToken::new(token.to_string(), Style::Highlighted));
-                            old_highlights = true;
-                        }
-                        collection::Edit::Change(_) => {
-                            unimplemented!("Edit/Change/Change not implemented, help!")
-                        }
-                    };
-                })
-                .for_each(drop);
+
+            similar::DiffOp::Insert {
+                old_index: _,
+                new_index,
+                new_len,
+            } => {
+                for token in tokenized_new.iter().skip(*new_index).take(*new_len) {
+                    new_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
+                }
+            }
+
+            similar::DiffOp::Delete {
+                old_index,
+                old_len,
+                new_index: _,
+            } => {
+                for token in tokenized_old.iter().skip(*old_index).take(*old_len) {
+                    old_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
+                    old_highlights = true;
+                }
+            }
+
+            similar::DiffOp::Replace {
+                old_index,
+                old_len,
+                new_index,
+                new_len,
+            } => {
+                for token in tokenized_old.iter().skip(*old_index).take(*old_len) {
+                    old_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
+                    old_highlights = true;
+                }
+                for token in tokenized_new.iter().skip(*new_index).take(*new_len) {
+                    new_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
+                }
+            }
         }
     }
 
