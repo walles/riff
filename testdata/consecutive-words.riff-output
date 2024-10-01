@@ -26,10 +26,10 @@ Date:   Thu Dec 31 15:22:09 2020 +0100
          return simple_format(old_text, new_text);
      }
 
-[31m-    // [7mThis check makes[27m us faster, please use the benchmark.py script before[7m and[0m
+[31m-    // [7mThis check makes[27m us faster, please use the benchmark.py script before and[0m
 [31m-    // after if you change this.[0m
 [32m+    // [7mThese checks make[27m us faster, please use the benchmark.py script before[0m
-[32m+    //[7m and[27m after if you change this.[0m
+[32m+    // and after if you change this.[0m
      if is_large_byte_count_change(old_text, new_text) {
          return simple_format(old_text, new_text);
      }

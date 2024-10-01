@@ -20,7 +20,7 @@
 [32m +	}[0m
 [32m +[0m
 [32m +	firstHitPosition := p.findFirstHit(*lineNumber, nil, false)[0m
-[32m +	if firstHitPosition == nil[7m && (*lineNumber != linenumbers.LineNumber{})[27m {[0m
+[32m +	if firstHitPosition == nil [7m&& (*lineNumber != linenumbers.LineNumber{}) [27m{[0m
 [32m +[0m		// Try again from the top
 [32m +[0m		firstHitPosition = p.findFirstHit(linenumbers.LineNumber{}, lineNumber, false)
 [32m +[0m	}
@@ -53,7 +53,7 @@
 [32m++[31m		return[0m
 [32m++[31m	}[0m
 [32m++[0m
-[32m++[31m	[7mfirstHitPosition[27m := [7mp.findFirstHit(*[27mp.scrollPosition.lineNumber(p), nil, false)[0m
+[32m++[31m	[7mfirstHitPosition[27m := p.[7mfindFirstHit(*p.[27mscrollPosition.lineNumber(p), nil, false)[0m
 [32m++[31m	if firstHitPosition == nil {[0m
 [32m++[31m		// Try again from the top[0m
 [32m++[31m		firstHitPosition = p.findFirstHit(linenumbers.LineNumber{}, [7mp.scrollPosition.[27mlineNumber[7m(p)[27m, false)[0m
