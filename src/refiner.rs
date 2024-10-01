@@ -196,11 +196,11 @@ pub fn to_highlighted_tokens(
                 new_index,
                 len,
             } => {
-                for i in *old_index..*old_index + *len {
-                    old_tokens.push(StyledToken::new(tokenized_old[i].to_string(), Style::Plain));
+                for token in tokenized_old.iter().skip(*old_index).take(*len) {
+                    old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
                 }
-                for i in *new_index..*new_index + *len {
-                    new_tokens.push(StyledToken::new(tokenized_new[i].to_string(), Style::Plain));
+                for token in tokenized_new.iter().skip(*new_index).take(*len) {
+                    new_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
                 }
             }
 
@@ -209,11 +209,8 @@ pub fn to_highlighted_tokens(
                 new_index,
                 new_len,
             } => {
-                for i in *new_index..*new_index + *new_len {
-                    new_tokens.push(StyledToken::new(
-                        tokenized_new[i].to_string(),
-                        Style::Highlighted,
-                    ));
+                for token in tokenized_new.iter().skip(*new_index).take(*new_len) {
+                    new_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
                 }
             }
 
@@ -222,11 +219,8 @@ pub fn to_highlighted_tokens(
                 old_len,
                 new_index: _,
             } => {
-                for i in *old_index..*old_index + *old_len {
-                    old_tokens.push(StyledToken::new(
-                        tokenized_old[i].to_string(),
-                        Style::Highlighted,
-                    ));
+                for token in tokenized_old.iter().skip(*old_index).take(*old_len) {
+                    old_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
                     old_highlights = true;
                 }
             }
@@ -237,18 +231,12 @@ pub fn to_highlighted_tokens(
                 new_index,
                 new_len,
             } => {
-                for i in *old_index..*old_index + *old_len {
-                    old_tokens.push(StyledToken::new(
-                        tokenized_old[i].to_string(),
-                        Style::Highlighted,
-                    ));
+                for token in tokenized_old.iter().skip(*old_index).take(*old_len) {
+                    old_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
                     old_highlights = true;
                 }
-                for i in *new_index..*new_index + *new_len {
-                    new_tokens.push(StyledToken::new(
-                        tokenized_new[i].to_string(),
-                        Style::Highlighted,
-                    ));
+                for token in tokenized_new.iter().skip(*new_index).take(*new_len) {
+                    new_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
                 }
             }
         }
