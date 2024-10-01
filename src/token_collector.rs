@@ -414,15 +414,27 @@ pub fn contextualize_unhighlighted_lines(tokens: &mut [StyledToken]) {
 
 /// Highlight single space between two highlighted tokens
 pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
-    for i in 1..(tokens.len() - 1) {
-        if tokens[i].token.len() == 1
-            && tokens[i].token != "\n"
-            && tokens[i].style == Style::Plain
-            && tokens[i - 1].style == Style::Highlighted
-            && tokens[i + 1].style == Style::Highlighted
-        {
-            tokens[i].style = Style::Highlighted;
+    fn bridgable(candidate: &StyledToken) -> bool {
+        if candidate.style != Style::Plain {
+            return false;
         }
+        if candidate.token.len() != 1 {
+            return false;
+        }
+
+        let rune = candidate.token.chars().next().unwrap();
+        return rune == ' ' || rune.is_ascii_punctuation();
+    }
+
+    for i in 1..(tokens.len() - 1) {
+        if tokens[i - 1].style != Style::Highlighted || tokens[i + 1].style != Style::Highlighted {
+            continue;
+        }
+        if bridgable(&tokens[i - 1]) || !bridgable(&tokens[i]) || bridgable(&tokens[i + 1]) {
+            continue;
+        }
+
+        tokens[i].style = Style::Highlighted;
     }
 }
 
@@ -688,44 +700,25 @@ mod tests {
         assert_eq!(actual, format!("{OLD}-x\t{NORMAL}"));
     }
 
-    #[test]
-    fn test_highlight_space_between_words() {
+    fn is_char_bridged(before: char, victim: char, after: char) -> bool {
         let mut row = [
-            StyledToken::new("Monkey".to_string(), Style::Highlighted),
-            StyledToken::new(" ".to_string(), Style::Plain),
-            StyledToken::new("Dance".to_string(), Style::Highlighted),
+            StyledToken::new(before.to_string(), Style::Highlighted),
+            StyledToken::new(victim.to_string(), Style::Plain),
+            StyledToken::new(after.to_string(), Style::Highlighted),
         ];
 
         bridge_consecutive_highlighted_tokens(&mut row);
 
-        assert_eq!(
-            row,
-            [
-                StyledToken::new("Monkey".to_string(), Style::Highlighted),
-                StyledToken::new(" ".to_string(), Style::Highlighted),
-                StyledToken::new("Dance".to_string(), Style::Highlighted),
-            ]
-        );
+        return row[1].style == Style::Highlighted;
     }
 
     #[test]
-    fn test_highlight_space_between_random_chars() {
-        let mut row = [
-            StyledToken::new(">".to_string(), Style::Highlighted),
-            StyledToken::new(" ".to_string(), Style::Plain),
-            StyledToken::new("5".to_string(), Style::Highlighted),
-        ];
-
-        bridge_consecutive_highlighted_tokens(&mut row);
-
-        assert_eq!(
-            row,
-            [
-                StyledToken::new(">".to_string(), Style::Highlighted),
-                StyledToken::new(" ".to_string(), Style::Highlighted),
-                StyledToken::new("5".to_string(), Style::Highlighted),
-            ]
-        );
+    fn test_bridge_consecutive_highlighted_tokens() {
+        assert!(is_char_bridged('a', ' ', 'b'));
+        assert!(is_char_bridged('>', ' ', '5'));
+        assert!(is_char_bridged('a', ' ', ' ')); // Because the second space is highlighted
+        assert!(!is_char_bridged('\'', '1', '\''));
+        assert!(is_char_bridged('a', '.', 'b')); // Bridge separators
     }
 
     #[test]

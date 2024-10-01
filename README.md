@@ -128,16 +128,9 @@ If you want to test the release script without actually releasing anything, do:
 - Render ESC characters in the diff as Unicode ␛
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
   executed from inside of the `$PATH`
-- Do `git show 57f27da` and think about what rule we should use to get
-  the REVERSE vs reversed() lines highlighted.
 - Add test for never changing the number of lines in the input, that
   messes up `git add -p` behavior.
-- Think about how to visualize an added line break together with some
-  indentation on the following line.
 - Make sure we highlight the output of `git show --stat` properly
-- Make sure we can handle a `git` conflict
-  resolution diff. File format is described at
-  http://git-scm.com/docs/git-diff#_combined_diff_format.
 - Given three files on the command line, we should pass them and any
   options on to `diff3` and highlight the result
 
@@ -235,3 +228,10 @@ If you want to test the release script without actually releasing anything, do:
 - Do `git show -b 77c8f77` and think about what rule we should use to
   highlight the leading spaces of the `+ refined` and `+ page` lines
   at the end of the file.
+- Do `git show 57f27da` and think about what rule we should use to get
+  the REVERSE vs reversed() lines highlighted.
+- Think about how to visualize an added line break together with some
+  indentation on the following line.
+- Make sure we can handle a `git` conflict
+  resolution diff. File format is described at
+  http://git-scm.com/docs/git-diff#_combined_diff_format.
