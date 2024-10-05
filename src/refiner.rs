@@ -158,6 +158,24 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
     return highlighted_lines;
 }
 
+fn should_highlight_change(tokens: &[&str]) -> bool {
+    let whitespace_only = tokens
+        .iter()
+        .all(|token| token.chars().all(|c| c.is_whitespace()));
+    let contains_newline = tokens.iter().any(|token| token.contains('\n'));
+    let is_newline_marker = tokens.len() == 2 && tokens[0] == "⏎" && tokens[1] == "\n";
+
+    if is_newline_marker {
+        return true;
+    }
+
+    if whitespace_only || contains_newline {
+        return false;
+    }
+
+    return true;
+}
+
 /// Returns two vectors for old and new sections. The first bool is true if
 /// there were any highlights found in the old text. The second bool is true if
 /// any highlights were removed for readability in the new text.
@@ -188,7 +206,8 @@ pub fn to_highlighted_tokens(
     }
 
     let diff = capture_diff_slices(similar::Algorithm::Patience, &tokenized_old, &tokenized_new);
-    let mut old_highlights = false;
+    let mut old_changes = false;
+    let mut new_unhighlighted = false;
     for change in diff.iter() {
         match change {
             similar::DiffOp::Equal {
@@ -209,8 +228,15 @@ pub fn to_highlighted_tokens(
                 new_index,
                 new_len,
             } => {
-                for token in tokenized_new.iter().skip(*new_index).take(*new_len) {
-                    new_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
+                let run = tokenized_new[*new_index..*new_index + *new_len].to_vec();
+                let style = if should_highlight_change(&run) {
+                    Style::HighlightedChange
+                } else {
+                    new_unhighlighted |= true;
+                    Style::PlainChange
+                };
+                for token in run.iter() {
+                    new_tokens.push(StyledToken::new(token.to_string(), style));
                 }
             }
 
@@ -219,9 +245,15 @@ pub fn to_highlighted_tokens(
                 old_len,
                 new_index: _,
             } => {
-                for token in tokenized_old.iter().skip(*old_index).take(*old_len) {
-                    old_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
-                    old_highlights = true;
+                let run = tokenized_old[*old_index..*old_index + *old_len].to_vec();
+                let style = if should_highlight_change(&run) {
+                    Style::HighlightedChange
+                } else {
+                    Style::PlainChange
+                };
+                for token in run.iter() {
+                    old_tokens.push(StyledToken::new(token.to_string(), style));
+                    old_changes = true;
                 }
             }
 
@@ -231,12 +263,26 @@ pub fn to_highlighted_tokens(
                 new_index,
                 new_len,
             } => {
-                for token in tokenized_old.iter().skip(*old_index).take(*old_len) {
-                    old_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
-                    old_highlights = true;
+                let old_run = tokenized_old[*old_index..*old_index + *old_len].to_vec();
+                let old_style = if should_highlight_change(&old_run) {
+                    Style::HighlightedChange
+                } else {
+                    Style::PlainChange
+                };
+                for token in old_run.iter() {
+                    old_tokens.push(StyledToken::new(token.to_string(), old_style));
+                    old_changes = true;
                 }
-                for token in tokenized_new.iter().skip(*new_index).take(*new_len) {
-                    new_tokens.push(StyledToken::new(token.to_string(), Style::Highlighted));
+
+                let new_run = tokenized_new[*new_index..*new_index + *new_len].to_vec();
+                let new_style = if should_highlight_change(&new_run) {
+                    Style::HighlightedChange
+                } else {
+                    new_unhighlighted |= true;
+                    Style::PlainChange
+                };
+                for token in new_run.iter() {
+                    new_tokens.push(StyledToken::new(token.to_string(), new_style));
                 }
             }
         }
@@ -244,19 +290,16 @@ pub fn to_highlighted_tokens(
 
     // Refine old tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
-    denoise(&mut old_tokens);
 
     // Refine new tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
-    let mut new_unhighlighted = false;
     if is_three_way_conflict {
         contextualize_unhighlighted_lines(&mut new_tokens);
     }
-    new_unhighlighted |= denoise(&mut new_tokens);
     errorlight_trailing_whitespace(&mut new_tokens);
     errorlight_nonleading_tabs(&mut new_tokens);
 
-    return (old_tokens, new_tokens, old_highlights, new_unhighlighted);
+    return (old_tokens, new_tokens, old_changes, new_unhighlighted);
 }
 
 /// Splits text into lines. If the text doesn't end in a newline, a no-newline

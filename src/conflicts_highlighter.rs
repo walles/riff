@@ -268,7 +268,7 @@ impl ConflictsHighlighter {
                 if c1.is_empty() {
                     // In the base, show only diffs vs c2
                     base_vs_c1_tokens.iter_mut().for_each(|token| {
-                        if token.style == Style::Highlighted {
+                        if token.style == Style::HighlightedChange {
                             token.style = Style::Plain;
                         }
                     });
@@ -282,7 +282,7 @@ impl ConflictsHighlighter {
                 if c2.is_empty() {
                     // In the base, show only diffs vs c1
                     base_vs_c2_tokens.iter_mut().for_each(|token| {
-                        if token.style == Style::Highlighted {
+                        if token.style == Style::HighlightedChange {
                             token.style = Style::Plain;
                         }
                     });
