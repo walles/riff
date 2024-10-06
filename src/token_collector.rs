@@ -23,7 +23,7 @@ pub(crate) enum Style {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct StyledToken {
-    token: String,
+    pub(crate) token: String,
     pub(crate) style: Style,
 }
 

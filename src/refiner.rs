@@ -158,7 +158,7 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
     return highlighted_lines;
 }
 
-fn should_highlight_change(tokens: &[&str]) -> bool {
+fn should_highlight_change(tokens: &[&str], whitespace_only_is_fine: bool) -> bool {
     let whitespace_only = tokens
         .iter()
         .all(|token| token.chars().all(|c| c.is_whitespace()));
@@ -169,11 +169,22 @@ fn should_highlight_change(tokens: &[&str]) -> bool {
         return true;
     }
 
-    if whitespace_only || contains_newline {
+    if (whitespace_only && !whitespace_only_is_fine) || contains_newline {
         return false;
     }
 
     return true;
+}
+
+fn is_whitepace_replacement(old_run: &[&str], new_run: &[&str]) -> bool {
+    let old_whitespace_only = old_run
+        .iter()
+        .all(|token| token.chars().all(|c| c.is_whitespace()));
+    let new_whitespace_only = new_run
+        .iter()
+        .all(|token| token.chars().all(|c| c.is_whitespace()));
+
+    return old_whitespace_only && new_whitespace_only;
 }
 
 /// Returns two vectors for old and new sections. The first bool is true if
@@ -208,6 +219,8 @@ pub fn to_highlighted_tokens(
     let diff = capture_diff_slices(similar::Algorithm::Patience, &tokenized_old, &tokenized_new);
     let mut old_changes = false;
     let mut new_unhighlighted = false;
+    let mut old_start_of_line = true;
+    let mut new_start_of_line = true;
     for change in diff.iter() {
         match change {
             similar::DiffOp::Equal {
@@ -229,7 +242,7 @@ pub fn to_highlighted_tokens(
                 new_len,
             } => {
                 let run = tokenized_new[*new_index..*new_index + *new_len].to_vec();
-                let style = if should_highlight_change(&run) {
+                let style = if should_highlight_change(&run, !new_start_of_line) {
                     Style::HighlightedChange
                 } else {
                     new_unhighlighted |= true;
@@ -246,7 +259,7 @@ pub fn to_highlighted_tokens(
                 new_index: _,
             } => {
                 let run = tokenized_old[*old_index..*old_index + *old_len].to_vec();
-                let style = if should_highlight_change(&run) {
+                let style = if should_highlight_change(&run, !old_start_of_line) {
                     Style::HighlightedChange
                 } else {
                     Style::PlainChange
@@ -266,13 +279,15 @@ pub fn to_highlighted_tokens(
                 let old_run = tokenized_old[*old_index..*old_index + *old_len].to_vec();
                 let new_run = tokenized_new[*new_index..*new_index + *new_len].to_vec();
 
-                let style =
-                    if should_highlight_change(&old_run) && should_highlight_change(&new_run) {
-                        Style::HighlightedChange
-                    } else {
-                        new_unhighlighted |= true;
-                        Style::PlainChange
-                    };
+                let style = if should_highlight_change(&old_run, false)
+                    && should_highlight_change(&new_run, false)
+                    && !is_whitepace_replacement(&old_run, &new_run)
+                {
+                    Style::HighlightedChange
+                } else {
+                    new_unhighlighted |= true;
+                    Style::PlainChange
+                };
 
                 for token in old_run.iter() {
                     old_tokens.push(StyledToken::new(token.to_string(), style));
@@ -284,6 +299,13 @@ pub fn to_highlighted_tokens(
                 }
             }
         }
+
+        old_start_of_line = old_tokens
+            .last()
+            .map_or(true, |token| token.token.ends_with('\n'));
+        new_start_of_line = new_tokens
+            .last()
+            .map_or(true, |token| token.token.ends_with('\n'));
     }
 
     // Refine old tokens highlighting
@@ -412,5 +434,63 @@ mod tests {
 
         let result = format(&["+"], &["x\n"]);
         assert_eq!(result, [format!("{NEW}+x{NORMAL}"),]);
+    }
+
+    #[test]
+    fn test_space_highlighting() {
+        // Add new initial spacing (indentation). We don't want to highlight indentation.
+        let (_, new_tokens, _, _) = to_highlighted_tokens("x", " x", false);
+        assert_eq!(
+            new_tokens,
+            vec![
+                StyledToken::new(" ".to_string(), Style::PlainChange),
+                StyledToken::new("x".to_string(), Style::Plain)
+            ]
+        );
+
+        // Increase indentation. Do not highlight this.
+        let (_, new_tokens, _, _) = to_highlighted_tokens(" x", "  x", false);
+        assert_eq!(
+            new_tokens,
+            vec![
+                StyledToken::new("  ".to_string(), Style::PlainChange),
+                StyledToken::new("x".to_string(), Style::Plain)
+            ]
+        );
+
+        // Add a new internal space. We do want to highlight this.
+        //
+        // This particular example is from a Markdown heading where someone forgot
+        // the space after the leading `#`.
+        let (_, new_tokens, _, _) = to_highlighted_tokens("#x", "# x", false);
+        assert_eq!(
+            new_tokens,
+            vec![
+                StyledToken::new("#".to_string(), Style::Plain),
+                StyledToken::new(" ".to_string(), Style::HighlightedChange),
+                StyledToken::new("x".to_string(), Style::Plain)
+            ]
+        );
+
+        // Increase internal space. We do not want to highlight this. Probably code reformatting.
+        let (_, new_tokens, _, _) = to_highlighted_tokens("x y", "x  y", false);
+        assert_eq!(
+            new_tokens,
+            vec![
+                StyledToken::new("x".to_string(), Style::Plain),
+                StyledToken::new("  ".to_string(), Style::PlainChange),
+                StyledToken::new("y".to_string(), Style::Plain)
+            ]
+        );
+
+        // Remove trailing space. We do want to highlight this.
+        let (old_tokens, _, _, _) = to_highlighted_tokens("x ", "x", false);
+        assert_eq!(
+            old_tokens,
+            vec![
+                StyledToken::new("x".to_string(), Style::Plain),
+                StyledToken::new(" ".to_string(), Style::HighlightedChange)
+            ]
+        );
     }
 }
