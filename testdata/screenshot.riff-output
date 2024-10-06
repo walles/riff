@@ -25,10 +25,10 @@ Date:   Tue Nov 17 08:44:29 2020 +0100
  * `LESS_TERMCAP_md`: Bold
  * `LESS_TERMCAP_us`: Underline
  
-[31m-[7mSee[27m [[7mhere[27m](https://github.com/walles/[7mmoar/issues/14) for usage examples[27m.[0m
+[31m-See [[7mhere[27m](https://github.com/walles/[7mmoar/issues/14[27m) for usage [7mexamples[27m.[0m
 [32m+Moar is used as the default pager by:[0m
-[32m+* [[7m`px` / `ptop`[27m](https://github.com/walles/px)[0m
-[32m+* [`riff`](https://github.com/walles/riff)[0m
+[32m+* [[7m`px` / `ptop`[27m](https://github.com/walles/[7mpx[27m)[0m
+[32m+* [7m[`riff`](https://github.com/walles/riff)[0m
  
  Installing
  ----------

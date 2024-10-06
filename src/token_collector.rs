@@ -14,14 +14,16 @@ pub(crate) enum Style {
     Plain,
     /// Brightened up, but not a highlighted difference
     Bright,
+    /// A difference that should not be highlighted
+    PlainChange,
     /// A difference to be highlighted
-    Highlighted,
+    HighlightedChange,
     Error,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct StyledToken {
-    token: String,
+    pub(crate) token: String,
     pub(crate) style: Style,
 }
 
@@ -205,7 +207,8 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
                 color: Default,
             },
             Style::Plain => line_style.plain_style,
-            Style::Highlighted => line_style.highlighted_style,
+            Style::PlainChange => line_style.plain_style,
+            Style::HighlightedChange => line_style.highlighted_style,
             Style::Error => AnsiStyle {
                 inverse: true,
                 weight: Weight::Normal,
@@ -246,67 +249,6 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
     }
 
     return rendered;
-}
-
-/// Unhighlight runs that have too much highlighting.
-pub fn denoise(tokens: &mut [StyledToken]) -> bool {
-    /// Unhighlight a run if:
-    /// - It contains only whitespace
-    /// - It contains any newline
-    /// - It isn't a newline marker ("⏎"), we always leave those
-    ///
-    /// Returns true if something was unhighlighted, false otherwise.
-    fn maybe_unhighlight_run(run: &mut [StyledToken]) -> bool {
-        let whitespace_only = run.iter().all(|token| token.is_whitespace());
-        let contains_newline = run.iter().any(|token| token.token == "\n");
-        let is_newline_marker = run.len() == 2 && run[0].token == "⏎" && run[1].token == "\n";
-
-        if is_newline_marker {
-            return false;
-        }
-
-        if !whitespace_only && !contains_newline {
-            return false;
-        }
-
-        let mut i_did_it = false;
-        for token in run {
-            if token.style == Style::Highlighted {
-                token.style = Style::Plain;
-                i_did_it = true;
-            }
-        }
-
-        return i_did_it;
-    }
-
-    let mut i_did_it = false;
-    let mut current_run_start = 0;
-    let mut is_in_run = false;
-    for i in 0..tokens.len() {
-        if tokens[i].style == Style::Highlighted {
-            if !is_in_run {
-                current_run_start = i;
-                is_in_run = true;
-            }
-            continue;
-        }
-
-        // Not in a run
-
-        if is_in_run {
-            // A run just ended
-            i_did_it |= maybe_unhighlight_run(&mut tokens[current_run_start..i]);
-            is_in_run = false;
-        }
-    }
-
-    if is_in_run {
-        // A run was still in progress at the end
-        i_did_it |= maybe_unhighlight_run(&mut tokens[current_run_start..]);
-    }
-
-    return i_did_it;
 }
 
 pub fn errorlight_trailing_whitespace(tokens: &mut [StyledToken]) {
@@ -427,14 +369,16 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     }
 
     for i in 1..(tokens.len() - 1) {
-        if tokens[i - 1].style != Style::Highlighted || tokens[i + 1].style != Style::Highlighted {
+        if tokens[i - 1].style != Style::HighlightedChange
+            || tokens[i + 1].style != Style::HighlightedChange
+        {
             continue;
         }
         if bridgable(&tokens[i - 1]) || !bridgable(&tokens[i]) || bridgable(&tokens[i + 1]) {
             continue;
         }
 
-        tokens[i].style = Style::Highlighted;
+        tokens[i].style = Style::HighlightedChange;
     }
 }
 
@@ -524,7 +468,7 @@ pub fn brighten_filename(row: &mut [StyledToken]) {
     }
 
     for token in to_brighten {
-        if token.style == Style::Highlighted {
+        if token.style == Style::HighlightedChange {
             continue;
         }
         token.style = Style::Bright;
@@ -702,14 +646,14 @@ mod tests {
 
     fn is_char_bridged(before: char, victim: char, after: char) -> bool {
         let mut row = [
-            StyledToken::new(before.to_string(), Style::Highlighted),
+            StyledToken::new(before.to_string(), Style::HighlightedChange),
             StyledToken::new(victim.to_string(), Style::Plain),
-            StyledToken::new(after.to_string(), Style::Highlighted),
+            StyledToken::new(after.to_string(), Style::HighlightedChange),
         ];
 
         bridge_consecutive_highlighted_tokens(&mut row);
 
-        return row[1].style == Style::Highlighted;
+        return row[1].style == Style::HighlightedChange;
     }
 
     #[test]
@@ -724,10 +668,10 @@ mod tests {
     #[test]
     fn test_four_tokens_highlighting() {
         let mut row = [
-            StyledToken::new("\n".to_string(), Style::Highlighted),
-            StyledToken::new("*".to_string(), Style::Highlighted),
+            StyledToken::new("\n".to_string(), Style::HighlightedChange),
+            StyledToken::new("*".to_string(), Style::HighlightedChange),
             StyledToken::new(" ".to_string(), Style::Plain),
-            StyledToken::new("Hello".to_string(), Style::Highlighted),
+            StyledToken::new("Hello".to_string(), Style::HighlightedChange),
         ];
 
         bridge_consecutive_highlighted_tokens(&mut row);
@@ -735,10 +679,10 @@ mod tests {
         assert_eq!(
             row,
             [
-                StyledToken::new("\n".to_string(), Style::Highlighted),
-                StyledToken::new("*".to_string(), Style::Highlighted),
-                StyledToken::new(" ".to_string(), Style::Highlighted),
-                StyledToken::new("Hello".to_string(), Style::Highlighted),
+                StyledToken::new("\n".to_string(), Style::HighlightedChange),
+                StyledToken::new("*".to_string(), Style::HighlightedChange),
+                StyledToken::new(" ".to_string(), Style::HighlightedChange),
+                StyledToken::new("Hello".to_string(), Style::HighlightedChange),
             ]
         );
     }

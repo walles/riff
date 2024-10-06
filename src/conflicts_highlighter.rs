@@ -258,8 +258,6 @@ impl ConflictsHighlighter {
 
         return StringFuture::from_function(
             move || {
-                // FIXME: If base is empty, we should show the diff between c1 and c2, both in green
-
                 let base_or_newline = if base.is_empty() { "\n" } else { &base };
 
                 let c1_or_newline = if c1.is_empty() { "\n" } else { &c1 };
@@ -268,7 +266,7 @@ impl ConflictsHighlighter {
                 if c1.is_empty() {
                     // In the base, show only diffs vs c2
                     base_vs_c1_tokens.iter_mut().for_each(|token| {
-                        if token.style == Style::Highlighted {
+                        if token.style == Style::HighlightedChange {
                             token.style = Style::Plain;
                         }
                     });
@@ -282,7 +280,7 @@ impl ConflictsHighlighter {
                 if c2.is_empty() {
                     // In the base, show only diffs vs c1
                     base_vs_c2_tokens.iter_mut().for_each(|token| {
-                        if token.style == Style::Highlighted {
+                        if token.style == Style::HighlightedChange {
                             token.style = Style::Plain;
                         }
                     });
