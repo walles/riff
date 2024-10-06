@@ -258,8 +258,6 @@ impl ConflictsHighlighter {
 
         return StringFuture::from_function(
             move || {
-                // FIXME: If base is empty, we should show the diff between c1 and c2, both in green
-
                 let base_or_newline = if base.is_empty() { "\n" } else { &base };
 
                 let c1_or_newline = if c1.is_empty() { "\n" } else { &c1 };

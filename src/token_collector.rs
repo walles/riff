@@ -14,10 +14,10 @@ pub(crate) enum Style {
     Plain,
     /// Brightened up, but not a highlighted difference
     Bright,
-    /// A difference to be highlighted
-    HighlightedChange,
     /// A difference that should not be highlighted
     PlainChange,
+    /// A difference to be highlighted
+    HighlightedChange,
     Error,
 }
 
