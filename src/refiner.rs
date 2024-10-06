@@ -264,25 +264,23 @@ pub fn to_highlighted_tokens(
                 new_len,
             } => {
                 let old_run = tokenized_old[*old_index..*old_index + *old_len].to_vec();
-                let old_style = if should_highlight_change(&old_run) {
-                    Style::HighlightedChange
-                } else {
-                    Style::PlainChange
-                };
+                let new_run = tokenized_new[*new_index..*new_index + *new_len].to_vec();
+
+                let style =
+                    if should_highlight_change(&old_run) && should_highlight_change(&new_run) {
+                        Style::HighlightedChange
+                    } else {
+                        new_unhighlighted |= true;
+                        Style::PlainChange
+                    };
+
                 for token in old_run.iter() {
-                    old_tokens.push(StyledToken::new(token.to_string(), old_style));
+                    old_tokens.push(StyledToken::new(token.to_string(), style));
                     old_changes = true;
                 }
 
-                let new_run = tokenized_new[*new_index..*new_index + *new_len].to_vec();
-                let new_style = if should_highlight_change(&new_run) {
-                    Style::HighlightedChange
-                } else {
-                    new_unhighlighted |= true;
-                    Style::PlainChange
-                };
                 for token in new_run.iter() {
-                    new_tokens.push(StyledToken::new(token.to_string(), new_style));
+                    new_tokens.push(StyledToken::new(token.to_string(), style));
                 }
             }
         }
