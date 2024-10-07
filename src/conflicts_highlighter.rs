@@ -188,7 +188,7 @@ impl ConflictsHighlighter {
                 let c1_or_newline = if c1.is_empty() { "\n" } else { &c1 };
                 let c2_or_newline = if c2.is_empty() { "\n" } else { &c2 };
                 let (c1_tokens, c2_tokens, _, _) =
-                    refiner::to_highlighted_tokens(c1_or_newline, c2_or_newline, false);
+                    refiner::to_highlighted_tokens(c1_or_newline, c2_or_newline, true);
 
                 let c1_style = if base_header.is_empty() {
                     LINE_STYLE_OLD
@@ -266,9 +266,7 @@ impl ConflictsHighlighter {
                 if c1.is_empty() {
                     // In the base, show only diffs vs c2
                     base_vs_c1_tokens.iter_mut().for_each(|token| {
-                        if token.style == Style::HighlightedChange {
-                            token.style = Style::Plain;
-                        }
+                        token.style = Style::Context;
                     });
                 }
                 let highlighted_c1 =
@@ -280,9 +278,7 @@ impl ConflictsHighlighter {
                 if c2.is_empty() {
                     // In the base, show only diffs vs c1
                     base_vs_c2_tokens.iter_mut().for_each(|token| {
-                        if token.style == Style::HighlightedChange {
-                            token.style = Style::Plain;
-                        }
+                        token.style = Style::Context;
                     });
                 }
                 let highlighted_c2 =

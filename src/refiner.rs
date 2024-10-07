@@ -199,7 +199,7 @@ fn is_whitepace_replacement(old_run: &[&str], new_run: &[&str]) -> bool {
 pub fn to_highlighted_tokens(
     old_text: &str,
     new_text: &str,
-    is_three_way_conflict: bool,
+    is_conflict: bool,
 ) -> (Vec<StyledToken>, Vec<StyledToken>, bool, bool) {
     // Find diffs between adds and removals
     let mut old_tokens = Vec::new();
@@ -310,13 +310,13 @@ pub fn to_highlighted_tokens(
 
     // Refine old tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
-    if is_three_way_conflict {
+    if is_conflict {
         contextualize_unhighlighted_lines(&mut old_tokens);
     }
 
     // Refine new tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
-    if is_three_way_conflict {
+    if is_conflict {
         contextualize_unhighlighted_lines(&mut new_tokens);
     }
     errorlight_trailing_whitespace(&mut new_tokens);
