@@ -310,6 +310,9 @@ pub fn to_highlighted_tokens(
 
     // Refine old tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
+    if is_three_way_conflict {
+        contextualize_unhighlighted_lines(&mut old_tokens);
+    }
 
     // Refine new tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
