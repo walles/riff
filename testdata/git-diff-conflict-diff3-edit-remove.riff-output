@@ -1,0 +1,16 @@
+[2mdiff --cc lines.txt[0m
+[2mindex 97515f1,f42366c..0000000[0m
+[1m--- lines.txt[0m
+[1m+++ lines.txt[0m
+[36m@@@ -1,3 -1,6 +1,11 @@@[0m
+  First line
+[7m++<<<<<<< HEAD[0m
+[7m++||||||| 3b5ce9b[0m
+[7m++[0mCaesar
+[7m++=======[0m
+[7m+ [27m[32mAdam[0m
+[7m+ [27m[32mBertil[0m
+[7m+ [0mCaesar
+[7m++>>>>>>> branch[0m
+  Last line
+  

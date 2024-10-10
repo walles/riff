@@ -174,7 +174,7 @@ impl ConflictsHighlighter {
         let (header_prefix, c1_prefix, c2_prefix, reset) = if self.c1_header.starts_with("++") {
             (INVERSE_VIDEO, " +", "+ ", NORMAL)
         } else {
-            ("", "", "", "")
+            (INVERSE_VIDEO, "", "", "")
         };
 
         let c1_header = self.c1_header.clone();

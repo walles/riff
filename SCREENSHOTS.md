@@ -1,8 +1,11 @@
-To update `screenshot-git-merge.png`, you should be running
-[iTerm2](https://iterm2.com/) and have [`moar`](https://github.com/walles/moar)
-as your pager.
+# Screenshot updating instructions
 
-Then:
+Screenshots are done using:
+
+- Terminal: [iTerm2](https://iterm2.com/)
+- Pager: [`moar`](https://github.com/walles/moar)
+
+## `screenshot-git-merge.png`
 
 1. Scale your terminal window to 65x17
 2. Copy the below example to the clipboard
@@ -25,3 +28,9 @@ index 0399cd5,59727f0..0000000
 
   hello()
 ```
+
+## `screenshot-diff2-conflict.png`
+
+1. Scale your window to 72x10
+2. `cargo run < testdata/conflict-markers.txt.riff-output`
+3. Screenshot the window and store it as `screenshot-diff2-conflict.png`

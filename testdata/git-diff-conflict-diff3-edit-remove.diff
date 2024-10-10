@@ -1,0 +1,16 @@
+diff --cc lines.txt
+index 97515f1,f42366c..0000000
+--- lines.txt
++++ lines.txt
+@@@ -1,3 -1,6 +1,11 @@@
+  First line
+++<<<<<<< HEAD
+++||||||| 3b5ce9b
+++Caesar
+++=======
++ Adam
++ Bertil
++ Caesar
+++>>>>>>> branch
+  Last line
+  
