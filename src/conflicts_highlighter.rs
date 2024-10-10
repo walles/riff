@@ -2,11 +2,11 @@ use std::vec;
 
 use threadpool::ThreadPool;
 
-use crate::constants::{GREEN, NORMAL};
+use crate::constants::{GREEN, INVERSE_VIDEO, NORMAL};
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::string_future::StringFuture;
-use crate::token_collector::{Style, LINE_STYLE_OLD};
-use crate::token_collector::{LINE_STYLE_CONFLICT_BASE, LINE_STYLE_NEW};
+use crate::token_collector::{Style, LINE_STYLE_CONFLICT_OLD};
+use crate::token_collector::{LINE_STYLE_CONFLICT_BASE, LINE_STYLE_CONFLICT_NEW};
 use crate::{refiner, token_collector};
 
 const CONFLICTS_HEADER1: &str = "<<<<<<<";
@@ -172,7 +172,7 @@ impl ConflictsHighlighter {
         }
 
         let (header_prefix, c1_prefix, c2_prefix, reset) = if self.c1_header.starts_with("++") {
-            (GREEN, " +", "+ ", NORMAL)
+            (INVERSE_VIDEO, " +", "+ ", NORMAL)
         } else {
             ("", "", "", "")
         };
@@ -191,13 +191,13 @@ impl ConflictsHighlighter {
                     refiner::to_highlighted_tokens(c1_or_newline, c2_or_newline, true);
 
                 let c1_style = if base_header.is_empty() {
-                    LINE_STYLE_OLD
+                    LINE_STYLE_CONFLICT_OLD
                 } else {
-                    LINE_STYLE_NEW
+                    LINE_STYLE_CONFLICT_NEW
                 };
                 let highlighted_c1 = token_collector::render(&c1_style, c1_prefix, &c1_tokens);
                 let highlighted_c2 =
-                    token_collector::render(&LINE_STYLE_NEW, c2_prefix, &c2_tokens);
+                    token_collector::render(&LINE_STYLE_CONFLICT_NEW, c2_prefix, &c2_tokens);
 
                 let mut rendered = String::new();
                 rendered.push_str(header_prefix);
@@ -242,9 +242,9 @@ impl ConflictsHighlighter {
     fn render_diff3(&self, thread_pool: &ThreadPool) -> StringFuture {
         let (header_prefix, c1_prefix, base_prefix, c2_prefix, reset) =
             if self.c1_header.starts_with("++") {
-                (GREEN, " +", "++", "+ ", NORMAL)
+                (INVERSE_VIDEO, " +", "++", "+ ", NORMAL)
             } else {
-                ("", "", "", "", "")
+                (INVERSE_VIDEO, "", "", "", "")
             };
 
         assert!(!self.base.is_empty());
@@ -270,7 +270,7 @@ impl ConflictsHighlighter {
                     });
                 }
                 let highlighted_c1 =
-                    token_collector::render(&LINE_STYLE_NEW, c1_prefix, &c1_tokens);
+                    token_collector::render(&LINE_STYLE_CONFLICT_NEW, c1_prefix, &c1_tokens);
 
                 let c2_or_newline = if c2.is_empty() { "\n" } else { &c2 };
                 let (mut base_vs_c2_tokens, c2_tokens, _, _) =
@@ -282,7 +282,7 @@ impl ConflictsHighlighter {
                     });
                 }
                 let highlighted_c2 =
-                    token_collector::render(&LINE_STYLE_NEW, c2_prefix, &c2_tokens);
+                    token_collector::render(&LINE_STYLE_CONFLICT_NEW, c2_prefix, &c2_tokens);
 
                 assert_eq!(base_vs_c1_tokens.len(), base_vs_c2_tokens.len());
 

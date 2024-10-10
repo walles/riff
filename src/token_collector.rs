@@ -117,9 +117,9 @@ pub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
 pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
     LineStyle {
         prefix_style: AnsiStyle {
-            inverse: false,
+            inverse: true,
             weight: Weight::Normal,
-            color: Green,
+            color: Default,
         },
         plain_style: AnsiStyle {
             inverse: false,
@@ -130,6 +130,46 @@ pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
             inverse: true,
             weight: Weight::Normal,
             color: Red,
+        },
+    }
+};
+
+pub(crate) const LINE_STYLE_CONFLICT_OLD: LineStyle = {
+    LineStyle {
+        prefix_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Normal,
+            color: Default,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Red,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Normal,
+            color: Red,
+        },
+    }
+};
+
+pub(crate) const LINE_STYLE_CONFLICT_NEW: LineStyle = {
+    LineStyle {
+        prefix_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Normal,
+            color: Default,
+        },
+        plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Green,
+        },
+        highlighted_style: AnsiStyle {
+            inverse: true,
+            weight: Weight::Normal,
+            color: Green,
         },
     }
 };
