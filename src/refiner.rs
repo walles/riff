@@ -106,7 +106,7 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
             new_tokens_internal,
             old_highlights_internal,
             new_unhighlighted_internal,
-        ) = to_highlighted_tokens(old_text, new_text, false);
+        ) = to_highlighted_tokens(old_text, new_text);
 
         old_tokens.push(old_tokens_internal);
         old_highlights |= old_highlights_internal;
@@ -199,7 +199,6 @@ fn is_whitepace_replacement(old_run: &[&str], new_run: &[&str]) -> bool {
 pub fn to_highlighted_tokens(
     old_text: &str,
     new_text: &str,
-    is_conflict: bool,
 ) -> (Vec<StyledToken>, Vec<StyledToken>, bool, bool) {
     // Find diffs between adds and removals
     let mut old_tokens = Vec::new();
@@ -229,10 +228,10 @@ pub fn to_highlighted_tokens(
                 len,
             } => {
                 for token in tokenized_old.iter().skip(*old_index).take(*len) {
-                    old_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
+                    old_tokens.push(StyledToken::new(token.to_string(), Style::Context));
                 }
                 for token in tokenized_new.iter().skip(*new_index).take(*len) {
-                    new_tokens.push(StyledToken::new(token.to_string(), Style::Plain));
+                    new_tokens.push(StyledToken::new(token.to_string(), Style::Context));
                 }
             }
 
@@ -310,15 +309,9 @@ pub fn to_highlighted_tokens(
 
     // Refine old tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
-    if is_conflict {
-        contextualize_unhighlighted_lines(&mut old_tokens);
-    }
 
     // Refine new tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
-    if is_conflict {
-        contextualize_unhighlighted_lines(&mut new_tokens);
-    }
     errorlight_trailing_whitespace(&mut new_tokens);
     errorlight_nonleading_tabs(&mut new_tokens);
 
@@ -442,7 +435,7 @@ mod tests {
     #[test]
     fn test_space_highlighting() {
         // Add new initial spacing (indentation). We don't want to highlight indentation.
-        let (_, new_tokens, _, _) = to_highlighted_tokens("x", " x", false);
+        let (_, new_tokens, _, _) = to_highlighted_tokens("x", " x");
         assert_eq!(
             new_tokens,
             vec![
@@ -452,7 +445,7 @@ mod tests {
         );
 
         // Increase indentation. Do not highlight this.
-        let (_, new_tokens, _, _) = to_highlighted_tokens(" x", "  x", false);
+        let (_, new_tokens, _, _) = to_highlighted_tokens(" x", "  x");
         assert_eq!(
             new_tokens,
             vec![
@@ -465,7 +458,7 @@ mod tests {
         //
         // This particular example is from a Markdown heading where someone forgot
         // the space after the leading `#`.
-        let (_, new_tokens, _, _) = to_highlighted_tokens("#x", "# x", false);
+        let (_, new_tokens, _, _) = to_highlighted_tokens("#x", "# x");
         assert_eq!(
             new_tokens,
             vec![
@@ -476,7 +469,7 @@ mod tests {
         );
 
         // Increase internal space. We do not want to highlight this. Probably code reformatting.
-        let (_, new_tokens, _, _) = to_highlighted_tokens("x y", "x  y", false);
+        let (_, new_tokens, _, _) = to_highlighted_tokens("x y", "x  y");
         assert_eq!(
             new_tokens,
             vec![
@@ -487,7 +480,7 @@ mod tests {
         );
 
         // Remove trailing space. We do want to highlight this.
-        let (old_tokens, _, _, _) = to_highlighted_tokens("x ", "x", false);
+        let (old_tokens, _, _, _) = to_highlighted_tokens("x ", "x");
         assert_eq!(
             old_tokens,
             vec![

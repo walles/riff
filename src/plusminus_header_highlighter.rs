@@ -118,7 +118,7 @@ impl PlusMinusHeaderHighlighter {
         }
 
         let (mut old_tokens, mut new_tokens, _, _) =
-            to_highlighted_tokens(&self.old_name, &self.new_name, false);
+            to_highlighted_tokens(&self.old_name, &self.new_name);
 
         brighten_filename(&mut old_tokens);
         brighten_filename(&mut new_tokens);

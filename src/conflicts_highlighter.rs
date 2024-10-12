@@ -188,7 +188,7 @@ impl ConflictsHighlighter {
                 let c1_or_newline = if c1.is_empty() { "\n" } else { &c1 };
                 let c2_or_newline = if c2.is_empty() { "\n" } else { &c2 };
                 let (c1_tokens, c2_tokens, _, _) =
-                    refiner::to_highlighted_tokens(c1_or_newline, c2_or_newline, true);
+                    refiner::to_highlighted_tokens(c1_or_newline, c2_or_newline);
 
                 let c1_style = if base_header.is_empty() {
                     LINE_STYLE_CONFLICT_OLD
@@ -262,7 +262,7 @@ impl ConflictsHighlighter {
 
                 let c1_or_newline = if c1.is_empty() { "\n" } else { &c1 };
                 let (mut base_vs_c1_tokens, c1_tokens, _, _) =
-                    refiner::to_highlighted_tokens(base_or_newline, c1_or_newline, true);
+                    refiner::to_highlighted_tokens(base_or_newline, c1_or_newline);
                 if c1.is_empty() {
                     // In the base, show only diffs vs c2
                     base_vs_c1_tokens.iter_mut().for_each(|token| {
@@ -274,7 +274,7 @@ impl ConflictsHighlighter {
 
                 let c2_or_newline = if c2.is_empty() { "\n" } else { &c2 };
                 let (mut base_vs_c2_tokens, c2_tokens, _, _) =
-                    refiner::to_highlighted_tokens(base_or_newline, c2_or_newline, true);
+                    refiner::to_highlighted_tokens(base_or_newline, c2_or_newline);
                 if c2.is_empty() {
                     // In the base, show only diffs vs c1
                     base_vs_c2_tokens.iter_mut().for_each(|token| {

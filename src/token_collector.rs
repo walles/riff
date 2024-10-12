@@ -358,42 +358,6 @@ pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
     new[new_tab_index_token].token = new_spaces;
 }
 
-/// If a line contains only plain tokens, style all tokens on that line as
-/// context. Lines are separated by newline tokens.
-///
-/// This can happen during conflicts highlighting.
-pub fn contextualize_unhighlighted_lines(tokens: &mut [StyledToken]) {
-    let mut line_start = 0;
-    for i in 0..tokens.len() {
-        if tokens[i].token != "\n" {
-            continue;
-        }
-
-        // Line ended
-
-        if tokens[line_start..(i + 1)]
-            .iter()
-            .all(|token| token.style == Style::Plain)
-        {
-            // Line contains only plain tokens
-            for token in &mut tokens[line_start..i] {
-                token.style = Style::Context;
-            }
-        }
-        line_start = i + 1;
-    }
-
-    // Handle the last line
-    if tokens[line_start..]
-        .iter()
-        .all(|token| token.style == Style::Plain)
-    {
-        for token in &mut tokens[line_start..] {
-            token.style = Style::Context;
-        }
-    }
-}
-
 /// Highlight single space between two highlighted tokens
 pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     fn bridgable(candidate: &StyledToken) -> bool {
