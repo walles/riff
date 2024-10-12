@@ -4,7 +4,6 @@ use crate::constants::*;
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::token_collector::*;
 use crate::tokenizer;
-use crate::NO_ADDS_ONLY_SPECIAL;
 
 /// Like format!(), but faster for our special case
 fn format_simple_line(old_new: &str, plus_minus: &str, contents: &str) -> String {
@@ -98,19 +97,10 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
 
     let mut old_tokens = vec![];
     let mut new_tokens = vec![];
-    let mut old_highlights = false;
-    let mut new_unhighlighted = false;
     for old_text in old_prefix_texts.iter() {
-        let (
-            old_tokens_internal,
-            new_tokens_internal,
-            old_highlights_internal,
-            new_unhighlighted_internal,
-        ) = to_highlighted_tokens(old_text, new_text);
+        let (old_tokens_internal, new_tokens_internal) = to_highlighted_tokens(old_text, new_text);
 
         old_tokens.push(old_tokens_internal);
-        old_highlights |= old_highlights_internal;
-        new_unhighlighted |= new_unhighlighted_internal;
 
         if new_tokens.is_empty() {
             // First iteration, just remember the new tokens
@@ -131,28 +121,14 @@ pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
 
     // Now turn all our token vectors (all vectors in old_tokens plus
     // new_tokens) into lines of highlighted text
-    let new_line_count = count_lines(&new_tokens);
-    let all_line_counts_match = old_tokens
-        .iter()
-        .all(|tokens| count_lines(tokens) == new_line_count);
-
-    let (old_style, new_style) = unsafe {
-        if NO_ADDS_ONLY_SPECIAL || old_highlights || new_unhighlighted || !all_line_counts_match {
-            // Classical highlighting
-            (LINE_STYLE_OLD, LINE_STYLE_NEW)
-        } else {
-            // Special adds-only highlighting
-            (LINE_STYLE_OLD_FAINT, LINE_STYLE_ADDS_ONLY)
-        }
-    };
 
     // First render() into strings, then to_lines() into lines
     let mut highlighted_lines = Vec::new();
     for (prefix, tokens) in old_prefixes.iter().zip(old_tokens.iter()) {
-        let text = render(&old_style, prefix, tokens);
+        let text = render(&LINE_STYLE_OLD, prefix, tokens);
         highlighted_lines.extend(to_lines(&text));
     }
-    let new_text = render(&new_style, new_prefix, &new_tokens);
+    let new_text = render(&LINE_STYLE_NEW, new_prefix, &new_tokens);
     highlighted_lines.extend(to_lines(&new_text));
 
     return highlighted_lines;
@@ -199,7 +175,7 @@ fn is_whitepace_replacement(old_run: &[&str], new_run: &[&str]) -> bool {
 pub fn to_highlighted_tokens(
     old_text: &str,
     new_text: &str,
-) -> (Vec<StyledToken>, Vec<StyledToken>, bool, bool) {
+) -> (Vec<StyledToken>, Vec<StyledToken>) {
     // Find diffs between adds and removals
     let mut old_tokens = Vec::new();
     let mut new_tokens = Vec::new();
@@ -216,8 +192,6 @@ pub fn to_highlighted_tokens(
     }
 
     let diff = capture_diff_slices(similar::Algorithm::Patience, &tokenized_old, &tokenized_new);
-    let mut old_changes = false;
-    let mut new_unhighlighted = false;
     let mut old_start_of_line = true;
     let mut new_start_of_line = true;
     for change in diff.iter() {
@@ -244,7 +218,6 @@ pub fn to_highlighted_tokens(
                 let style = if should_highlight_change(&run, !new_start_of_line) {
                     Style::HighlightedChange
                 } else {
-                    new_unhighlighted |= true;
                     Style::PlainChange
                 };
                 for token in run.iter() {
@@ -265,7 +238,6 @@ pub fn to_highlighted_tokens(
                 };
                 for token in run.iter() {
                     old_tokens.push(StyledToken::new(token.to_string(), style));
-                    old_changes = true;
                 }
             }
 
@@ -284,13 +256,11 @@ pub fn to_highlighted_tokens(
                 {
                     Style::HighlightedChange
                 } else {
-                    new_unhighlighted |= true;
                     Style::PlainChange
                 };
 
                 for token in old_run.iter() {
                     old_tokens.push(StyledToken::new(token.to_string(), style));
-                    old_changes = true;
                 }
 
                 for token in new_run.iter() {
@@ -315,7 +285,7 @@ pub fn to_highlighted_tokens(
     errorlight_trailing_whitespace(&mut new_tokens);
     errorlight_nonleading_tabs(&mut new_tokens);
 
-    return (old_tokens, new_tokens, old_changes, new_unhighlighted);
+    return (old_tokens, new_tokens);
 }
 
 /// Splits text into lines. If the text doesn't end in a newline, a no-newline
@@ -435,7 +405,7 @@ mod tests {
     #[test]
     fn test_space_highlighting() {
         // Add new initial spacing (indentation). We don't want to highlight indentation.
-        let (_, new_tokens, _, _) = to_highlighted_tokens("x", " x");
+        let (_, new_tokens) = to_highlighted_tokens("x", " x");
         assert_eq!(
             new_tokens,
             vec![
@@ -445,7 +415,7 @@ mod tests {
         );
 
         // Increase indentation. Do not highlight this.
-        let (_, new_tokens, _, _) = to_highlighted_tokens(" x", "  x");
+        let (_, new_tokens) = to_highlighted_tokens(" x", "  x");
         assert_eq!(
             new_tokens,
             vec![
@@ -458,7 +428,7 @@ mod tests {
         //
         // This particular example is from a Markdown heading where someone forgot
         // the space after the leading `#`.
-        let (_, new_tokens, _, _) = to_highlighted_tokens("#x", "# x");
+        let (_, new_tokens) = to_highlighted_tokens("#x", "# x");
         assert_eq!(
             new_tokens,
             vec![
@@ -469,7 +439,7 @@ mod tests {
         );
 
         // Increase internal space. We do not want to highlight this. Probably code reformatting.
-        let (_, new_tokens, _, _) = to_highlighted_tokens("x y", "x  y");
+        let (_, new_tokens) = to_highlighted_tokens("x y", "x  y");
         assert_eq!(
             new_tokens,
             vec![
@@ -480,7 +450,7 @@ mod tests {
         );
 
         // Remove trailing space. We do want to highlight this.
-        let (old_tokens, _, _, _) = to_highlighted_tokens("x ", "x");
+        let (old_tokens, _) = to_highlighted_tokens("x ", "x");
         assert_eq!(
             old_tokens,
             vec![

@@ -40,8 +40,6 @@ mod string_future;
 mod token_collector;
 mod tokenizer;
 
-static mut NO_ADDS_ONLY_SPECIAL: bool = false;
-
 const HELP_TEXT_FOOTER: &str = r#"Installing riff in the $PATH:
   sudo cp riff /usr/local/bin
 
@@ -104,11 +102,6 @@ struct Options {
     /// Don't page the result
     #[arg(long)]
     no_pager: bool,
-
-    /// No special highlighting for lines that only add content
-    // Ref: https://github.com/walles/riff/issues/47
-    #[arg(long)]
-    no_adds_only_special: bool,
 
     /// `auto` = color if stdout is a terminal
     #[arg(long)]
@@ -460,11 +453,6 @@ fn main() {
     if options.please_panic {
         panic!("Panicking on purpose");
     }
-
-    unsafe {
-        // Nothing going on yet, updating this variable should be fine!
-        NO_ADDS_ONLY_SPECIAL = options.no_adds_only_special
-    };
 
     if let (Some(file1), Some(file2)) = (options.x1, options.x2) {
         // "riff file1 file2"
