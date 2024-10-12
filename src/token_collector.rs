@@ -321,7 +321,7 @@ pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
 /// Highlight single space between two highlighted tokens
 pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     fn bridgable(candidate: &StyledToken) -> bool {
-        if candidate.style != Style::Plain {
+        if candidate.style as u8 > Style::Plain as u8 {
             return false;
         }
         if candidate.token.len() != 1 {
