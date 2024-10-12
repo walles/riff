@@ -104,6 +104,9 @@ editing](https://jonasbn.github.io/til/vscode/integrate_with_cli.html).
 
 If you put example input and output in the `testdata` directory, then `cargo test` will verify that they match.
 
+On mismatches, you can run `testdata-examples.sh` to compare current output to
+the expected output for all examples, and optionally update expectations.
+
 Invoke `ci.sh` to run the same thing as CI.
 
 Invoke `benchmark.py` to get numbers for how fast your current source code is
