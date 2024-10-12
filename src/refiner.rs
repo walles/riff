@@ -410,7 +410,7 @@ mod tests {
             new_tokens,
             vec![
                 StyledToken::new(" ".to_string(), Style::PlainChange),
-                StyledToken::new("x".to_string(), Style::Plain)
+                StyledToken::new("x".to_string(), Style::Context)
             ]
         );
 
@@ -420,7 +420,7 @@ mod tests {
             new_tokens,
             vec![
                 StyledToken::new("  ".to_string(), Style::PlainChange),
-                StyledToken::new("x".to_string(), Style::Plain)
+                StyledToken::new("x".to_string(), Style::Context)
             ]
         );
 
@@ -432,9 +432,9 @@ mod tests {
         assert_eq!(
             new_tokens,
             vec![
-                StyledToken::new("#".to_string(), Style::Plain),
+                StyledToken::new("#".to_string(), Style::Context),
                 StyledToken::new(" ".to_string(), Style::HighlightedChange),
-                StyledToken::new("x".to_string(), Style::Plain)
+                StyledToken::new("x".to_string(), Style::Context)
             ]
         );
 
@@ -443,9 +443,9 @@ mod tests {
         assert_eq!(
             new_tokens,
             vec![
-                StyledToken::new("x".to_string(), Style::Plain),
+                StyledToken::new("x".to_string(), Style::Context),
                 StyledToken::new("  ".to_string(), Style::PlainChange),
-                StyledToken::new("y".to_string(), Style::Plain)
+                StyledToken::new("y".to_string(), Style::Context)
             ]
         );
 
@@ -454,7 +454,7 @@ mod tests {
         assert_eq!(
             old_tokens,
             vec![
-                StyledToken::new("x".to_string(), Style::Plain),
+                StyledToken::new("x".to_string(), Style::Context),
                 StyledToken::new(" ".to_string(), Style::HighlightedChange)
             ]
         );
