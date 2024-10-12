@@ -27,7 +27,8 @@ for EXPECTED in testdata/*.riff-output; do
         fi
     fi
 
-    echo "$INPUT -> $EXPECTED"
+    echo
+    echo "$INPUT"
 
     # Create /tmp/before.sh
     cat <<EOF >/tmp/before.sh
@@ -47,7 +48,7 @@ EOF
     fi
 
     echo
-    read -r -p "Run /tmp/before.sh in another tab, then press Enter to continue"
+    read -r -p "Run /tmp/before.sh in another tab, then press Enter for $INPUT"
 
     moar "$WORKFILE"
 
