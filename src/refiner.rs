@@ -370,9 +370,6 @@ mod tests {
 
     #[test]
     fn test_quote_change() {
-        // FIXME: Get this from somewhere else?
-        const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
-
         let result = format(
             &["-", "+"],
             &[
@@ -384,10 +381,10 @@ mod tests {
             result,
             [
                 format!(
-                    "{OLD}-{INVERSE_VIDEO}<{NOT_INVERSE_VIDEO}unchanged text between quotes{INVERSE_VIDEO}>{NORMAL}"
+                    "{OLD}-{INVERSE_VIDEO}<{NORMAL}unchanged text between quotes{INVERSE_VIDEO}{OLD}>{NORMAL}"
                 ),
                 format!(
-                    "{NEW}+{INVERSE_VIDEO}[{NOT_INVERSE_VIDEO}unchanged text between quotes{INVERSE_VIDEO}]{NORMAL}"
+                    "{NEW}+{INVERSE_VIDEO}[{NORMAL}unchanged text between quotes{INVERSE_VIDEO}{NEW}]{NORMAL}"
                 ),
             ]
         )
