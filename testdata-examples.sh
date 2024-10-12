@@ -39,7 +39,7 @@ EOF
     chmod +x /tmp/before.sh
 
     # Capture the actual output
-    cargo run -- --color=on <"$INPUT" >"$WORKFILE"
+    cargo run -- --color=on <"$INPUT" >"$WORKFILE" || true
 
     # Is the output different?
     if diff -u "$EXPECTED" "$WORKFILE" >/dev/null; then
