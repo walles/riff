@@ -698,9 +698,12 @@ mod tests {
 
         println!("\n{}/{} examples failed", failure_count, example_count,);
 
-        if failing_example.is_some() {
+        if let Some(failing_example) = failing_example {
             println!();
-            println!("Example: {}", failing_example.unwrap());
+            println!("Example: {}", failing_example);
+            println!();
+            println!("==> Run \"./testdata-examples.sh\" to visualize changes / failures");
+            println!();
             assert_eq!(failing_example_actual, failing_example_expected);
 
             // Sometimes the previous assert doesn't trigger, so we put this one
