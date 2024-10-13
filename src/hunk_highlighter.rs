@@ -308,8 +308,8 @@ mod tests {
         assert_eq!(
             result.highlighted[0].get(),
             concat!(
-                "\u{1b}[31m-\u{1b}[0mHello, my name is Johan\n",
-                "\u{1b}[32m+\u{1b}[0mHello, my \u{1b}[7m\u{1b}[32mfirst \u{1b}[0mname is Johan\n"
+                "\u{1b}[31m-\u{1b}[33mHello, my name is Johan\u{1b}[0m\n",
+                "\u{1b}[32m+\u{1b}[33mHello, my \u{1b}[7m\u{1b}[32mfirst \u{1b}[27m\u{1b}[33mname is Johan\u{1b}[0m\n"
             )
         );
         assert_eq!(result.highlighted[1].get(), " I like pie.\n");

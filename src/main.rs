@@ -103,6 +103,10 @@ struct Options {
     #[arg(long)]
     no_pager: bool,
 
+    /// No effect, exists for backwards compatibility.
+    #[arg(long)]
+    no_adds_only_special: bool,
+
     /// `auto` = color if stdout is a terminal
     #[arg(long)]
     color: Option<ColorOption>,

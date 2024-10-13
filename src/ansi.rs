@@ -1,3 +1,7 @@
+use crate::constants::{
+    BOLD, FAINT, GREEN, INVERSE_VIDEO, NORMAL, NORMAL_INTENSITY, NO_INVERSE_VIDEO, RED, YELLOW,
+};
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Color {
     Default,
@@ -36,39 +40,39 @@ impl AnsiStyle {
 
         if self == &ANSI_STYLE_NORMAL {
             // Special case for resetting to default style
-            return String::from("\x1b[0m");
+            return String::from(NORMAL);
         }
 
         let mut return_me = String::new();
 
         if self.inverse && !before.inverse {
             // Inverse on
-            return_me.push_str("\x1b[7m");
+            return_me.push_str(INVERSE_VIDEO);
         }
         if !self.inverse && before.inverse {
             // Inverse off
-            return_me.push_str("\x1b[27m");
+            return_me.push_str(NO_INVERSE_VIDEO);
         }
 
         if self.weight != before.weight {
             if before.weight != Weight::Normal {
                 // Turn off bold or faint
-                return_me.push_str("\x1b[22m");
+                return_me.push_str(NORMAL_INTENSITY);
             }
             if self.weight == Weight::Faint {
-                return_me.push_str("\x1b[2m");
+                return_me.push_str(FAINT);
             }
             if self.weight == Weight::Bold {
-                return_me.push_str("\x1b[1m");
+                return_me.push_str(BOLD);
             }
         }
 
         if self.color != before.color {
             match self.color {
                 Color::Default => return_me.push_str("\x1b[39m"),
-                Color::Red => return_me.push_str("\x1b[31m"),
-                Color::Green => return_me.push_str("\x1b[32m"),
-                Color::Yellow => return_me.push_str("\x1b[33m"),
+                Color::Red => return_me.push_str(RED),
+                Color::Green => return_me.push_str(GREEN),
+                Color::Yellow => return_me.push_str(YELLOW),
             }
         }
 

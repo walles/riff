@@ -387,10 +387,10 @@ mod tests {
             result,
             [
                 format!(
-                    "{OLD}-{INVERSE_VIDEO}<{NORMAL}unchanged text between quotes{INVERSE_VIDEO}{OLD}>{NORMAL}"
+                    "{OLD}-{INVERSE_VIDEO}<{NO_INVERSE_VIDEO}{YELLOW}unchanged text between quotes{INVERSE_VIDEO}{OLD}>{NORMAL}"
                 ),
                 format!(
-                    "{NEW}+{INVERSE_VIDEO}[{NORMAL}unchanged text between quotes{INVERSE_VIDEO}{NEW}]{NORMAL}"
+                    "{NEW}+{INVERSE_VIDEO}[{NO_INVERSE_VIDEO}{YELLOW}unchanged text between quotes{INVERSE_VIDEO}{NEW}]{NORMAL}"
                 ),
             ]
         )
