@@ -4,6 +4,10 @@ Riff is a wrapper around `diff` that highlights which parts of lines have change
 
 ![Screenshot of riff in action](screenshot.png 'git show')
 
+Unchanged parts of changed lines are shown in yellow.
+
+`riff` also [helpfully highlights conflicts and merge commits](#more-features).
+
 Much like `git`, Riff sends its output to a pager, trying these in order:
 
 1. Whatever is specified in the `$PAGER` environment variable
