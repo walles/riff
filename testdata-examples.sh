@@ -16,6 +16,10 @@
 set -e -o pipefail
 
 WORKFILE=$(mktemp)
+trap 'rm -f "$WORKFILE"' EXIT
+
+echo
+read -r -p "Run /tmp/before.sh in another tab to compare the output. Press Enter to continue."
 
 for EXPECTED in testdata/*.riff-output; do
     INPUT="${EXPECTED%.riff-output}.diff"
@@ -46,9 +50,6 @@ EOF
         echo "Already up to date, never mind: $EXPECTED"
         continue
     fi
-
-    echo
-    read -r -p "Run /tmp/before.sh in another tab, then press Enter for $INPUT"
 
     moar "$WORKFILE"
 

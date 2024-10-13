@@ -202,10 +202,16 @@ pub fn to_highlighted_tokens(
                 len,
             } => {
                 for token in tokenized_old.iter().skip(*old_index).take(*len) {
-                    old_tokens.push(StyledToken::new(token.to_string(), Style::Context));
+                    old_tokens.push(StyledToken::new(
+                        token.to_string(),
+                        Style::DiffPartUnchanged,
+                    ));
                 }
                 for token in tokenized_new.iter().skip(*new_index).take(*len) {
-                    new_tokens.push(StyledToken::new(token.to_string(), Style::Context));
+                    new_tokens.push(StyledToken::new(
+                        token.to_string(),
+                        Style::DiffPartUnchanged,
+                    ));
                 }
             }
 
@@ -216,9 +222,9 @@ pub fn to_highlighted_tokens(
             } => {
                 let run = tokenized_new[*new_index..*new_index + *new_len].to_vec();
                 let style = if should_highlight_change(&run, !new_start_of_line) {
-                    Style::HighlightedChange
+                    Style::DiffPartHighlighted
                 } else {
-                    Style::PlainChange
+                    Style::DiffPartMidlighted
                 };
                 for token in run.iter() {
                     new_tokens.push(StyledToken::new(token.to_string(), style));
@@ -232,9 +238,9 @@ pub fn to_highlighted_tokens(
             } => {
                 let run = tokenized_old[*old_index..*old_index + *old_len].to_vec();
                 let style = if should_highlight_change(&run, !old_start_of_line) {
-                    Style::HighlightedChange
+                    Style::DiffPartHighlighted
                 } else {
-                    Style::PlainChange
+                    Style::DiffPartMidlighted
                 };
                 for token in run.iter() {
                     old_tokens.push(StyledToken::new(token.to_string(), style));
@@ -254,9 +260,9 @@ pub fn to_highlighted_tokens(
                     && should_highlight_change(&new_run, false)
                     && !is_whitepace_replacement(&old_run, &new_run)
                 {
-                    Style::HighlightedChange
+                    Style::DiffPartHighlighted
                 } else {
-                    Style::PlainChange
+                    Style::DiffPartMidlighted
                 };
 
                 for token in old_run.iter() {
@@ -406,8 +412,8 @@ mod tests {
         assert_eq!(
             new_tokens,
             vec![
-                StyledToken::new(" ".to_string(), Style::PlainChange),
-                StyledToken::new("x".to_string(), Style::Context)
+                StyledToken::new(" ".to_string(), Style::DiffPartMidlighted),
+                StyledToken::new("x".to_string(), Style::DiffPartUnchanged)
             ]
         );
 
@@ -416,8 +422,8 @@ mod tests {
         assert_eq!(
             new_tokens,
             vec![
-                StyledToken::new("  ".to_string(), Style::PlainChange),
-                StyledToken::new("x".to_string(), Style::Context)
+                StyledToken::new("  ".to_string(), Style::DiffPartMidlighted),
+                StyledToken::new("x".to_string(), Style::DiffPartUnchanged)
             ]
         );
 
@@ -429,9 +435,9 @@ mod tests {
         assert_eq!(
             new_tokens,
             vec![
-                StyledToken::new("#".to_string(), Style::Context),
-                StyledToken::new(" ".to_string(), Style::HighlightedChange),
-                StyledToken::new("x".to_string(), Style::Context)
+                StyledToken::new("#".to_string(), Style::DiffPartUnchanged),
+                StyledToken::new(" ".to_string(), Style::DiffPartHighlighted),
+                StyledToken::new("x".to_string(), Style::DiffPartUnchanged)
             ]
         );
 
@@ -440,9 +446,9 @@ mod tests {
         assert_eq!(
             new_tokens,
             vec![
-                StyledToken::new("x".to_string(), Style::Context),
-                StyledToken::new("  ".to_string(), Style::PlainChange),
-                StyledToken::new("y".to_string(), Style::Context)
+                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
+                StyledToken::new("  ".to_string(), Style::DiffPartMidlighted),
+                StyledToken::new("y".to_string(), Style::DiffPartUnchanged)
             ]
         );
 
@@ -451,8 +457,8 @@ mod tests {
         assert_eq!(
             old_tokens,
             vec![
-                StyledToken::new("x".to_string(), Style::Context),
-                StyledToken::new(" ".to_string(), Style::HighlightedChange)
+                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
+                StyledToken::new(" ".to_string(), Style::DiffPartHighlighted)
             ]
         );
     }

@@ -11,13 +11,10 @@ use crate::ansi::ANSI_STYLE_NORMAL;
 pub(crate) enum Style {
     Lowlighted,
     Context,
-    Plain,
-    /// Brightened up, but not a highlighted difference
     Bright,
-    /// A difference that should not be highlighted
-    PlainChange,
-    /// A difference to be highlighted
-    HighlightedChange,
+    DiffPartUnchanged,
+    DiffPartMidlighted,
+    DiffPartHighlighted,
     Error,
 }
 
@@ -31,6 +28,7 @@ pub(crate) struct StyledToken {
 pub(crate) struct LineStyle {
     prefix_style: AnsiStyle,
     plain_style: AnsiStyle,
+    midlighted_style: AnsiStyle,
     highlighted_style: AnsiStyle,
 }
 
@@ -42,6 +40,11 @@ pub(crate) const LINE_STYLE_OLD: LineStyle = {
             color: Red,
         },
         plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Default,
+        },
+        midlighted_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
             color: Red,
@@ -64,6 +67,11 @@ pub(crate) const LINE_STYLE_NEW: LineStyle = {
         plain_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
+            color: Default,
+        },
+        midlighted_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
             color: Green,
         },
         highlighted_style: AnsiStyle {
@@ -82,6 +90,11 @@ pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
             color: Default,
         },
         plain_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Default,
+        },
+        midlighted_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
             color: Red,
@@ -104,6 +117,11 @@ pub(crate) const LINE_STYLE_CONFLICT_OLD: LineStyle = {
         plain_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
+            color: Default,
+        },
+        midlighted_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
             color: Red,
         },
         highlighted_style: AnsiStyle {
@@ -124,6 +142,11 @@ pub(crate) const LINE_STYLE_CONFLICT_NEW: LineStyle = {
         plain_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
+            color: Default,
+        },
+        midlighted_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
             color: Green,
         },
         highlighted_style: AnsiStyle {
@@ -142,6 +165,11 @@ pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
             color: Default,
         },
         plain_style: ANSI_STYLE_NORMAL,
+        midlighted_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Red,
+        },
         highlighted_style: AnsiStyle {
             inverse: true,
             weight: Weight::Normal,
@@ -158,6 +186,11 @@ pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
             color: Default,
         },
         plain_style: ANSI_STYLE_NORMAL,
+        midlighted_style: AnsiStyle {
+            inverse: false,
+            weight: Weight::Normal,
+            color: Green,
+        },
         highlighted_style: AnsiStyle {
             inverse: true,
             weight: Weight::Normal,
@@ -206,9 +239,9 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
                 weight: Weight::Bold,
                 color: Default,
             },
-            Style::Plain => line_style.plain_style,
-            Style::PlainChange => line_style.plain_style,
-            Style::HighlightedChange => line_style.highlighted_style,
+            Style::DiffPartUnchanged => line_style.plain_style,
+            Style::DiffPartMidlighted => line_style.midlighted_style,
+            Style::DiffPartHighlighted => line_style.highlighted_style,
             Style::Error => AnsiStyle {
                 inverse: true,
                 weight: Weight::Normal,
@@ -321,7 +354,7 @@ pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
 /// Highlight single space between two highlighted tokens
 pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     fn bridgable(candidate: &StyledToken) -> bool {
-        if candidate.style as u8 > Style::Plain as u8 {
+        if candidate.style as u8 > Style::DiffPartUnchanged as u8 {
             return false;
         }
         if candidate.token.len() != 1 {
@@ -333,8 +366,8 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     }
 
     for i in 1..(tokens.len() - 1) {
-        if tokens[i - 1].style != Style::HighlightedChange
-            || tokens[i + 1].style != Style::HighlightedChange
+        if tokens[i - 1].style != Style::DiffPartHighlighted
+            || tokens[i + 1].style != Style::DiffPartHighlighted
         {
             continue;
         }
@@ -342,7 +375,7 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
             continue;
         }
 
-        tokens[i].style = Style::HighlightedChange;
+        tokens[i].style = Style::DiffPartHighlighted;
     }
 }
 
@@ -409,7 +442,7 @@ pub fn brighten_filename(row: &mut [StyledToken]) {
     }
 
     for token in to_brighten {
-        if token.style == Style::HighlightedChange {
+        if token.style == Style::DiffPartHighlighted {
             continue;
         }
         token.style = Style::Bright;
@@ -429,23 +462,23 @@ mod tests {
     #[test]
     fn test_errorlight_nonleading_tabs() {
         let mut tokens = vec![
-            StyledToken::new("\t".to_string(), Style::Plain),
-            StyledToken::new("\t".to_string(), Style::Plain),
-            StyledToken::new("one".to_string(), Style::Plain),
-            StyledToken::new("\n".to_string(), Style::Plain),
-            StyledToken::new("two".to_string(), Style::Plain),
-            StyledToken::new("\t".to_string(), Style::Plain),
+            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("one".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("\n".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("two".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
         ];
         errorlight_nonleading_tabs(&mut tokens);
 
         assert_eq!(
             tokens,
             vec![
-                StyledToken::new("\t".to_string(), Style::Plain),
-                StyledToken::new("\t".to_string(), Style::Plain),
-                StyledToken::new("one".to_string(), Style::Plain),
-                StyledToken::new("\n".to_string(), Style::Plain),
-                StyledToken::new("two".to_string(), Style::Plain),
+                StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
+                StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
+                StyledToken::new("one".to_string(), Style::DiffPartUnchanged),
+                StyledToken::new("\n".to_string(), Style::DiffPartUnchanged),
+                StyledToken::new("two".to_string(), Style::DiffPartUnchanged),
                 StyledToken::new("\t".to_string(), Style::Error),
             ]
         );
@@ -459,11 +492,11 @@ mod tests {
             &[
                 StyledToken {
                     token: "hej".to_string(),
-                    style: Style::Plain,
+                    style: Style::DiffPartMidlighted,
                 },
                 StyledToken {
                     token: "\n".to_string(),
-                    style: Style::Plain,
+                    style: Style::DiffPartMidlighted,
                 },
             ],
         );
@@ -473,35 +506,35 @@ mod tests {
     #[test]
     fn test_errorlight_trailing_whitespace() {
         // Just a whitespace
-        let mut row = [StyledToken::new(" ".to_string(), Style::Plain)];
+        let mut row = [StyledToken::new(" ".to_string(), Style::DiffPartUnchanged)];
         errorlight_trailing_whitespace(&mut row);
         assert_eq!(row, [StyledToken::new(" ".to_string(), Style::Error)]);
 
         // Trailing whitespace
         let mut row = [
-            StyledToken::new("x".to_string(), Style::Plain),
-            StyledToken::new(" ".to_string(), Style::Plain),
+            StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new(" ".to_string(), Style::DiffPartUnchanged),
         ];
         errorlight_trailing_whitespace(&mut row);
         assert_eq!(
             row,
             [
-                StyledToken::new("x".to_string(), Style::Plain),
+                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
                 StyledToken::new(" ".to_string(), Style::Error),
             ]
         );
 
         // Leading whitespace
         let mut row = [
-            StyledToken::new(" ".to_string(), Style::Plain),
-            StyledToken::new("x".to_string(), Style::Plain),
+            StyledToken::new(" ".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
         ];
         errorlight_trailing_whitespace(&mut row);
         assert_eq!(
             row,
             [
-                StyledToken::new(" ".to_string(), Style::Plain),
-                StyledToken::new("x".to_string(), Style::Plain),
+                StyledToken::new(" ".to_string(), Style::DiffPartUnchanged),
+                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
             ]
         );
     }
@@ -512,7 +545,7 @@ mod tests {
         let actual = render(
             &LINE_STYLE_OLD,
             "-",
-            &[StyledToken::new(" ".to_string(), Style::Plain)],
+            &[StyledToken::new(" ".to_string(), Style::DiffPartMidlighted)],
         );
 
         assert_eq!(actual, format!("{OLD}- {NORMAL}"));
@@ -522,52 +555,55 @@ mod tests {
     fn test_add_nonleading_tab() {
         // Trailing TAB
         let mut row = [
-            StyledToken::new("x".to_string(), Style::Plain),
-            StyledToken::new("\t".to_string(), Style::Plain),
+            StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
         ];
         errorlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
-                StyledToken::new("x".to_string(), Style::Plain),
+                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
                 StyledToken::new("\t".to_string(), Style::Error),
             ]
         );
 
         // Middle TAB
         let mut row = [
-            StyledToken::new("x".to_string(), Style::Plain),
-            StyledToken::new("\t".to_string(), Style::Plain),
-            StyledToken::new("y".to_string(), Style::Plain),
+            StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("y".to_string(), Style::DiffPartUnchanged),
         ];
         errorlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
-                StyledToken::new("x".to_string(), Style::Plain),
+                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
                 StyledToken::new("\t".to_string(), Style::Error),
-                StyledToken::new("y".to_string(), Style::Plain),
+                StyledToken::new("y".to_string(), Style::DiffPartUnchanged),
             ]
         );
 
         // Leading TAB (don't highlight)
         let mut row = [
-            StyledToken::new("\t".to_string(), Style::Plain),
-            StyledToken::new("x".to_string(), Style::Plain),
+            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
         ];
         errorlight_nonleading_tabs(&mut row);
         assert_eq!(
             row,
             [
-                StyledToken::new("\t".to_string(), Style::Plain),
-                StyledToken::new("x".to_string(), Style::Plain),
+                StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
+                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
             ]
         );
 
         // Single TAB (don't highlight because it is leading)
-        let mut row = [StyledToken::new("\t".to_string(), Style::Plain)];
+        let mut row = [StyledToken::new("\t".to_string(), Style::DiffPartUnchanged)];
         errorlight_nonleading_tabs(&mut row);
-        assert_eq!(row, [StyledToken::new("\t".to_string(), Style::Plain),]);
+        assert_eq!(
+            row,
+            [StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),]
+        );
     }
 
     #[test]
@@ -577,8 +613,8 @@ mod tests {
             &LINE_STYLE_OLD,
             "-",
             &[
-                StyledToken::new("x".to_string(), Style::Plain),
-                StyledToken::new("\t".to_string(), Style::Plain),
+                StyledToken::new("x".to_string(), Style::DiffPartMidlighted),
+                StyledToken::new("\t".to_string(), Style::DiffPartMidlighted),
             ],
         );
 
@@ -587,14 +623,14 @@ mod tests {
 
     fn is_char_bridged(before: char, victim: char, after: char) -> bool {
         let mut row = [
-            StyledToken::new(before.to_string(), Style::HighlightedChange),
-            StyledToken::new(victim.to_string(), Style::Plain),
-            StyledToken::new(after.to_string(), Style::HighlightedChange),
+            StyledToken::new(before.to_string(), Style::DiffPartHighlighted),
+            StyledToken::new(victim.to_string(), Style::DiffPartUnchanged),
+            StyledToken::new(after.to_string(), Style::DiffPartHighlighted),
         ];
 
         bridge_consecutive_highlighted_tokens(&mut row);
 
-        return row[1].style == Style::HighlightedChange;
+        return row[1].style == Style::DiffPartHighlighted;
     }
 
     #[test]
@@ -609,10 +645,10 @@ mod tests {
     #[test]
     fn test_four_tokens_highlighting() {
         let mut row = [
-            StyledToken::new("\n".to_string(), Style::HighlightedChange),
-            StyledToken::new("*".to_string(), Style::HighlightedChange),
-            StyledToken::new(" ".to_string(), Style::Plain),
-            StyledToken::new("Hello".to_string(), Style::HighlightedChange),
+            StyledToken::new("\n".to_string(), Style::DiffPartHighlighted),
+            StyledToken::new("*".to_string(), Style::DiffPartHighlighted),
+            StyledToken::new(" ".to_string(), Style::DiffPartUnchanged),
+            StyledToken::new("Hello".to_string(), Style::DiffPartHighlighted),
         ];
 
         bridge_consecutive_highlighted_tokens(&mut row);
@@ -620,10 +656,10 @@ mod tests {
         assert_eq!(
             row,
             [
-                StyledToken::new("\n".to_string(), Style::HighlightedChange),
-                StyledToken::new("*".to_string(), Style::HighlightedChange),
-                StyledToken::new(" ".to_string(), Style::HighlightedChange),
-                StyledToken::new("Hello".to_string(), Style::HighlightedChange),
+                StyledToken::new("\n".to_string(), Style::DiffPartHighlighted),
+                StyledToken::new("*".to_string(), Style::DiffPartHighlighted),
+                StyledToken::new(" ".to_string(), Style::DiffPartHighlighted),
+                StyledToken::new("Hello".to_string(), Style::DiffPartHighlighted),
             ]
         );
     }
