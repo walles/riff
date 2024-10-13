@@ -3,6 +3,7 @@ pub enum Color {
     Default,
     Red,
     Green,
+    Yellow,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -67,6 +68,7 @@ impl AnsiStyle {
                 Color::Default => return_me.push_str("\x1b[39m"),
                 Color::Red => return_me.push_str("\x1b[31m"),
                 Color::Green => return_me.push_str("\x1b[32m"),
+                Color::Yellow => return_me.push_str("\x1b[33m"),
             }
         }
 

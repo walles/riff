@@ -13,28 +13,28 @@ Date:   Wed May 6 21:52:51 2015 +0200
 
 [31m-# Inspired by http://timelessrepo.com/making-ruby-gems[0m
  begin
-[31m-[0m  require 'riff'
-[31m-[0mrescue LoadError
-[31m-  [0m$LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
-[31m-  [0mrequire 'riff'
-[31m-[0mend
-[31m-[0mrequire 'pager'
-[32m+[0m  [32m# Inspired by http://timelessrepo.com/making-ruby-gems[0m
+[31m-[33m  require 'riff'[0m
+[31m-[33mrescue LoadError[0m
+[31m-  [33m$LOAD_PATH.unshift File.join(__dir__, '..', 'lib')[0m
+[31m-  [33mrequire 'riff'[0m
+[31m-[33mend[0m
+[31m-[33mrequire 'pager'[0m
+[32m+[33m  [32m# Inspired by http://timelessrepo.com/making-ruby-gems[0m
 [32m+  begin[0m
-[32m+    [0mrequire 'riff'
-[32m+  [0mrescue LoadError
-[32m+    [0m$LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
-[32m+    [0mrequire 'riff'
-[32m+  [0mend
-[32m+  [0mrequire 'pager'
+[32m+    [33mrequire 'riff'[0m
+[32m+  [33mrescue LoadError[0m
+[32m+    [33m$LOAD_PATH.unshift File.join(__dir__, '..', 'lib')[0m
+[32m+    [33mrequire 'riff'[0m
+[32m+  [33mend[0m
+[32m+  [33mrequire 'pager'[0m
 
-[31m-[0minclude Pager
-[32m+  [0minclude Pager
+[31m-[33minclude Pager[0m
+[32m+  [33minclude Pager[0m
 
-[31m-[0mrefined = Riff.new().do_stream(STDIN)
-[31m-[0mpage(refined)
-[32m+  [0mrefined = Riff.new().do_stream(STDIN)
-[32m+  [0mpage(refined)
+[31m-[33mrefined = Riff.new().do_stream(STDIN)[0m
+[31m-[33mpage(refined)[0m
+[32m+  [33mrefined = Riff.new().do_stream(STDIN)[0m
+[32m+  [33mpage(refined)[0m
 [32m+rescue => e[0m
 [32m+  STDERR.puts[0m
 [32m+  STDERR.puts e.to_s[0m

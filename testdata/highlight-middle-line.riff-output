@@ -2,12 +2,12 @@
              println!("Evaluating example file <{}>...", diff.to_str().unwrap());
 
              // Run highlighting on the file into a memory buffer
-[31m-[0m            let [7m[31mmut actual_result: Vec<u8>[0m = [7m[31mVec[0m::new();
-[31m-[0m            highlight_diff(&mut fs::File::open(diff).unwrap(), [7m[31m&mut actual_result[0m);
-[31m-[0m            let actual_result = [7m[31mstr[0m::[7m[31mfrom_utf8(&actual_result[0m).unwrap();
-[32m+[0m            let [7m[32mfile[0m = [7m[32mtempfile::NamedTempFile[0m::new()[7m[32m.unwrap()[0m;
-[32m+[0m            highlight_diff(&mut fs::File::open(diff).unwrap(), [7m[32mfile.reopen().unwrap()[0m);
-[32m+[0m            let actual_result = [7m[32mfs[0m::[7m[32mread_to_string(file.path[0m()[7m[32m)[0m.unwrap();
+[31m-[33m            let [7m[31mmut actual_result: Vec<u8>[27m[33m = [7m[31mVec[27m[33m::new();[0m
+[31m-[33m            highlight_diff(&mut fs::File::open(diff).unwrap(), [7m[31m&mut actual_result[27m[33m);[0m
+[31m-[33m            let actual_result = [7m[31mstr[27m[33m::[7m[31mfrom_utf8(&actual_result[27m[33m).unwrap();[0m
+[32m+[33m            let [7m[32mfile[27m[33m = [7m[32mtempfile::NamedTempFile[27m[33m::new()[7m[32m.unwrap()[27m[33m;[0m
+[32m+[33m            highlight_diff(&mut fs::File::open(diff).unwrap(), [7m[32mfile.reopen().unwrap()[27m[33m);[0m
+[32m+[33m            let actual_result = [7m[32mfs[27m[33m::[7m[32mread_to_string(file.path[27m[33m()[7m[32m)[27m[33m.unwrap();[0m
 
              // Load the corresponding .riff-output file into a string
              let basename = diff.file_stem().unwrap().to_str().unwrap();

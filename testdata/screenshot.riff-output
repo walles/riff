@@ -12,23 +12,23 @@ Date:   Tue Nov 17 08:44:29 2020 +0100
  * [Regexp](http://en.wikipedia.org/wiki/Regular_expression#Basic_concepts)
    search if your search string is a valid regexp
  * Supports displaying ANSI color coded texts (like the output from
-[31m-[0m  `git diff` for example)
-[32m+[0m  `git diff` [7m[32m[| `riff`](https://github.com/walles/riff) [0mfor example)
+[31m-[33m  `git diff` for example)[0m
+[32m+[33m  `git diff` [7m[32m[| `riff`](https://github.com/walles/riff) [27m[33mfor example)[0m
  * Supports UTF-8 input and output
  * The position in the file is always shown
  
-[31m-[0mFor compatibility reasons, `moar`[31m [0muses the formats declared in these
-[31m-[0menvironment variables when viewing man pages:
-[32m+[7m[[0mFor compatibility reasons[7m[32m](https://github.com/walles/moar/issues/14)[0m, `moar`
-[32m+[0muses the formats declared in these[32m [0menvironment variables when viewing man pages:
+[31m-[33mFor compatibility reasons, `moar`[31m [33muses the formats declared in these[0m
+[31m-[33menvironment variables when viewing man pages:[0m
+[32m+[7m[[27m[33mFor compatibility reasons[7m[32m](https://github.com/walles/moar/issues/14)[27m[33m, `moar`[0m
+[32m+[33muses the formats declared in these[32m [33menvironment variables when viewing man pages:[0m
  
  * `LESS_TERMCAP_md`: Bold
  * `LESS_TERMCAP_us`: Underline
  
-[31m-See[0m [[7m[31mhere[0m](https://github.com/walles/[7m[31mmoar/issues/14[0m)[31m for usage[0m [7m[31mexamples[0m.
+[31m-See[33m [[7m[31mhere[27m[33m](https://github.com/walles/[7m[31mmoar/issues/14[27m[33m)[31m for usage[33m [7m[31mexamples[27m[33m.[0m
 [32m+Moar is used as the default pager by:[0m
-[32m+*[0m [[7m[32m`px` / `ptop`[0m](https://github.com/walles/[7m[32mpx[0m)
-[32m+*[0m [7m[32m[`riff`](https://github.com/walles/riff)[0m
+[32m+*[33m [[7m[32m`px` / `ptop`[27m[33m](https://github.com/walles/[7m[32mpx[27m[33m)[0m
+[32m+*[33m [7m[32m[`riff`](https://github.com/walles/riff)[0m
  
  Installing
  ----------

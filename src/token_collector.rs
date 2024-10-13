@@ -4,6 +4,7 @@ use crate::ansi::AnsiStyle;
 use crate::ansi::Color::Default;
 use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
+use crate::ansi::Color::Yellow;
 use crate::ansi::Weight;
 use crate::ansi::ANSI_STYLE_NORMAL;
 
@@ -27,7 +28,7 @@ pub(crate) struct StyledToken {
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct LineStyle {
     prefix_style: AnsiStyle,
-    plain_style: AnsiStyle,
+    unchanged_style: AnsiStyle,
     midlighted_style: AnsiStyle,
     highlighted_style: AnsiStyle,
 }
@@ -39,10 +40,10 @@ pub(crate) const LINE_STYLE_OLD: LineStyle = {
             weight: Weight::Normal,
             color: Red,
         },
-        plain_style: AnsiStyle {
+        unchanged_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
-            color: Default,
+            color: Yellow,
         },
         midlighted_style: AnsiStyle {
             inverse: false,
@@ -64,10 +65,10 @@ pub(crate) const LINE_STYLE_NEW: LineStyle = {
             weight: Weight::Normal,
             color: Green,
         },
-        plain_style: AnsiStyle {
+        unchanged_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
-            color: Default,
+            color: Yellow,
         },
         midlighted_style: AnsiStyle {
             inverse: false,
@@ -89,7 +90,7 @@ pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
             weight: Weight::Normal,
             color: Default,
         },
-        plain_style: AnsiStyle {
+        unchanged_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
             color: Default,
@@ -114,7 +115,7 @@ pub(crate) const LINE_STYLE_CONFLICT_OLD: LineStyle = {
             weight: Weight::Normal,
             color: Default,
         },
-        plain_style: AnsiStyle {
+        unchanged_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
             color: Default,
@@ -139,7 +140,7 @@ pub(crate) const LINE_STYLE_CONFLICT_NEW: LineStyle = {
             weight: Weight::Normal,
             color: Default,
         },
-        plain_style: AnsiStyle {
+        unchanged_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
             color: Default,
@@ -164,7 +165,7 @@ pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
             weight: Weight::Bold,
             color: Default,
         },
-        plain_style: ANSI_STYLE_NORMAL,
+        unchanged_style: ANSI_STYLE_NORMAL,
         midlighted_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
@@ -185,7 +186,7 @@ pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
             weight: Weight::Bold,
             color: Default,
         },
-        plain_style: ANSI_STYLE_NORMAL,
+        unchanged_style: ANSI_STYLE_NORMAL,
         midlighted_style: AnsiStyle {
             inverse: false,
             weight: Weight::Normal,
@@ -239,7 +240,7 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
                 weight: Weight::Bold,
                 color: Default,
             },
-            Style::DiffPartUnchanged => line_style.plain_style,
+            Style::DiffPartUnchanged => line_style.unchanged_style,
             Style::DiffPartMidlighted => line_style.midlighted_style,
             Style::DiffPartHighlighted => line_style.highlighted_style,
             Style::Error => AnsiStyle {
