@@ -29,6 +29,7 @@ pub(crate) struct StyledToken {
 pub(crate) struct LineStyle {
     prefix_style: AnsiStyle,
     unchanged_style: AnsiStyle,
+    unchanged_with_underline_style: AnsiStyle,
     midlighted_style: AnsiStyle,
     highlighted_style: AnsiStyle,
 }
@@ -37,6 +38,7 @@ pub(crate) const LINE_STYLE_OLD: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
         unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+        unchanged_with_underline_style: ANSI_STYLE_NORMAL.with_color(Yellow).with_underline(true),
         midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
@@ -46,6 +48,7 @@ pub(crate) const LINE_STYLE_NEW: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
         unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+        unchanged_with_underline_style: ANSI_STYLE_NORMAL.with_color(Yellow).with_underline(true),
         midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
@@ -55,6 +58,7 @@ pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
         unchanged_style: ANSI_STYLE_NORMAL,
+        unchanged_with_underline_style: ANSI_STYLE_NORMAL,
         midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
@@ -64,6 +68,7 @@ pub(crate) const LINE_STYLE_CONFLICT_OLD: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
         unchanged_style: ANSI_STYLE_NORMAL,
+        unchanged_with_underline_style: ANSI_STYLE_NORMAL,
         midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
@@ -73,6 +78,7 @@ pub(crate) const LINE_STYLE_CONFLICT_NEW: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
         unchanged_style: ANSI_STYLE_NORMAL,
+        unchanged_with_underline_style: ANSI_STYLE_NORMAL,
         midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
@@ -82,6 +88,7 @@ pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
         unchanged_style: ANSI_STYLE_NORMAL,
+        unchanged_with_underline_style: ANSI_STYLE_NORMAL,
         midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
@@ -91,6 +98,7 @@ pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
         unchanged_style: ANSI_STYLE_NORMAL,
+        unchanged_with_underline_style: ANSI_STYLE_NORMAL,
         midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
@@ -125,7 +133,7 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
             Style::Lowlighted => ANSI_STYLE_NORMAL.with_weight(Weight::Faint),
             Style::Bright => ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
             Style::DiffPartUnchanged => line_style.unchanged_style,
-            Style::DiffPartUnchangedUnderlined => line_style.unchanged_style.with_underline(true),
+            Style::DiffPartUnchangedUnderlined => line_style.unchanged_with_underline_style,
             Style::DiffPartMidlighted => line_style.midlighted_style,
             Style::DiffPartHighlighted => line_style.highlighted_style,
             Style::Error => AnsiStyle {
@@ -287,7 +295,7 @@ pub fn underline_last_line(tokens: &mut [StyledToken]) {
         return;
     }
 
-    let last_line_start = find_last_line_start(&tokens);
+    let last_line_start = find_last_line_start(tokens);
     for token in tokens.iter_mut().skip(last_line_start) {
         if token.style == Style::DiffPartUnchanged {
             token.style = Style::DiffPartUnchangedUnderlined;
