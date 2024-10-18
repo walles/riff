@@ -255,7 +255,7 @@ fn try_pager(input: &mut dyn io::Read, pager_name: &str, color: bool) -> bool {
     }
 }
 
-fn panic_handler(panic_info: &panic::PanicInfo) {
+fn panic_handler(panic_info: &panic::PanicHookInfo) {
     eprintln!("\n\n-v-v-v----------- RIFF CRASHED ---------------v-v-v-\n",);
 
     // Panic message
@@ -429,7 +429,7 @@ fn env_and_command_line() -> Vec<String> {
 }
 
 fn main() {
-    panic::set_hook(Box::new(|panic_info: &panic::PanicInfo| {
+    panic::set_hook(Box::new(|panic_info: &panic::PanicHookInfo| {
         panic_handler(panic_info);
     }));
 
