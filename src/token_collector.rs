@@ -1,7 +1,6 @@
 use std::cmp;
 
 use crate::ansi::AnsiStyle;
-use crate::ansi::Color::Default;
 use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
 use crate::ansi::Color::Yellow;
@@ -10,13 +9,14 @@ use crate::ansi::ANSI_STYLE_NORMAL;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Style {
-    Lowlighted,
-    Context,
-    Bright,
-    DiffPartUnchanged,
-    DiffPartMidlighted,
-    DiffPartHighlighted,
-    Error,
+    Lowlighted,                  // Faint
+    Context,                     // Default
+    Bright,                      // Bold
+    DiffPartUnchanged,           // Yellow
+    DiffPartUnchangedUnderlined, // Yellow and underlined
+    DiffPartMidlighted,          // Red or Green
+    DiffPartHighlighted,         // Inverse Red or Green
+    Error,                       // Inverse Red
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -121,28 +121,18 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
     // Render tokens
     for token in row {
         let new_style = match token.style {
-            Style::Context => AnsiStyle {
-                inverse: false,
-                weight: Weight::Normal,
-                color: Default,
-            },
-            Style::Lowlighted => AnsiStyle {
-                inverse: false,
-                weight: Weight::Faint,
-                color: Default,
-            },
-            Style::Bright => AnsiStyle {
-                inverse: false,
-                weight: Weight::Bold,
-                color: Default,
-            },
+            Style::Context => ANSI_STYLE_NORMAL,
+            Style::Lowlighted => ANSI_STYLE_NORMAL.with_weight(Weight::Faint),
+            Style::Bright => ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
             Style::DiffPartUnchanged => line_style.unchanged_style,
+            Style::DiffPartUnchangedUnderlined => line_style.unchanged_style.with_underline(true),
             Style::DiffPartMidlighted => line_style.midlighted_style,
             Style::DiffPartHighlighted => line_style.highlighted_style,
             Style::Error => AnsiStyle {
-                inverse: true,
-                weight: Weight::Normal,
                 color: Red,
+                weight: Weight::Normal,
+                underline: false,
+                inverse: true,
             },
         };
 
@@ -273,6 +263,35 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
         }
 
         tokens[i].style = Style::DiffPartHighlighted;
+    }
+}
+
+/// Requires at least one token
+fn find_last_line_start(tokens: &[StyledToken]) -> usize {
+    let ends_in_newline = tokens.last().unwrap().token == "\n";
+    let without_ending_newline = if ends_in_newline {
+        &tokens[..tokens.len() - 1]
+    } else {
+        tokens
+    };
+
+    let last_newline_index = without_ending_newline
+        .iter()
+        .rposition(|token| token.token == "\n");
+
+    return last_newline_index.map_or(0, |index| index + 1);
+}
+
+pub fn underline_last_line(tokens: &mut [StyledToken]) {
+    if tokens.is_empty() {
+        return;
+    }
+
+    let last_line_start = find_last_line_start(&tokens);
+    for token in tokens.iter_mut().skip(last_line_start) {
+        if token.style == Style::DiffPartUnchanged {
+            token.style = Style::DiffPartUnchangedUnderlined;
+        }
     }
 }
 

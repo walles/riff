@@ -1,5 +1,6 @@
 use crate::constants::{
-    BOLD, FAINT, GREEN, INVERSE_VIDEO, NORMAL, NORMAL_INTENSITY, NO_INVERSE_VIDEO, RED, YELLOW,
+    BOLD, FAINT, GREEN, INVERSE_VIDEO, NORMAL, NORMAL_INTENSITY, NO_INVERSE_VIDEO, NO_UNDERLINE,
+    RED, UNDERLINE, YELLOW,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -19,15 +20,17 @@ pub enum Weight {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct AnsiStyle {
-    pub inverse: bool,
-    pub weight: Weight,
     pub color: Color,
+    pub weight: Weight,
+    pub underline: bool,
+    pub inverse: bool,
 }
 
 pub const ANSI_STYLE_NORMAL: AnsiStyle = AnsiStyle {
-    inverse: false,
-    weight: Weight::Normal,
     color: Color::Default,
+    weight: Weight::Normal,
+    inverse: false,
+    underline: false,
 };
 
 impl AnsiStyle {
@@ -67,6 +70,14 @@ impl AnsiStyle {
             }
         }
 
+        if self.underline != before.underline {
+            if self.underline {
+                return_me.push_str(UNDERLINE);
+            } else {
+                return_me.push_str(NO_UNDERLINE);
+            }
+        }
+
         if self.color != before.color {
             match self.color {
                 Color::Default => return_me.push_str("\x1b[39m"),
@@ -81,25 +92,37 @@ impl AnsiStyle {
 
     pub const fn with_color(&self, color: Color) -> AnsiStyle {
         return AnsiStyle {
-            inverse: self.inverse,
-            weight: self.weight,
             color,
+            weight: self.weight,
+            underline: self.underline,
+            inverse: self.inverse,
         };
     }
 
     pub const fn with_inverse(&self, inverse: bool) -> AnsiStyle {
         return AnsiStyle {
-            inverse,
-            weight: self.weight,
             color: self.color,
+            weight: self.weight,
+            underline: self.underline,
+            inverse,
         };
     }
 
     pub const fn with_weight(&self, weight: Weight) -> AnsiStyle {
         return AnsiStyle {
-            inverse: self.inverse,
-            weight,
             color: self.color,
+            weight,
+            underline: self.underline,
+            inverse: self.inverse,
+        };
+    }
+
+    pub const fn with_underline(&self, underline: bool) -> AnsiStyle {
+        return AnsiStyle {
+            color: self.color,
+            weight: self.weight,
+            underline,
+            inverse: self.inverse,
         };
     }
 }

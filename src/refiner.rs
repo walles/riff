@@ -285,6 +285,10 @@ pub fn to_highlighted_tokens(
 
     // Refine old tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
+    if !new_text.is_empty() {
+        // Draw a line between the old and the new part
+        underline_last_line(&mut old_tokens);
+    }
 
     // Refine new tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
