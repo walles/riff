@@ -35,168 +35,64 @@ pub(crate) struct LineStyle {
 
 pub(crate) const LINE_STYLE_OLD: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        unchanged_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Yellow,
-        },
-        midlighted_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Red,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_NEW: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Green,
-        },
-        unchanged_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Yellow,
-        },
-        midlighted_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Green,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Green,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Default,
-        },
-        unchanged_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Default,
-        },
-        midlighted_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Red,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+        unchanged_style: ANSI_STYLE_NORMAL,
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_CONFLICT_OLD: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Default,
-        },
-        unchanged_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Default,
-        },
-        midlighted_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Red,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+        unchanged_style: ANSI_STYLE_NORMAL,
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_CONFLICT_NEW: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Default,
-        },
-        unchanged_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Default,
-        },
-        midlighted_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Green,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Green,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+        unchanged_style: ANSI_STYLE_NORMAL,
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Bold,
-            color: Default,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
         unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Red,
-        },
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Bold,
-            color: Default,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
         unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Green,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Green,
-        },
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
 };
 

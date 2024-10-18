@@ -78,6 +78,30 @@ impl AnsiStyle {
 
         return return_me;
     }
+
+    pub const fn with_color(&self, color: Color) -> AnsiStyle {
+        return AnsiStyle {
+            inverse: self.inverse,
+            weight: self.weight,
+            color,
+        };
+    }
+
+    pub const fn with_inverse(&self, inverse: bool) -> AnsiStyle {
+        return AnsiStyle {
+            inverse,
+            weight: self.weight,
+            color: self.color,
+        };
+    }
+
+    pub const fn with_weight(&self, weight: Weight) -> AnsiStyle {
+        return AnsiStyle {
+            inverse: self.inverse,
+            weight,
+            color: self.color,
+        };
+    }
 }
 
 // Modifies the input so that all ANSI escape codes are removed
