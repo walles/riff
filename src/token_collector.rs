@@ -136,12 +136,7 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
             Style::DiffPartUnchangedUnderlined => line_style.unchanged_with_underline_style,
             Style::DiffPartMidlighted => line_style.midlighted_style,
             Style::DiffPartHighlighted => line_style.highlighted_style,
-            Style::Error => AnsiStyle {
-                color: Red,
-                weight: Weight::Normal,
-                underline: false,
-                inverse: true,
-            },
+            Style::Error => ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
         };
 
         rendered.push_str(&new_style.from(&current_style));
