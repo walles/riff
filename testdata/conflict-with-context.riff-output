@@ -5,7 +5,7 @@
 [36m@@@ -10,45 -6,9 +10,79 @@@ [1mimport [0m
   	"github.com/walles/moar/m/linenumbers"
   )
-  
+
 [7m++<<<<<<< HEAD[0m
 [7m +[0mfunc (p *Pager) scrollToSearchHits() {
 [7m +[0m	if p.searchPattern == nil {

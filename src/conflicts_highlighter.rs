@@ -31,6 +31,9 @@ pub(crate) struct ConflictsHighlighter {
     /// Always ends with a newline.
     base: String,
 
+    /// Prefixes of the base section, one per line.
+    base_line_prefixes: vec::Vec<String>,
+
     /// `=======`, followed by `c2`
     c2_header: String,
 
@@ -90,17 +93,17 @@ impl LinesHighlighter for ConflictsHighlighter {
         // All header lines handled, this is a content line
         //
 
-        let destination = if !self.c2_header.is_empty() {
-            &mut self.c2
+        let (prefix_destination, destination) = if !self.c2_header.is_empty() {
+            (None, &mut self.c2)
         } else if !self.base_header.is_empty() {
-            &mut self.base
+            (Some(&mut self.base_line_prefixes), &mut self.base)
         } else {
-            &mut self.c1
+            (None, &mut self.c1)
         };
 
         let prefixes = if self.c1_header.starts_with("++") {
             // Possible content line prefixes when doing "git diff"
-            vec!["+ ", "++", " +"]
+            vec!["+ ", "++", " +", " -", "- ", "  "]
         } else {
             vec![""]
         };
@@ -110,6 +113,11 @@ impl LinesHighlighter for ConflictsHighlighter {
                 // Handle the context line
                 destination.push_str(line);
                 destination.push('\n');
+
+                if let Some(prefix_destination) = prefix_destination {
+                    prefix_destination.push(prefix.to_string());
+                }
+
                 return Ok(Response {
                     line_accepted: LineAcceptance::AcceptedWantMore,
                     highlighted: vec![],
@@ -149,6 +157,7 @@ impl ConflictsHighlighter {
             footer: String::new(),
             c1: String::new(),
             base: String::new(),
+            base_line_prefixes: Vec::new(),
             c2: String::new(),
         });
     }
@@ -240,18 +249,18 @@ impl ConflictsHighlighter {
     ///   vs C1 or vs C2.
     /// * In section C2, we highlight additions compared to base
     fn render_diff3(&self, thread_pool: &ThreadPool) -> StringFuture {
-        let (header_prefix, c1_prefix, base_prefix, c2_prefix, reset) =
-            if self.c1_header.starts_with("++") {
-                (INVERSE_VIDEO, " +", "++", "+ ", NORMAL)
-            } else {
-                (INVERSE_VIDEO, "", "", "", "")
-            };
+        let (header_prefix, c1_prefix, c2_prefix, reset) = if self.c1_header.starts_with("++") {
+            (INVERSE_VIDEO, " +", "+ ", NORMAL)
+        } else {
+            (INVERSE_VIDEO, "", "", "")
+        };
 
         assert!(!self.base.is_empty());
         let c1_header = self.c1_header.clone();
         let c1 = self.c1.clone();
         let base_header = self.base_header.clone();
         let base = self.base.clone();
+        let base_line_prefixes = self.base_line_prefixes.clone();
         let c2_header = self.c2_header.clone();
         let c2 = self.c2.clone();
         let footer = self.footer.clone();
@@ -296,8 +305,11 @@ impl ConflictsHighlighter {
                     }
                 }
 
-                let highlighted_base =
-                    token_collector::render(&LINE_STYLE_CONFLICT_BASE, base_prefix, &base_tokens);
+                let highlighted_base = token_collector::render_multiprefix(
+                    &LINE_STYLE_CONFLICT_BASE,
+                    &base_line_prefixes,
+                    &base_tokens,
+                );
 
                 let mut rendered = String::new();
                 rendered.push_str(header_prefix);
