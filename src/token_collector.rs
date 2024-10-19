@@ -179,6 +179,48 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
     return rendered;
 }
 
+/// Render all the tokens into a (most of the time multiline) string. Each line
+/// is prefixed by a prefix from `line_prefixes`.
+#[must_use]
+pub fn render_multiprefix(
+    line_style: &LineStyle,
+    line_prefixes: &[String],
+    tokens: &[StyledToken],
+) -> String {
+    let mut rendered = String::new();
+
+    let mut current_row_start = 0;
+    let mut line_number_zero_based = 0;
+    for (i, token) in tokens.iter().enumerate() {
+        if token.token != "\n" {
+            continue;
+        }
+
+        let rendered_row = &render_row(
+            line_style,
+            &line_prefixes[line_number_zero_based],
+            &tokens[current_row_start..i],
+        );
+        rendered.push_str(rendered_row);
+        rendered.push('\n');
+        current_row_start = i + 1;
+
+        line_number_zero_based += 1;
+    }
+
+    if current_row_start < tokens.len() {
+        // Render the last row
+        let rendered_row = &render_row(
+            line_style,
+            &line_prefixes[line_number_zero_based],
+            &tokens[current_row_start..],
+        );
+        rendered.push_str(rendered_row);
+    }
+
+    return rendered;
+}
+
 pub fn errorlight_trailing_whitespace(tokens: &mut [StyledToken]) {
     let mut in_trailer = true;
     for token in tokens.iter_mut().rev() {

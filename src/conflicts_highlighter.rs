@@ -94,9 +94,9 @@ impl LinesHighlighter for ConflictsHighlighter {
         //
 
         let (prefix_destination, destination) = if !self.c2_header.is_empty() {
-            (Some(&mut self.base_line_prefixes), &mut self.c2)
+            (None, &mut self.c2)
         } else if !self.base_header.is_empty() {
-            (None, &mut self.base)
+            (Some(&mut self.base_line_prefixes), &mut self.base)
         } else {
             (None, &mut self.c1)
         };
@@ -249,18 +249,18 @@ impl ConflictsHighlighter {
     ///   vs C1 or vs C2.
     /// * In section C2, we highlight additions compared to base
     fn render_diff3(&self, thread_pool: &ThreadPool) -> StringFuture {
-        let (header_prefix, c1_prefix, base_prefix, c2_prefix, reset) =
-            if self.c1_header.starts_with("++") {
-                (INVERSE_VIDEO, " +", "++", "+ ", NORMAL)
-            } else {
-                (INVERSE_VIDEO, "", "", "", "")
-            };
+        let (header_prefix, c1_prefix, c2_prefix, reset) = if self.c1_header.starts_with("++") {
+            (INVERSE_VIDEO, " +", "+ ", NORMAL)
+        } else {
+            (INVERSE_VIDEO, "", "", "")
+        };
 
         assert!(!self.base.is_empty());
         let c1_header = self.c1_header.clone();
         let c1 = self.c1.clone();
         let base_header = self.base_header.clone();
         let base = self.base.clone();
+        let base_line_prefixes = self.base_line_prefixes.clone();
         let c2_header = self.c2_header.clone();
         let c2 = self.c2.clone();
         let footer = self.footer.clone();
@@ -305,8 +305,11 @@ impl ConflictsHighlighter {
                     }
                 }
 
-                let highlighted_base =
-                    token_collector::render(&LINE_STYLE_CONFLICT_BASE, base_prefix, &base_tokens);
+                let highlighted_base = token_collector::render_multiprefix(
+                    &LINE_STYLE_CONFLICT_BASE,
+                    &base_line_prefixes,
+                    &base_tokens,
+                );
 
                 let mut rendered = String::new();
                 rendered.push_str(header_prefix);
