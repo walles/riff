@@ -1,6 +1,5 @@
 use crate::constants::{
-    BOLD, FAINT, GREEN, INVERSE_VIDEO, NORMAL, NORMAL_INTENSITY, NO_INVERSE_VIDEO, NO_UNDERLINE,
-    RED, UNDERLINE, YELLOW,
+    BOLD, FAINT, GREEN, INVERSE_VIDEO, NORMAL, NORMAL_INTENSITY, NO_INVERSE_VIDEO, RED, YELLOW,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -22,7 +21,6 @@ pub enum Weight {
 pub struct AnsiStyle {
     pub color: Color,
     pub weight: Weight,
-    pub underline: bool,
     pub inverse: bool,
 }
 
@@ -30,7 +28,6 @@ pub const ANSI_STYLE_NORMAL: AnsiStyle = AnsiStyle {
     color: Color::Default,
     weight: Weight::Normal,
     inverse: false,
-    underline: false,
 };
 
 impl AnsiStyle {
@@ -70,14 +67,6 @@ impl AnsiStyle {
             }
         }
 
-        if self.underline != before.underline {
-            if self.underline {
-                return_me.push_str(UNDERLINE);
-            } else {
-                return_me.push_str(NO_UNDERLINE);
-            }
-        }
-
         if self.color != before.color {
             match self.color {
                 Color::Default => return_me.push_str("\x1b[39m"),
@@ -94,7 +83,6 @@ impl AnsiStyle {
         return AnsiStyle {
             color,
             weight: self.weight,
-            underline: self.underline,
             inverse: self.inverse,
         };
     }
@@ -103,7 +91,6 @@ impl AnsiStyle {
         return AnsiStyle {
             color: self.color,
             weight: self.weight,
-            underline: self.underline,
             inverse,
         };
     }
@@ -112,16 +99,6 @@ impl AnsiStyle {
         return AnsiStyle {
             color: self.color,
             weight,
-            underline: self.underline,
-            inverse: self.inverse,
-        };
-    }
-
-    pub const fn with_underline(&self, underline: bool) -> AnsiStyle {
-        return AnsiStyle {
-            color: self.color,
-            weight: self.weight,
-            underline,
             inverse: self.inverse,
         };
     }

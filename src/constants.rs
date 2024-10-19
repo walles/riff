@@ -11,9 +11,6 @@ pub const BOLD: &str = "\x1b[1m";
 pub const FAINT: &str = "\x1b[2m";
 pub const NORMAL_INTENSITY: &str = "\x1b[22m"; // Neither bold nor faint
 
-pub const UNDERLINE: &str = "\x1b[4m";
-pub const NO_UNDERLINE: &str = "\x1b[24m";
-
 pub const YELLOW: &str = "\x1b[33m";
 pub const GREEN: &str = "\x1b[32m";
 pub const CYAN: &str = "\x1b[36m";
