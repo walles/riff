@@ -1,0 +1,120 @@
+[2mdiff --cc src/token_collector.rs[0m
+[2mindex b0b23a5,d8d6da8..0000000[0m
+[1m--- [0msrc/[1mtoken_collector.rs[0m
+[1m+++ [0msrc/[1mtoken_collector.rs[0m
+[36m@@@ -34,47 -35,62 +34,95 @@@ [1mpub(crate) struct LineStyle [0m
+  }
+
+  pub(crate) const LINE_STYLE_OLD: LineStyle = {
+[32m +    LineStyle {[0m
+[32m +        prefix_style: ANSI_STYLE_NORMAL.with_color(Red),[0m
+[32m +        plain_style: ANSI_STYLE_NORMAL.with_color(Red),[0m
+[32m +        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),[0m
+[32m +    }[0m
+[32m +};[0m
+[32m +[0m
+[7m++<<<<<<< HEAD[0m
+[7m +[0mpub(crate) const LINE_STYLE_OLD_FAINT: LineStyle = {
+[7m +[0m    LineStyle {
+[7m +[27m[32m        prefix_style: ANSI_STYLE_NORMAL.with_color(Red).with_weight(Weight::Faint),[0m
+[7m +[27m[32m        plain_style: ANSI_STYLE_NORMAL.with_color(Red).with_weight(Weight::Faint),[0m
+[7m +[27m[32m        highlighted_style: [7mANSI_STYLE_NORMAL[0m
+[7m +[27m[32m            .with_color(Red)[0m
+[7m +[27m[32m            .with_weight(Weight::Faint)[0m
+[7m +[27m[32m            .with_inverse(true),[0m
+[7m +[0m    }
+[7m +[0m};
+[7m +[0m
+[7m++||||||| parent of 980b661 (Remove the adds-only special highlighting feature)[0m
+[7m++[0mpub(crate) const LINE_STYLE_OLD_FAINT: LineStyle = {
+[7m+ [0m    LineStyle {
+[7m+ [27m[31m        prefix_style: AnsiStyle {[0m
+[7m+ [27m[31m            inverse: false,[0m
+[7m -[27m[31m[2m            weight: Weight::Normal,[0m
+[7m++[27m[31m            weight: Weight::Faint,[0m
+[7m+ [27m[31m            color: Red,[0m
+[7m+ [27m[31m        },[0m
+[7m+ [27m[31m        plain_style: AnsiStyle {[0m
+[7m+ [27m[31m            inverse: false,[0m
+[7m -[27m[31m[2m            weight: Weight::Normal,[0m
+[7m++[27m[31m            weight: Weight::Faint,[0m
+[7m+ [27m[31m            color: Red,[0m
+[7m+ [27m[31m        },[0m
+[7m+ [27m[31m        highlighted_style: [7mAnsiStyle {[0m
+[7m+ [27m[31m            inverse: true,[0m
+[7m -[27m[31m[2m            weight: Weight::Normal,[0m
+[7m++[27m[31m            weight: Weight::Faint,[0m
+[7m+ [27m[31m            color: Red,[0m
+[7m+ [27m[31m        },[0m
+[7m+ [0m    }
+[7m+ [0m};
+[7m+ [0m
+[7m++=======[0m
+[7m++>>>>>>> 980b661 (Remove the adds-only special highlighting feature)[0m
+  pub(crate) const LINE_STYLE_NEW: LineStyle = {
+[32m +    LineStyle {[0m
+[32m +        prefix_style: ANSI_STYLE_NORMAL.with_color(Green),[0m
+[32m +        plain_style: ANSI_STYLE_NORMAL.with_color(Green),[0m
+[32m +        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),[0m
+[32m +    }[0m
+[32m +};[0m
+[32m +[0m
+[7m++<<<<<<< HEAD[0m
+[7m +[0mpub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
+[7m +[0m    LineStyle {
+[7m +[27m[32m        prefix_style: [7mANSI_STYLE_NORMAL[0m
+[7m +[27m[32m            [7m.with_color(Green)[0m
+[7m +[27m[32m            .with_weight(Weight::Faint),[0m
+[7m +[27m[32m        plain_style: ANSI_STYLE_NORMAL,[0m
+[7m +[27m[32m        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),[0m
+[7m +[0m    }
+[7m +[0m};
+[7m +[0m
+[7m++||||||| parent of 980b661 (Remove the adds-only special highlighting feature)[0m
+[7m++[0mpub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
+[7m+ [0m    LineStyle {
+[7m+ [27m[31m        prefix_style: [7mAnsiStyle {[0m
+[7m+ [27m[31m            [7minverse: false,[0m
+[7m -[27m[31m[2m            weight: Weight::Normal,[0m
+[7m++[27m[31m            weight: Weight::Faint,[0m
+[7m+ [27m[31m            color: Green,[0m
+[7m+ [27m[31m        },[0m
+[7m+ [27m[31m        plain_style: AnsiStyle {[0m
+[7m+ [27m[31m            inverse: false,[0m
+[7m+ [27m[31m            weight: Weight::Normal,[0m
+[7m -[27m[31m[2m            color: Green,[0m
+[7m++[27m[31m            color: Default,[0m
+[7m+ [27m[31m        },[0m
+[7m+ [27m[31m        highlighted_style: AnsiStyle {[0m
+[7m+ [27m[31m            inverse: true,[0m
+[7m+ [27m[31m            weight: Weight::Normal,[0m
+[7m+ [27m[31m            color: Green,[0m
+[7m+ [27m[31m        },[0m
+[7m+ [0m    }
+[7m+ [0m};
+[7m+ [0m
+[7m++=======[0m
+[7m++>>>>>>> 980b661 (Remove the adds-only special highlighting feature)[0m
+  pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
+      LineStyle {
+[31m -        prefix_style: AnsiStyle {[0m
+[31m -            inverse: true,[0m
+[31m -            weight: Weight::Normal,[0m
+[31m -            color: Default,[0m
+[31m -        },[0m
+[31m -        plain_style: AnsiStyle {[0m
+[31m -            inverse: false,[0m
+[31m -            weight: Weight::Normal,[0m
+[31m -            color: Red,[0m
+[31m -        },[0m
+[31m -        highlighted_style: AnsiStyle {[0m
+[31m -            inverse: true,[0m
+[31m -            weight: Weight::Normal,[0m
+[31m -            color: Red,[0m
+[31m -        },[0m
+[32m +        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),[0m
+[32m +        plain_style: ANSI_STYLE_NORMAL.with_color(Red),[0m
+[32m +        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),[0m
+      }
+  };
+
