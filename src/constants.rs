@@ -1,5 +1,4 @@
 pub const OLD: &str = "\x1b[31m"; // Red
-pub const NEW: &str = "\x1b[32m"; // Green
 pub const PARSE_ERROR: &str = "\x1b[33m\x1b[7m"; // Inverse yellow
 
 pub const INVERSE_VIDEO: &str = "\x1b[7m";
@@ -11,6 +10,7 @@ pub const BOLD: &str = "\x1b[1m";
 pub const FAINT: &str = "\x1b[2m";
 pub const NORMAL_INTENSITY: &str = "\x1b[22m"; // Neither bold nor faint
 
+pub const DEFAULT_COLOR: &str = "\x1b[39m";
 pub const YELLOW: &str = "\x1b[33m";
 pub const GREEN: &str = "\x1b[32m";
 pub const CYAN: &str = "\x1b[36m";

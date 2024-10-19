@@ -369,7 +369,7 @@ mod tests {
         assert_eq!(result.highlighted.len(), 1);
         assert_eq!(
             result.highlighted[0].get(),
-            "\u{1b}[32m+No trailing newline\u{1b}[31m\u{1b}[7m⏎\u{1b}[0m\n\u{1b}[2m\\ No newline at end of file\u{1b}[0m\n",
+            "\u{1b}[32m+No trailing newline\u{1b}[0m\u{1b}[31m\u{1b}[7m⏎\u{1b}[0m\n\u{1b}[2m\\ No newline at end of file\u{1b}[0m\n",
         );
 
         assert!(!test_me.more_lines_expected());

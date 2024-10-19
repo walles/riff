@@ -546,7 +546,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn new(text: &str) -> String {
-        return format!("{NEW}{text}{NORMAL}");
+        return format!("{GREEN}{text}{NORMAL}");
     }
 
     #[test]

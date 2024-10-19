@@ -6,16 +6,6 @@ use crate::token_collector::*;
 use crate::tokenizer;
 use crate::NO_ADDS_ONLY_SPECIAL;
 
-/// Like format!(), but faster for our special case
-fn format_simple_line(old_new: &str, plus_minus: &str, contents: &str) -> String {
-    let mut line = String::with_capacity(old_new.len() + 1 + contents.len() + NORMAL.len());
-    line.push_str(old_new);
-    line.push_str(plus_minus);
-    line.push_str(contents);
-    line.push_str(NORMAL);
-    return line;
-}
-
 /// Format old and new lines in OLD and NEW colors.
 ///
 /// No intra-line refinement.
@@ -24,7 +14,11 @@ fn format_simple(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
 
     for (prefix, prefix_text) in prefixes.iter().zip(prefix_texts.iter()) {
-        let old_new = if prefix.contains('+') { NEW } else { OLD };
+        let line_style = if prefix.contains('+') {
+            LINE_STYLE_NEW
+        } else {
+            LINE_STYLE_OLD
+        };
 
         // If the user adds a section with a missing trailing newline, we want
         // to draw a highlighted-in-red newline symbol at the end of the last
@@ -35,10 +29,19 @@ fn format_simple(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
         for (pos, line) in prefix_text.lines().enumerate() {
             let last_line = pos == last_pos;
 
+            let to_push = render_row(
+                &line_style,
+                prefix,
+                &[StyledToken::new(
+                    line.to_string(),
+                    Style::DiffPartMidlighted,
+                )],
+                false,
+            );
             if last_line && draw_missing_trailing_newline {
-                lines.push(format!("{NEW}+{line}{OLD}{INVERSE_VIDEO}⏎{NORMAL}"));
+                lines.push(format!("{to_push}{OLD}{INVERSE_VIDEO}⏎{NORMAL}"));
             } else {
-                lines.push(format_simple_line(old_new, prefix, line));
+                lines.push(to_push);
             }
         }
 
@@ -366,13 +369,13 @@ mod tests {
         // Test adds-only
         assert_eq!(
             format_simple(&["+"], &["a\n"]),
-            ["".to_string() + NEW + "+a" + NORMAL]
+            ["".to_string() + GREEN + "+a" + NORMAL]
         );
         assert_eq!(
             format_simple(&["+"], &["a\nb\n"]),
             [
-                "".to_string() + NEW + "+a" + NORMAL,
-                "".to_string() + NEW + "+b" + NORMAL,
+                "".to_string() + GREEN + "+a" + NORMAL,
+                "".to_string() + GREEN + "+b" + NORMAL,
             ]
         );
 
@@ -430,7 +433,7 @@ mod tests {
                     "{OLD}-{INVERSE_VIDEO}<{NOT_INVERSE_VIDEO}unchanged text between quotes{INVERSE_VIDEO}>{NORMAL}"
                 ),
                 format!(
-                    "{NEW}+{INVERSE_VIDEO}[{NOT_INVERSE_VIDEO}unchanged text between quotes{INVERSE_VIDEO}]{NORMAL}"
+                    "{GREEN}+{INVERSE_VIDEO}[{NOT_INVERSE_VIDEO}unchanged text between quotes{INVERSE_VIDEO}]{NORMAL}"
                 ),
             ]
         )
@@ -442,7 +445,7 @@ mod tests {
         assert_eq!(result, [format!("{OLD}-x{NORMAL}"),]);
 
         let result = format(&["+"], &["x\n"]);
-        assert_eq!(result, [format!("{NEW}+x{NORMAL}"),]);
+        assert_eq!(result, [format!("{GREEN}+x{NORMAL}"),]);
     }
 
     #[test]
