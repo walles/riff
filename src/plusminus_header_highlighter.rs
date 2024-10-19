@@ -230,7 +230,7 @@ mod tests {
             format!(
                 "\
                 {BOLD}--- {INVERSE_VIDEO}{NORMAL_INTENSITY}{OLD}x{NOT_INVERSE_VIDEO}{BOLD}{DEFAULT_COLOR}.txt{NORMAL}\n\
-                {BOLD}+++ {INVERSE_VIDEO}{NORMAL_INTENSITY}{NEW}y{NOT_INVERSE_VIDEO}{BOLD}{DEFAULT_COLOR}.txt{NORMAL}\n"
+                {BOLD}+++ {INVERSE_VIDEO}{NORMAL_INTENSITY}{GREEN}y{NOT_INVERSE_VIDEO}{BOLD}{DEFAULT_COLOR}.txt{NORMAL}\n"
             ),
             highlighted
         );

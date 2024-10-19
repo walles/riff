@@ -28,7 +28,7 @@ pub(crate) struct StyledToken {
 pub(crate) struct LineStyle {
     prefix_style: AnsiStyle,
     unchanged_style: AnsiStyle,
-    midlighted_style: AnsiStyle,
+    pub(crate) midlighted_style: AnsiStyle,
     highlighted_style: AnsiStyle,
 }
 
@@ -107,7 +107,7 @@ impl StyledToken {
 }
 
 #[must_use]
-fn render_row(
+pub(crate) fn render_row(
     line_style: &LineStyle,
     prefix: &str,
     row: &[StyledToken],
@@ -392,7 +392,7 @@ pub fn brighten_filename(row: &mut [StyledToken]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::NEW;
+    use crate::constants::GREEN;
     use crate::constants::NORMAL;
     use crate::constants::OLD;
 
@@ -440,7 +440,7 @@ mod tests {
                 },
             ],
         );
-        assert_eq!(rendered, format!("{NEW}+hej{NORMAL}\n"));
+        assert_eq!(rendered, format!("{GREEN}+hej{NORMAL}\n"));
     }
 
     #[test]

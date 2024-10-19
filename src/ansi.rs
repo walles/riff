@@ -1,5 +1,6 @@
 use crate::constants::{
-    BOLD, FAINT, GREEN, INVERSE_VIDEO, NORMAL, NORMAL_INTENSITY, NO_INVERSE_VIDEO, RED, YELLOW,
+    BOLD, DEFAULT_COLOR, FAINT, GREEN, INVERSE_VIDEO, NORMAL, NORMAL_INTENSITY, NO_INVERSE_VIDEO,
+    RED, YELLOW,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -69,7 +70,7 @@ impl AnsiStyle {
 
         if self.color != before.color {
             match self.color {
-                Color::Default => return_me.push_str("\x1b[39m"),
+                Color::Default => return_me.push_str(DEFAULT_COLOR),
                 Color::Red => return_me.push_str(RED),
                 Color::Green => return_me.push_str(GREEN),
                 Color::Yellow => return_me.push_str(YELLOW),
