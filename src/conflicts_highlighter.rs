@@ -31,6 +31,9 @@ pub(crate) struct ConflictsHighlighter {
     /// Always ends with a newline.
     base: String,
 
+    /// Prefixes of the base section, one per line.
+    base_line_prefixes: vec::Vec<String>,
+
     /// `=======`, followed by `c2`
     c2_header: String,
 
@@ -90,12 +93,12 @@ impl LinesHighlighter for ConflictsHighlighter {
         // All header lines handled, this is a content line
         //
 
-        let destination = if !self.c2_header.is_empty() {
-            &mut self.c2
+        let (prefix_destination, destination) = if !self.c2_header.is_empty() {
+            (Some(&mut self.base_line_prefixes), &mut self.c2)
         } else if !self.base_header.is_empty() {
-            &mut self.base
+            (None, &mut self.base)
         } else {
-            &mut self.c1
+            (None, &mut self.c1)
         };
 
         let prefixes = if self.c1_header.starts_with("++") {
@@ -110,6 +113,11 @@ impl LinesHighlighter for ConflictsHighlighter {
                 // Handle the context line
                 destination.push_str(line);
                 destination.push('\n');
+
+                if let Some(prefix_destination) = prefix_destination {
+                    prefix_destination.push(prefix.to_string());
+                }
+
                 return Ok(Response {
                     line_accepted: LineAcceptance::AcceptedWantMore,
                     highlighted: vec![],
@@ -149,6 +157,7 @@ impl ConflictsHighlighter {
             footer: String::new(),
             c1: String::new(),
             base: String::new(),
+            base_line_prefixes: Vec::new(),
             c2: String::new(),
         });
     }
