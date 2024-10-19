@@ -71,9 +71,9 @@
 [7m++[27m[31m	p.scrollPosition = *firstHitPosition[0m
 [7m++[27m[31m}[0m
 [7m++[0m
-[7m++[0m// NOTE: When we search, we do that by looping over the *input lines*, not
-[7m++[27m[31m//[7m the[27m screen lines. That's why [7mwe're using[27m a[7m line number[27m rather than a[0m
-[7m++[27m[31m// scrollPosition for searching.[0m
+[7m+ [0m// NOTE: When we search, we do that by looping over the *input lines*, not
+[7m+ [27m[31m//[7m the[27m screen lines. That's why [7mwe're using[27m a[7m line number[27m rather than a[0m
+[7m+ [27m[31m// scrollPosition for searching.[0m
 [7m++=======[0m
 [7m+ [0m// NOTE: When we search, we do that by looping over the *input lines*, not
 [7m+ [0m// the screen lines. That's why we're using a line number rather than a

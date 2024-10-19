@@ -4,6 +4,8 @@ Riff is a wrapper around `diff` that highlights which parts of lines have change
 
 ![Screenshot of riff in action](screenshot.png 'git show')
 
+`riff` also [helpfully highlights conflicts and merge commits](#more-features).
+
 Much like `git`, Riff sends its output to a pager, trying these in order:
 
 1. Whatever is specified in the `$PAGER` environment variable
@@ -103,6 +105,9 @@ editing](https://jonasbn.github.io/til/vscode/integrate_with_cli.html).
 # Development
 
 If you put example input and output in the `testdata` directory, then `cargo test` will verify that they match.
+
+On mismatches, you can run `testdata-examples.sh` to compare current output to
+the expected output for all examples, and optionally update expectations.
 
 Invoke `ci.sh` to run the same thing as CI.
 
