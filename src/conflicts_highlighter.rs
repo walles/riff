@@ -100,7 +100,7 @@ impl LinesHighlighter for ConflictsHighlighter {
 
         let prefixes = if self.c1_header.starts_with("++") {
             // Possible content line prefixes when doing "git diff"
-            vec!["+ ", "++", " +"]
+            vec!["+ ", "++", " +", " -", "- "]
         } else {
             vec![""]
         };
