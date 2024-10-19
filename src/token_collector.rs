@@ -34,9 +34,9 @@ pub(crate) struct LineStyle {
 
 pub(crate) const LINE_STYLE_OLD: LineStyle = {
     LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
-        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Red).with_bg_color(Red),
+        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow).with_bg_color(Red),
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_bg_color(Red),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };

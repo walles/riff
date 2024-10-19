@@ -6,7 +6,7 @@
  }
 
  fn print(stream: &mut BufWriter<&mut dyn Write>, text: &str) {
-[31m-[33m    stream.write_all(text.as_bytes()).[7m[31munwrap[27m[33m();[0m
+[31m[48;2;30;0;0m[0K-[33m    stream.write_all(text.as_bytes()).[7m[31m[49munwrap[27m[33m[48;2;30;0;0m[0K();[0m
 [32m+[33m    [7m[32mif let Err(error) = [27m[33mstream.write_all(text.as_bytes())[32m {[0m
 [32m+        if error[33m.[7m[32mkind[27m[33m()[32m == ErrorKind::BrokenPipe {[0m
 [32m+            // This is fine, somebody probably just quit their pager before it[0m

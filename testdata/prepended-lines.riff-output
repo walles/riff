@@ -6,7 +6,7 @@
      # Build the current version
      print()
      print("Building current sources...")
-[31m-[33m    subprocess.run(["cargo", "build", "--release"], check=True)[0m
+[31m[48;2;30;0;0m[0K-[33m    subprocess.run(["cargo", "build", "--release"], check=True)[0m
 [32m+[33m    [32mbuildenv = os.environ.copy()[0m
 [32m+    buildenv["RUSTFLAGS"] = "-Awarnings"[0m
 [32m+    [33msubprocess.run(["cargo", "build", "--release"], check=True[7m[32m, env=buildenv[27m[33m)[0m

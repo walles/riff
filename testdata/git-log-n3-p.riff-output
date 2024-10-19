@@ -12,7 +12,7 @@ Date:   Mon Oct 24 00:32:27 2022 +0200
  
  [[package]]
  name = "riffdiff"
-[31m-[33mversion = "2.[7m[31m20[27m[33m.0"[0m
+[31m[48;2;30;0;0m[0K-[33mversion = "2.[7m[31m[49m20[27m[33m[48;2;30;0;0m[0K.0"[0m
 [32m+[33mversion = "2.[7m[32m21[27m[33m.0"[0m
  dependencies = [
   "backtrace",
@@ -25,7 +25,7 @@ Date:   Mon Oct 24 00:32:27 2022 +0200
  
  [package]
  name = "riffdiff"  # Actually "riff", but that was already taken on crates.io
-[31m-[33mversion = "2.[7m[31m20[27m[33m.0"[0m
+[31m[48;2;30;0;0m[0K-[33mversion = "2.[7m[31m[49m20[27m[33m[48;2;30;0;0m[0K.0"[0m
 [32m+[33mversion = "2.[7m[32m21[27m[33m.0"[0m
  authors = ["Johan Walles <johan.walles@gmail.com>"]
  edition = "2018"
@@ -57,7 +57,7 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
  
      let comma = format!("{}, {}", YELLOW, NORMAL);
      return format!(
-[31m-[33m        "{}{} ({}){}",[0m
+[31m[48;2;30;0;0m[0K-[33m        "{}{} ({}){}",[0m
 [32m+[33m        "{}{} ({}[7m[32m{}[27m[33m){}",[0m
          YELLOW,
          commit_part,
@@ -74,7 +74,7 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
 [1m--- [0mtestdata/[1mgit-commit-line.riff-output[0m
 [1m+++ [0mtestdata/[1mgit-commit-line.riff-output[0m
 [36m@@ -1,3 +1,3 @@[0m
-[31m-[33mcommit b24b967d952a8b7cf538d57d12aae8019cedada2 (HEAD -> master, tag: 2.20.0, origin/master, origin/HEAD)[0m
+[31m[48;2;30;0;0m[0K-[33mcommit b24b967d952a8b7cf538d57d12aae8019cedada2 (HEAD -> master, tag: 2.20.0, origin/master, origin/HEAD)[0m
 [32m+[33mcommit b24b967d952a8b7cf538d57d12aae8019cedada2 (HEAD -> master, tag: 2.20.0, origin/master, origin/HEAD)[0m
  Author: Johan Walles <johan.walles@gmail.com>
  Date:   Wed Sep 14 19:07:05 2022 +0200
@@ -83,7 +83,7 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
 [1m--- [0mtestdata/[1mremove-file.riff-output[0m
 [1m+++ [0mtestdata/[1mremove-file.riff-output[0m
 [36m@@ -1,4 +1,4 @@[0m
-[31m-[33mcommit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)[0m
+[31m[48;2;30;0;0m[0K-[33mcommit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)[0m
 [32m+[33mcommit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)[0m
  Author: Johan Walles <johan.walles@gmail.com>
  Date:   Wed Sep 14 18:57:42 2022 +0200

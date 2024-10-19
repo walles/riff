@@ -1,6 +1,6 @@
 use crate::constants::{
-    BOLD, DEFAULT_COLOR, FAINT, GREEN, INVERSE_VIDEO, NORMAL, NORMAL_INTENSITY, NO_INVERSE_VIDEO,
-    RED, YELLOW,
+    BG_DEFAULT_COLOR, BG_RED, BOLD, DEFAULT_COLOR, FAINT, GREEN, INVERSE_VIDEO, NORMAL,
+    NORMAL_INTENSITY, NO_INVERSE_VIDEO, RED, YELLOW,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -21,12 +21,14 @@ pub enum Weight {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct AnsiStyle {
     pub color: Color,
+    pub bg_color: Color,
     pub weight: Weight,
     pub inverse: bool,
 }
 
 pub const ANSI_STYLE_NORMAL: AnsiStyle = AnsiStyle {
     color: Color::Default,
+    bg_color: Color::Default,
     weight: Weight::Normal,
     inverse: false,
 };
@@ -77,12 +79,22 @@ impl AnsiStyle {
             }
         }
 
+        if self.bg_color != before.bg_color {
+            match self.bg_color {
+                Color::Default => return_me.push_str(BG_DEFAULT_COLOR),
+                Color::Red => return_me.push_str(BG_RED),
+                Color::Green => unimplemented!("Green background not implemented"),
+                Color::Yellow => unimplemented!("Yellow background not implemented"),
+            }
+        }
+
         return return_me;
     }
 
     pub const fn with_color(&self, color: Color) -> AnsiStyle {
         return AnsiStyle {
             color,
+            bg_color: self.bg_color,
             weight: self.weight,
             inverse: self.inverse,
         };
@@ -91,6 +103,7 @@ impl AnsiStyle {
     pub const fn with_inverse(&self, inverse: bool) -> AnsiStyle {
         return AnsiStyle {
             color: self.color,
+            bg_color: self.bg_color,
             weight: self.weight,
             inverse,
         };
@@ -99,7 +112,17 @@ impl AnsiStyle {
     pub const fn with_weight(&self, weight: Weight) -> AnsiStyle {
         return AnsiStyle {
             color: self.color,
+            bg_color: self.bg_color,
             weight,
+            inverse: self.inverse,
+        };
+    }
+
+    pub const fn with_bg_color(&self, bg_color: Color) -> AnsiStyle {
+        return AnsiStyle {
+            color: self.color,
+            bg_color,
+            weight: self.weight,
             inverse: self.inverse,
         };
     }

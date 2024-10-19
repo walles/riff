@@ -16,7 +16,7 @@
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
 
-[31m-[33mThe above [7m[31mcopyright [27m[33mnotice and this permission notice shall be included in all[0m
+[31m[48;2;30;0;0m[0K-[33mThe above [7m[31m[49mcopyright [27m[33m[48;2;30;0;0m[0Knotice and this permission notice shall be included in all[0m
 [32m+[33mThe above notice and this permission notice shall be included in all[0m
  copies or substantial portions of the Software.
 
@@ -31,7 +31,7 @@
 [36m@@ -1,6 +1,6 @@[0m
  # See also .cargo/config
 
-[31m-[33m[[7m[31mpackage[27m[33m][0m
+[31m[48;2;30;0;0m[0K-[33m[[7m[31m[49mpackage[27m[33m[48;2;30;0;0m[0K][0m
 [32m+[33m[[7m[32mpluckage[27m[33m][0m
  name = "riffdiff"  # Actually "riff", but that was already taken on crates.io
  version = "2.18.1"

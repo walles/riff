@@ -6,7 +6,7 @@
  }
 
  // NewReaderFromStream creates a new stream reader
-[31m-[33mfunc NewReaderFromStream(name [7m[31m*[27m[33mstring, reader io.Reader) *Reader {[0m
+[31m[48;2;30;0;0m[0K-[33mfunc NewReaderFromStream(name [7m[31m[49m*[27m[33m[48;2;30;0;0m[0Kstring, reader io.Reader) *Reader {[0m
 [32m+//[0m
 [32m+// The name can be an empty string ("").[0m
 [32m+//[0m
@@ -14,9 +14,9 @@
 [32m+// corner to help the user keep track of what is being paged.[0m
 [32m+[33mfunc NewReaderFromStream(name string, reader io.Reader) *Reader {[0m
     mReader := newReaderFromStream(reader, nil)
-[31m-[33m   mReader.lock.Lock()[0m
-[31m-   [33mmReader.name = name[0m
-[31m-   [33mmReader.lock.Unlock()[0m
+[31m[48;2;30;0;0m[0K-[33m   mReader.lock.Lock()[0m
+[31m[48;2;30;0;0m[0K-   [33mmReader.name = name[0m
+[31m[48;2;30;0;0m[0K-   [33mmReader.lock.Unlock()[0m
 [32m+[0m
 [32m+[33m   [32mif len(name) > 0 {[0m
 [32m+       [33mmReader.lock.Lock()[0m
@@ -30,7 +30,7 @@
         return nil, err
     }
 
-[31m-[33m   reader := NewReaderFromStream([7m[31m&[27m[33mfilename, stream)[0m
+[31m[48;2;30;0;0m[0K-[33m   reader := NewReaderFromStream([7m[31m[49m&[27m[33m[48;2;30;0;0m[0Kfilename, stream)[0m
 [32m+[33m   reader := NewReaderFromStream(filename, stream)[0m
     return reader, nil
  }

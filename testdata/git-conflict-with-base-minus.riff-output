@@ -97,21 +97,21 @@
 [7m++>>>>>>> 980b661 (Remove the adds-only special highlighting feature)[0m
   pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
       LineStyle {
-[31m -[33m        prefix_style: [31mAnsiStyle {[0m
-[31m -            inverse: [33mtrue[31m,[0m
-[31m -            weight: Weight::Normal,[0m
-[31m -            color: Default,[0m
-[31m -        }[33m,[0m
-[31m -[33m        plain_style: [31mAnsiStyle {[0m
-[31m -            inverse: false,[0m
-[31m -            weight: Weight::Normal,[0m
-[31m -            color: [33mRed[31m,[0m
-[31m -        }[33m,[0m
-[31m -[33m        highlighted_style: [31mAnsiStyle {[0m
-[31m -            inverse: true,[0m
-[31m -            weight: Weight::Normal,[0m
-[31m -            color: [33mRed[31m,[0m
-[31m -        }[33m,[0m
+[31m[48;2;30;0;0m[0K -[33m        prefix_style: [31mAnsiStyle {[0m
+[31m[48;2;30;0;0m[0K -            inverse: [33mtrue[31m,[0m
+[31m[48;2;30;0;0m[0K -            weight: Weight::Normal,[0m
+[31m[48;2;30;0;0m[0K -            color: Default,[0m
+[31m[48;2;30;0;0m[0K -        }[33m,[0m
+[31m[48;2;30;0;0m[0K -[33m        plain_style: [31mAnsiStyle {[0m
+[31m[48;2;30;0;0m[0K -            inverse: false,[0m
+[31m[48;2;30;0;0m[0K -            weight: Weight::Normal,[0m
+[31m[48;2;30;0;0m[0K -            color: [33mRed[31m,[0m
+[31m[48;2;30;0;0m[0K -        }[33m,[0m
+[31m[48;2;30;0;0m[0K -[33m        highlighted_style: [31mAnsiStyle {[0m
+[31m[48;2;30;0;0m[0K -            inverse: true,[0m
+[31m[48;2;30;0;0m[0K -            weight: Weight::Normal,[0m
+[31m[48;2;30;0;0m[0K -            color: [33mRed[31m,[0m
+[31m[48;2;30;0;0m[0K -        }[33m,[0m
 [32m +[33m        prefix_style: [32mANSI_STYLE_NORMAL.with_inverse([33mtrue[32m)[33m,[0m
 [32m +[33m        plain_style: [32mANSI_STYLE_NORMAL.with_color([33mRed[32m)[33m,[0m
 [32m +[33m        highlighted_style: [32mANSI_STYLE_NORMAL.with_color([33mRed[32m).with_inverse(true)[33m,[0m

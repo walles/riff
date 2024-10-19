@@ -1,7 +1,7 @@
 [1m--- [7m[22m[31mbefore[27m[1m[39m.txt[22m[2m  2023-09-24 16:22:05[0m
 [1m+++ [7m[22m[32mafter[27m[1m[39m.txt[22m[2m   2023-09-24 16:22:42[0m
 [36m@@ -1,1 +1,6 @@[0m
-[31m-[33m        let tokens = std::mem::take(&mut self.tokens);[0m
+[31m[48;2;30;0;0m[0K-[33m        let tokens = std::mem::take(&mut self.tokens);[0m
 [32m+[33m        let [7m[32mmut [27m[33mtokens = std::mem::take(&mut self.tokens);[0m
 [32m+[0m
 [32m+        // FIXME: Maybe do highlight_space_between_words() before this one? And[0m

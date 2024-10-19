@@ -16,6 +16,11 @@ pub const GREEN: &str = "\x1b[32m";
 pub const CYAN: &str = "\x1b[36m";
 pub const RED: &str = "\x1b[31m";
 
+pub const BG_DEFAULT_COLOR: &str = "\x1b[49m";
+
+// Red background to the end of the line
+pub const BG_RED: &str = "\x1b[48;2;30;0;0m\x1b[0K";
+
 // Dark blue: https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
 pub const BLUE_TO_END_OF_LINE: &str = "\x1b[48;5;17m\x1b[0K";
 

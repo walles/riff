@@ -13,10 +13,10 @@ Date:   Thu Jan 25 08:57:37 2024 +0100
 [1m+++ file.txt[0m
 [36m@@@ -1,10 -1,8 +1,9 @@@[0m
   This is the first line.
-[31m -[33mThis line [7m[31mwill be[27m[33m edited in the main branch.[0m
+[31m[48;2;30;0;0m[0K -[33mThis line [7m[31m[49mwill be[27m[33m[48;2;30;0;0m[0K edited in the main branch.[0m
 [32m +[33mThis line [7m[32mwas[27m[33m edited in the main branch.[0m
   This is placeholder line one.
-[31m- This line will be removed in the branch.[0m
+[31m[48;2;30;0;0m[0K- This line will be removed in the branch.[0m
   This is placeholder line two.
   After this line, a new line will be added in the main branch.
 [32m +Hello.[0m
@@ -27,7 +27,7 @@ Date:   Thu Jan 25 08:57:37 2024 +0100
   Hello.
   This is placeholder line five.
   This is placeholder line six.
-[31m- [33m-> A prefix will be added to this line on main, a suffix on branch and the middle [7m[31mwill be[27m[33m changed during conflict resolution.[0m
-[31m -[33mA prefix will be added to this line on main, a suffix on branch and the middle [7m[31mwill be[27m[33m changed during conflict resolution. <-[0m
+[31m[48;2;30;0;0m[0K- [33m-> A prefix will be added to this line on main, a suffix on branch and the middle [7m[31m[49mwill be[27m[33m[48;2;30;0;0m[0K changed during conflict resolution.[0m
+[31m[48;2;30;0;0m[0K -[33mA prefix will be added to this line on main, a suffix on branch and the middle [7m[31m[49mwill be[27m[33m[48;2;30;0;0m[0K changed during conflict resolution. <-[0m
 [32m++[7m-> [27m[33mA prefix will be added to this line on main, a suffix on branch and the middle [7m[32mwas[27m[33m changed during conflict resolution.[7m[32m <-[0m
   This is placeholder line seven.

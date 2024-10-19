@@ -1,7 +1,7 @@
 [1m--- [0m/tmp/dom/[7m[31mapa[27m[1m[39m.txt[22m[2m   2024-02-04 08:36:46[0m
 [1m+++ [0m/tmp/dom/[7m[32mbepa[27m[1m[39m.txt[22m[2m  2024-02-04 08:37:13[0m
 [36m@@ -1,2 +1,2 @@[0m
-[31m-[7mChange this[27m[33m line[0m
+[31m[48;2;30;0;0m[0K-[7m[49mChange this[27m[33m[48;2;30;0;0m[0K line[0m
 [32m+[7mThis[27m[33m line[7m[32m was changed[0m
  This line has no EOL
 [2m\ No newline at end of file[0m
