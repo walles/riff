@@ -1,7 +1,6 @@
 use std::cmp;
 
 use crate::ansi::AnsiStyle;
-use crate::ansi::Color::Default;
 use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
 use crate::ansi::Weight;
@@ -36,173 +35,78 @@ pub(crate) struct LineStyle {
 
 pub(crate) const LINE_STYLE_OLD: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Red,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+        plain_style: ANSI_STYLE_NORMAL.with_color(Red),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_OLD_FAINT: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Faint,
-            color: Red,
-        },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Faint,
-            color: Red,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Faint,
-            color: Red,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Red).with_weight(Weight::Faint),
+        plain_style: ANSI_STYLE_NORMAL.with_color(Red).with_weight(Weight::Faint),
+        highlighted_style: ANSI_STYLE_NORMAL
+            .with_color(Red)
+            .with_weight(Weight::Faint)
+            .with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_NEW: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Green,
-        },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Green,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Green,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+        plain_style: ANSI_STYLE_NORMAL.with_color(Green),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Faint,
-            color: Green,
-        },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Default,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Green,
-        },
+        prefix_style: ANSI_STYLE_NORMAL
+            .with_color(Green)
+            .with_weight(Weight::Faint),
+        plain_style: ANSI_STYLE_NORMAL,
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Default,
-        },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Red,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+        plain_style: ANSI_STYLE_NORMAL.with_color(Red),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_CONFLICT_OLD: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Default,
-        },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Red,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Red,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+        plain_style: ANSI_STYLE_NORMAL.with_color(Red),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_CONFLICT_NEW: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Default,
-        },
-        plain_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Normal,
-            color: Green,
-        },
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Green,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+        plain_style: ANSI_STYLE_NORMAL.with_color(Green),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Bold,
-            color: Default,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
         plain_style: ANSI_STYLE_NORMAL,
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Red,
-        },
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
 
 pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
     LineStyle {
-        prefix_style: AnsiStyle {
-            inverse: false,
-            weight: Weight::Bold,
-            color: Default,
-        },
+        prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
         plain_style: ANSI_STYLE_NORMAL,
-        highlighted_style: AnsiStyle {
-            inverse: true,
-            weight: Weight::Normal,
-            color: Green,
-        },
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
 };
 
@@ -231,29 +135,13 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
     // Render tokens
     for token in row {
         let new_style = match token.style {
-            Style::Context => AnsiStyle {
-                inverse: false,
-                weight: Weight::Normal,
-                color: Default,
-            },
-            Style::Lowlighted => AnsiStyle {
-                inverse: false,
-                weight: Weight::Faint,
-                color: Default,
-            },
-            Style::Bright => AnsiStyle {
-                inverse: false,
-                weight: Weight::Bold,
-                color: Default,
-            },
+            Style::Context => ANSI_STYLE_NORMAL,
+            Style::Lowlighted => ANSI_STYLE_NORMAL.with_weight(Weight::Faint),
+            Style::Bright => ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
             Style::Plain => line_style.plain_style,
             Style::PlainChange => line_style.plain_style,
             Style::HighlightedChange => line_style.highlighted_style,
-            Style::Error => AnsiStyle {
-                inverse: true,
-                weight: Weight::Normal,
-                color: Red,
-            },
+            Style::Error => ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
         };
 
         rendered.push_str(&new_style.from(&current_style));

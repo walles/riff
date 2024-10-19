@@ -1,3 +1,7 @@
+use crate::constants::{
+    BOLD, FAINT, GREEN, INVERSE_VIDEO, NORMAL, NORMAL_INTENSITY, NO_INVERSE_VIDEO, RED,
+};
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Color {
     Default,
@@ -14,15 +18,15 @@ pub enum Weight {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct AnsiStyle {
-    pub inverse: bool,
-    pub weight: Weight,
     pub color: Color,
+    pub weight: Weight,
+    pub inverse: bool,
 }
 
 pub const ANSI_STYLE_NORMAL: AnsiStyle = AnsiStyle {
-    inverse: false,
-    weight: Weight::Normal,
     color: Color::Default,
+    weight: Weight::Normal,
+    inverse: false,
 };
 
 impl AnsiStyle {
@@ -35,42 +39,66 @@ impl AnsiStyle {
 
         if self == &ANSI_STYLE_NORMAL {
             // Special case for resetting to default style
-            return String::from("\x1b[0m");
+            return String::from(NORMAL);
         }
 
         let mut return_me = String::new();
 
         if self.inverse && !before.inverse {
             // Inverse on
-            return_me.push_str("\x1b[7m");
+            return_me.push_str(INVERSE_VIDEO);
         }
         if !self.inverse && before.inverse {
             // Inverse off
-            return_me.push_str("\x1b[27m");
+            return_me.push_str(NO_INVERSE_VIDEO);
         }
 
         if self.weight != before.weight {
             if before.weight != Weight::Normal {
                 // Turn off bold or faint
-                return_me.push_str("\x1b[22m");
+                return_me.push_str(NORMAL_INTENSITY);
             }
             if self.weight == Weight::Faint {
-                return_me.push_str("\x1b[2m");
+                return_me.push_str(FAINT);
             }
             if self.weight == Weight::Bold {
-                return_me.push_str("\x1b[1m");
+                return_me.push_str(BOLD);
             }
         }
 
         if self.color != before.color {
             match self.color {
                 Color::Default => return_me.push_str("\x1b[39m"),
-                Color::Red => return_me.push_str("\x1b[31m"),
-                Color::Green => return_me.push_str("\x1b[32m"),
+                Color::Red => return_me.push_str(RED),
+                Color::Green => return_me.push_str(GREEN),
             }
         }
 
         return return_me;
+    }
+
+    pub const fn with_color(&self, color: Color) -> AnsiStyle {
+        return AnsiStyle {
+            color,
+            weight: self.weight,
+            inverse: self.inverse,
+        };
+    }
+
+    pub const fn with_inverse(&self, inverse: bool) -> AnsiStyle {
+        return AnsiStyle {
+            color: self.color,
+            weight: self.weight,
+            inverse,
+        };
+    }
+
+    pub const fn with_weight(&self, weight: Weight) -> AnsiStyle {
+        return AnsiStyle {
+            color: self.color,
+            weight,
+            inverse: self.inverse,
+        };
     }
 }
 

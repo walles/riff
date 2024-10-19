@@ -3,6 +3,7 @@ pub const NEW: &str = "\x1b[32m"; // Green
 pub const PARSE_ERROR: &str = "\x1b[33m\x1b[7m"; // Inverse yellow
 
 pub const INVERSE_VIDEO: &str = "\x1b[7m";
+pub const NO_INVERSE_VIDEO: &str = "\x1b[27m";
 
 pub const NO_EOF_NEWLINE_COLOR: &str = "\x1b[2m"; // Faint
 
