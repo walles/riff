@@ -5,7 +5,7 @@
 [36m@@@ -10,45 -6,9 +10,79 @@@ [1mimport [0m
   	"github.com/walles/moar/m/linenumbers"
   )
-
+  
 [7m++<<<<<<< HEAD[0m
 [7m +[0mfunc (p *Pager) scrollToSearchHits() {
 [7m +[0m	if p.searchPattern == nil {
@@ -71,9 +71,9 @@
 [7m++[27m[31m	p.scrollPosition = *firstHitPosition[0m
 [7m++[27m[31m}[0m
 [7m++[0m
-[7m++[0m// NOTE: When we search, we do that by looping over the *input lines*, not
-[7m++[0m//[7m[31m the[0m screen lines. That's why [7m[31mwe're using[0m a[7m[31m line number[0m rather than a
-[7m++[0m// scrollPosition [31mfor[0m searching.
+[7m+ [0m// NOTE: When we search, we do that by looping over the *input lines*, not
+[7m+ [0m//[7m[31m the[0m screen lines. That's why [7m[31mwe're using[0m a[7m[31m line number[0m rather than a
+[7m+ [0m// scrollPosition [31mfor[0m searching.
 [7m++=======[0m
 [7m+ [0m// NOTE: When we search, we do that by looping over the *input lines*, not
 [7m+ [0m// the screen lines. That's why we're using a line number rather than a
