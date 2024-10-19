@@ -1,0 +1,120 @@
+diff --cc src/token_collector.rs
+index b0b23a5,d8d6da8..0000000
+--- src/token_collector.rs
++++ src/token_collector.rs
+@@@ -34,47 -35,62 +34,95 @@@ pub(crate) struct LineStyle 
+  }
+  
+  pub(crate) const LINE_STYLE_OLD: LineStyle = {
+ +    LineStyle {
+ +        prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+ +        plain_style: ANSI_STYLE_NORMAL.with_color(Red),
+ +        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+ +    }
+ +};
+ +
+++<<<<<<< HEAD
+ +pub(crate) const LINE_STYLE_OLD_FAINT: LineStyle = {
+ +    LineStyle {
+ +        prefix_style: ANSI_STYLE_NORMAL.with_color(Red).with_weight(Weight::Faint),
+ +        plain_style: ANSI_STYLE_NORMAL.with_color(Red).with_weight(Weight::Faint),
+ +        highlighted_style: ANSI_STYLE_NORMAL
+ +            .with_color(Red)
+ +            .with_weight(Weight::Faint)
+ +            .with_inverse(true),
+ +    }
+ +};
+ +
+++||||||| parent of 980b661 (Remove the adds-only special highlighting feature)
+++pub(crate) const LINE_STYLE_OLD_FAINT: LineStyle = {
++     LineStyle {
++         prefix_style: AnsiStyle {
++             inverse: false,
+ -            weight: Weight::Normal,
+++            weight: Weight::Faint,
++             color: Red,
++         },
++         plain_style: AnsiStyle {
++             inverse: false,
+ -            weight: Weight::Normal,
+++            weight: Weight::Faint,
++             color: Red,
++         },
++         highlighted_style: AnsiStyle {
++             inverse: true,
+ -            weight: Weight::Normal,
+++            weight: Weight::Faint,
++             color: Red,
++         },
++     }
++ };
++ 
+++=======
+++>>>>>>> 980b661 (Remove the adds-only special highlighting feature)
+  pub(crate) const LINE_STYLE_NEW: LineStyle = {
+ +    LineStyle {
+ +        prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+ +        plain_style: ANSI_STYLE_NORMAL.with_color(Green),
+ +        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+ +    }
+ +};
+ +
+++<<<<<<< HEAD
+ +pub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
+ +    LineStyle {
+ +        prefix_style: ANSI_STYLE_NORMAL
+ +            .with_color(Green)
+ +            .with_weight(Weight::Faint),
+ +        plain_style: ANSI_STYLE_NORMAL,
+ +        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+ +    }
+ +};
+ +
+++||||||| parent of 980b661 (Remove the adds-only special highlighting feature)
+++pub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
++     LineStyle {
++         prefix_style: AnsiStyle {
++             inverse: false,
+ -            weight: Weight::Normal,
+++            weight: Weight::Faint,
++             color: Green,
++         },
++         plain_style: AnsiStyle {
++             inverse: false,
++             weight: Weight::Normal,
+ -            color: Green,
+++            color: Default,
++         },
++         highlighted_style: AnsiStyle {
++             inverse: true,
++             weight: Weight::Normal,
++             color: Green,
++         },
++     }
++ };
++ 
+++=======
+++>>>>>>> 980b661 (Remove the adds-only special highlighting feature)
+  pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
+      LineStyle {
+ -        prefix_style: AnsiStyle {
+ -            inverse: true,
+ -            weight: Weight::Normal,
+ -            color: Default,
+ -        },
+ -        plain_style: AnsiStyle {
+ -            inverse: false,
+ -            weight: Weight::Normal,
+ -            color: Red,
+ -        },
+ -        highlighted_style: AnsiStyle {
+ -            inverse: true,
+ -            weight: Weight::Normal,
+ -            color: Red,
+ -        },
+ +        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+ +        plain_style: ANSI_STYLE_NORMAL.with_color(Red),
+ +        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+      }
+  };
+  

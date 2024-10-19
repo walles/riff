@@ -122,7 +122,12 @@ impl StyledToken {
 }
 
 #[must_use]
-fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> String {
+fn render_row(
+    line_style: &LineStyle,
+    prefix: &str,
+    row: &[StyledToken],
+    force_faint: bool,
+) -> String {
     let mut rendered = String::new();
 
     let mut current_style = ANSI_STYLE_NORMAL;
@@ -134,7 +139,7 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
 
     // Render tokens
     for token in row {
-        let new_style = match token.style {
+        let mut new_style = match token.style {
             Style::Context => ANSI_STYLE_NORMAL,
             Style::Lowlighted => ANSI_STYLE_NORMAL.with_weight(Weight::Faint),
             Style::Bright => ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
@@ -143,6 +148,10 @@ fn render_row(line_style: &LineStyle, prefix: &str, row: &[StyledToken]) -> Stri
             Style::HighlightedChange => line_style.highlighted_style,
             Style::Error => ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
         };
+
+        if force_faint {
+            new_style = new_style.with_weight(Weight::Faint);
+        }
 
         rendered.push_str(&new_style.from(&current_style));
         current_style = new_style;
@@ -163,7 +172,8 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
     let mut current_row_start = 0;
     for (i, token) in tokens.iter().enumerate() {
         if token.token == "\n" {
-            let rendered_row = &render_row(line_style, prefix, &tokens[current_row_start..i]);
+            let rendered_row =
+                &render_row(line_style, prefix, &tokens[current_row_start..i], false);
             rendered.push_str(rendered_row);
             rendered.push('\n');
             current_row_start = i + 1;
@@ -172,7 +182,57 @@ pub fn render(line_style: &LineStyle, prefix: &str, tokens: &[StyledToken]) -> S
     }
 
     if current_row_start < tokens.len() {
-        let rendered_row = &render_row(line_style, prefix, &tokens[current_row_start..]);
+        let rendered_row = &render_row(line_style, prefix, &tokens[current_row_start..], false);
+        rendered.push_str(rendered_row);
+    }
+
+    return rendered;
+}
+
+/// Render all the tokens into a (most of the time multiline) string. Each line
+/// is prefixed by a prefix from `line_prefixes`.
+#[must_use]
+pub fn render_multiprefix(
+    line_style: &LineStyle,
+    line_prefixes: &[String],
+    tokens: &[StyledToken],
+) -> String {
+    let mut rendered = String::new();
+
+    let mut current_row_start = 0;
+    let mut line_number_zero_based = 0;
+    for (i, token) in tokens.iter().enumerate() {
+        if token.token != "\n" {
+            continue;
+        }
+
+        let prefix = &line_prefixes[line_number_zero_based];
+        let force_faint = prefix.chars().any(|c| c == '-');
+
+        let rendered_row = &render_row(
+            line_style,
+            prefix,
+            &tokens[current_row_start..i],
+            force_faint,
+        );
+        rendered.push_str(rendered_row);
+        rendered.push('\n');
+        current_row_start = i + 1;
+
+        line_number_zero_based += 1;
+    }
+
+    if current_row_start < tokens.len() {
+        // Render the last row
+        let prefix = &line_prefixes[line_number_zero_based];
+        let force_faint = prefix.chars().any(|c| c == '-');
+
+        let rendered_row = &render_row(
+            line_style,
+            prefix,
+            &tokens[current_row_start..],
+            force_faint,
+        );
         rendered.push_str(rendered_row);
     }
 
