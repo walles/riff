@@ -103,9 +103,13 @@ struct Options {
     #[arg(long)]
     no_pager: bool,
 
-    /// No effect, exists for backwards compatibility.
+    /// No effect, replaced by --unchanged-style
     #[arg(long)]
     no_adds_only_special: bool,
+
+    /// How will unchanged line parts be styled?
+    #[arg(long)]
+    unchanged_style: Option<UnchangedStyle>,
 
     /// `auto` = color if stdout is a terminal
     #[arg(long)]
@@ -115,7 +119,7 @@ struct Options {
     please_panic: bool,
 }
 
-#[derive(ValueEnum, Clone, Default)]
+#[derive(ValueEnum, Clone, Default, Debug)]
 enum ColorOption {
     On,
     Off,
@@ -132,6 +136,17 @@ impl ColorOption {
             ColorOption::Auto => default,
         }
     }
+}
+
+/// How will unchanged line parts be styled?
+#[derive(ValueEnum, Clone, Default, Debug)]
+pub(crate) enum UnchangedStyle {
+    /// No special styling, just red / green like the rest of the line
+    #[default]
+    None,
+
+    /// Unchanged parts are colored yellow
+    Yellow,
 }
 
 fn format_error(message: String, line_number: usize, line: &[u8]) -> String {
