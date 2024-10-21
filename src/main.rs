@@ -146,8 +146,8 @@ pub(crate) enum UnchangedStyle {
     #[default]
     None,
 
-    /// Unchanged parts are colored yellow
-    Yellow,
+    /// Try it and report back!
+    Experimental,
 }
 
 fn format_error(message: String, line_number: usize, line: &[u8]) -> String {
@@ -484,7 +484,7 @@ fn main() {
 
     let formatter = match options.unchanged_style.unwrap_or(UnchangedStyle::None) {
         UnchangedStyle::None => Formatter::default(),
-        UnchangedStyle::Yellow => Formatter::yellow(),
+        UnchangedStyle::Experimental => Formatter::experimental(),
     };
 
     if let (Some(file1), Some(file2)) = (options.x1, options.x2) {
@@ -593,7 +593,7 @@ mod tests {
             &mut input,
             file.reopen().unwrap(),
             true,
-            Formatter::yellow(),
+            Formatter::experimental(),
         ) {
             panic!("{}", error);
         }
@@ -761,7 +761,7 @@ mod tests {
             &mut fs::File::open(input_file).unwrap(),
             file.reopen().unwrap(),
             true,
-            Formatter::yellow(),
+            Formatter::experimental(),
         ) {
             return Some(ExampleFailure {
                 diagnostics: format!("Highlighting failed: {}", error),
@@ -789,7 +789,7 @@ mod tests {
             &mut fs::File::open(input_file).unwrap(),
             file.reopen().unwrap(),
             false,
-            Formatter::yellow(),
+            Formatter::default(),
         )
         .unwrap();
 

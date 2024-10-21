@@ -3,6 +3,7 @@ use similar::capture_diff_slices;
 use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
 use crate::ansi::Color::Yellow;
+use crate::ansi::Weight::Faint;
 use crate::ansi::ANSI_STYLE_NORMAL;
 use crate::constants::*;
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
@@ -33,11 +34,11 @@ impl Formatter {
         }
     }
 
-    pub(crate) fn yellow() -> Self {
+    pub(crate) fn experimental() -> Self {
         Formatter {
             line_style_old: LineStyle {
                 prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
-                unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+                unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow).with_weight(Faint),
                 midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
                 highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
             },

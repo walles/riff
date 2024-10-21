@@ -443,9 +443,6 @@ mod tests {
         assert_eq!(rendered, format!("{GREEN}+hej{NORMAL}\n"));
     }
 
-
-FIXME: Why are the tests passing even though stuff is supposed to default to red / green?
-
     #[test]
     fn test_errorlight_trailing_whitespace() {
         // Just a whitespace
