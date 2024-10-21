@@ -6,9 +6,19 @@ use crate::token_collector::*;
 use crate::tokenizer;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct Formatter {}
+pub(crate) struct Formatter {
+    line_style_old: LineStyle,
+    line_style_new: LineStyle,
+}
 
 impl Formatter {
+    pub(crate) fn new(line_style_old: LineStyle, line_style_new: LineStyle) -> Self {
+        Formatter {
+            line_style_old,
+            line_style_new,
+        }
+    }
+
     /// Format old and new lines in OLD and NEW colors.
     ///
     /// No intra-line refinement.
@@ -18,9 +28,9 @@ impl Formatter {
 
         for (prefix, prefix_text) in prefixes.iter().zip(prefix_texts.iter()) {
             let line_style = if prefix.contains('+') {
-                LINE_STYLE_NEW
+                &self.line_style_new
             } else {
-                LINE_STYLE_OLD
+                &self.line_style_old
             };
 
             // If the user adds a section with a missing trailing newline, we want
@@ -34,7 +44,7 @@ impl Formatter {
                 let last_line = pos == last_pos;
 
                 let to_push = render_row(
-                    &line_style,
+                    line_style,
                     prefix,
                     &[StyledToken::new(
                         line.to_string(),
@@ -326,25 +336,51 @@ fn to_lines(text: &str) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
+    use crate::ansi::Color::Green;
+    use crate::ansi::Color::Red;
+    use crate::ansi::Color::Yellow;
+    use crate::ansi::ANSI_STYLE_NORMAL;
+
     use super::*;
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
+    const LINE_STYLE_OLD: LineStyle = {
+        LineStyle {
+            prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+            midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+            highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+        }
+    };
+
+    const LINE_STYLE_NEW: LineStyle = {
+        LineStyle {
+            prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+            midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+            highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+        }
+    };
+
+    const FORMATTER: Formatter = Formatter {
+        line_style_old: LINE_STYLE_OLD,
+        line_style_new: LINE_STYLE_NEW,
+    };
+
     #[test]
     fn test_simple_format_adds_and_removes() {
-        let formatter = Formatter {};
-
         let empty: Vec<String> = Vec::new();
-        assert_eq!(formatter.format_simple(&[], &[]), empty);
+        assert_eq!(FORMATTER.format_simple(&[], &[]), empty);
 
         // Test adds-only
         assert_eq!(
-            formatter.format_simple(&["+"], &["a\n"]),
+            FORMATTER.format_simple(&["+"], &["a\n"]),
             ["".to_string() + GREEN + "+a" + NORMAL]
         );
         assert_eq!(
-            formatter.format_simple(&["+"], &["a\nb\n"]),
+            FORMATTER.format_simple(&["+"], &["a\nb\n"]),
             [
                 "".to_string() + GREEN + "+a" + NORMAL,
                 "".to_string() + GREEN + "+b" + NORMAL,
@@ -353,11 +389,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            formatter.format_simple(&["-"], &["a\n"]),
+            FORMATTER.format_simple(&["-"], &["a\n"]),
             ["".to_string() + OLD + "-a" + NORMAL]
         );
         assert_eq!(
-            formatter.format_simple(&["-"], &["a\nb\n"]),
+            FORMATTER.format_simple(&["-"], &["a\nb\n"]),
             [
                 "".to_string() + OLD + "-a" + NORMAL,
                 "".to_string() + OLD + "-b" + NORMAL,
@@ -369,8 +405,6 @@ mod tests {
     /// hangs, that's probably what happened again.
     #[test]
     fn test_format_simple_complexity() {
-        let formatter = Formatter {};
-
         // Values from whan this file was added in a single commit:
         // https://github.com/walles/moar/blob/59270d6f8cf454f7a79fcde36a7fcf794768ced9/sample-files/large-git-log-patch.txt
         let lines = 300_000;
@@ -384,15 +418,13 @@ mod tests {
         let prefixes = vec!["+"];
         let texts = vec![text.as_str()];
 
-        let result = formatter.format_simple(&prefixes, &texts);
+        let result = FORMATTER.format_simple(&prefixes, &texts);
         assert_eq!(text.lines().count(), result.len());
     }
 
     #[test]
     fn test_quote_change() {
-        let formatter = Formatter {};
-
-        let result = formatter.format(
+        let result = FORMATTER.format(
             &["-", "+"],
             &[
                 "<unchanged text between quotes>\n",
@@ -414,12 +446,10 @@ mod tests {
 
     #[test]
     fn test_almost_empty_changes() {
-        let formatter = Formatter {};
-
-        let result = formatter.format(&["-"], &["x\n"]);
+        let result = FORMATTER.format(&["-"], &["x\n"]);
         assert_eq!(result, [format!("{OLD}-x{NORMAL}"),]);
 
-        let result = formatter.format(&["+"], &["x\n"]);
+        let result = FORMATTER.format(&["+"], &["x\n"]);
         assert_eq!(result, [format!("{GREEN}+x{NORMAL}"),]);
     }
 

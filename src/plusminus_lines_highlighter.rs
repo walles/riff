@@ -3,6 +3,7 @@ use threadpool::ThreadPool;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::refiner::Formatter;
 use crate::string_future::StringFuture;
+use crate::token_collector::{LINE_STYLE_NEW, LINE_STYLE_OLD};
 
 #[derive(Debug)]
 pub(crate) struct PlusMinusLinesHighlighter {
@@ -126,7 +127,7 @@ impl PlusMinusLinesHighlighter {
             texts: vec![line.to_string() + "\n"],
             prefixes: vec![prefix.to_string()],
             last_seen_prefix: Some(prefix.to_string()),
-            formatter: Formatter {},
+            formatter: Formatter::new(LINE_STYLE_OLD, LINE_STYLE_NEW),
         });
     }
 

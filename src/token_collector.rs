@@ -24,12 +24,12 @@ pub(crate) struct StyledToken {
     pub(crate) style: Style,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct LineStyle {
-    prefix_style: AnsiStyle,
-    unchanged_style: AnsiStyle,
+    pub(crate) prefix_style: AnsiStyle,
+    pub(crate) unchanged_style: AnsiStyle,
     pub(crate) midlighted_style: AnsiStyle,
-    highlighted_style: AnsiStyle,
+    pub(crate) highlighted_style: AnsiStyle,
 }
 
 pub(crate) const LINE_STYLE_OLD: LineStyle = {
