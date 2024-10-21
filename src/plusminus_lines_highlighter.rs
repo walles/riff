@@ -21,6 +21,8 @@ pub(crate) struct PlusMinusLinesHighlighter {
     prefixes: Vec<String>,
 
     last_seen_prefix: Option<String>,
+
+    formatter: Formatter,
 }
 
 impl LinesHighlighter for PlusMinusLinesHighlighter {
@@ -124,6 +126,7 @@ impl PlusMinusLinesHighlighter {
             texts: vec![line.to_string() + "\n"],
             prefixes: vec![prefix.to_string()],
             last_seen_prefix: Some(prefix.to_string()),
+            formatter: Formatter {},
         });
     }
 
@@ -202,6 +205,7 @@ impl PlusMinusLinesHighlighter {
 
         let texts = self.texts.clone();
         let prefixes = self.prefixes.clone();
+        let formatter = self.formatter;
 
         self.texts.clear();
         self.prefixes.clear();
@@ -209,7 +213,7 @@ impl PlusMinusLinesHighlighter {
         let return_me = StringFuture::from_function(
             move || {
                 let mut result = String::new();
-                for line in Formatter::format(
+                for line in formatter.format(
                     &prefixes.iter().map(String::as_str).collect::<Vec<&str>>(),
                     &texts.iter().map(String::as_str).collect::<Vec<&str>>(),
                 ) {

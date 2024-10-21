@@ -5,6 +5,7 @@ use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::token_collector::*;
 use crate::tokenizer;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Formatter {}
 
 impl Formatter {
@@ -12,7 +13,7 @@ impl Formatter {
     ///
     /// No intra-line refinement.
     #[must_use]
-    fn format_simple(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
+    fn format_simple(&self, prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
         let mut lines: Vec<String> = Vec::new();
 
         for (prefix, prefix_text) in prefixes.iter().zip(prefix_texts.iter()) {
@@ -80,18 +81,18 @@ impl Formatter {
     ///
     /// `prefixes` are the prefixes to use for each `prefix_texts` text.
     #[must_use]
-    pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
+    pub fn format(&self, prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
         if prefixes.len() < 2 {
             // Nothing to compare, we can't highlight anything
-            return Self::format_simple(prefixes, prefix_texts);
+            return self.format_simple(prefixes, prefix_texts);
         }
         if !prefixes.iter().any(|prefix| prefix.contains('+')) {
             // Nothing added, we can't highlight anything
-            return Self::format_simple(prefixes, prefix_texts);
+            return self.format_simple(prefixes, prefix_texts);
         }
 
-        if Self::too_large_to_refine(prefix_texts) {
-            return Self::format_simple(prefixes, prefix_texts);
+        if Formatter::too_large_to_refine(prefix_texts) {
+            return self.format_simple(prefixes, prefix_texts);
         }
 
         // This is what all old texts will be compared against
@@ -332,16 +333,18 @@ mod tests {
 
     #[test]
     fn test_simple_format_adds_and_removes() {
+        let formatter = Formatter {};
+
         let empty: Vec<String> = Vec::new();
-        assert_eq!(Formatter::format_simple(&[], &[]), empty);
+        assert_eq!(formatter.format_simple(&[], &[]), empty);
 
         // Test adds-only
         assert_eq!(
-            Formatter::format_simple(&["+"], &["a\n"]),
+            formatter.format_simple(&["+"], &["a\n"]),
             ["".to_string() + GREEN + "+a" + NORMAL]
         );
         assert_eq!(
-            Formatter::format_simple(&["+"], &["a\nb\n"]),
+            formatter.format_simple(&["+"], &["a\nb\n"]),
             [
                 "".to_string() + GREEN + "+a" + NORMAL,
                 "".to_string() + GREEN + "+b" + NORMAL,
@@ -350,11 +353,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            Formatter::format_simple(&["-"], &["a\n"]),
+            formatter.format_simple(&["-"], &["a\n"]),
             ["".to_string() + OLD + "-a" + NORMAL]
         );
         assert_eq!(
-            Formatter::format_simple(&["-"], &["a\nb\n"]),
+            formatter.format_simple(&["-"], &["a\nb\n"]),
             [
                 "".to_string() + OLD + "-a" + NORMAL,
                 "".to_string() + OLD + "-b" + NORMAL,
@@ -366,6 +369,8 @@ mod tests {
     /// hangs, that's probably what happened again.
     #[test]
     fn test_format_simple_complexity() {
+        let formatter = Formatter {};
+
         // Values from whan this file was added in a single commit:
         // https://github.com/walles/moar/blob/59270d6f8cf454f7a79fcde36a7fcf794768ced9/sample-files/large-git-log-patch.txt
         let lines = 300_000;
@@ -379,13 +384,15 @@ mod tests {
         let prefixes = vec!["+"];
         let texts = vec![text.as_str()];
 
-        let result = Formatter::format_simple(&prefixes, &texts);
+        let result = formatter.format_simple(&prefixes, &texts);
         assert_eq!(text.lines().count(), result.len());
     }
 
     #[test]
     fn test_quote_change() {
-        let result = Formatter::format(
+        let formatter = Formatter {};
+
+        let result = formatter.format(
             &["-", "+"],
             &[
                 "<unchanged text between quotes>\n",
@@ -407,10 +414,12 @@ mod tests {
 
     #[test]
     fn test_almost_empty_changes() {
-        let result = Formatter::format(&["-"], &["x\n"]);
+        let formatter = Formatter {};
+
+        let result = formatter.format(&["-"], &["x\n"]);
         assert_eq!(result, [format!("{OLD}-x{NORMAL}"),]);
 
-        let result = Formatter::format(&["+"], &["x\n"]);
+        let result = formatter.format(&["+"], &["x\n"]);
         assert_eq!(result, [format!("{GREEN}+x{NORMAL}"),]);
     }
 
