@@ -5,6 +5,7 @@ use crate::hunk_highlighter::HunkLinesHighlighter;
 use crate::io::ErrorKind;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter};
 use crate::plusminus_header_highlighter::PlusMinusHeaderHighlighter;
+use crate::refiner::Formatter;
 use std::io::{self, BufWriter, Write};
 use std::process::{self, exit};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
@@ -101,6 +102,8 @@ pub(crate) struct LineCollector {
     // returns a string and another that does a background computation first.
     // But I failed to figure out how when I tried, more Googling needed!
     print_queue_putter: SyncSender<StringFuture>,
+
+    formatter: Formatter,
 }
 
 impl Drop for LineCollector {
@@ -138,7 +141,11 @@ impl Drop for LineCollector {
 }
 
 impl LineCollector {
-    pub fn new<W: io::Write + Send + 'static>(output: W, color: bool) -> LineCollector {
+    pub fn new<W: io::Write + Send + 'static>(
+        output: W,
+        color: bool,
+        formatter: Formatter,
+    ) -> LineCollector {
         // This is how many entries we can look ahead. An "entry" in this case
         // being either a plain text section or an oldnew section.
         //
@@ -181,6 +188,8 @@ impl LineCollector {
             consumer_thread: Some(consumer),
             thread_pool: ThreadPool::new(num_cpus::get()),
             print_queue_putter: queue_putter,
+
+            formatter,
         };
     }
 
@@ -283,7 +292,7 @@ impl LineCollector {
             }
         }
 
-        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line) {
+        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line, self.formatter) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(());

@@ -1,5 +1,9 @@
 use similar::capture_diff_slices;
 
+use crate::ansi::Color::Green;
+use crate::ansi::Color::Red;
+use crate::ansi::Color::Yellow;
+use crate::ansi::ANSI_STYLE_NORMAL;
 use crate::constants::*;
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::token_collector::*;
@@ -12,10 +16,37 @@ pub(crate) struct Formatter {
 }
 
 impl Formatter {
-    pub(crate) fn new(line_style_old: LineStyle, line_style_new: LineStyle) -> Self {
+    pub(crate) fn default() -> Self {
         Formatter {
-            line_style_old,
-            line_style_new,
+            line_style_old: LineStyle {
+                prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+                unchanged_style: ANSI_STYLE_NORMAL.with_color(Red),
+                midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+                highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+            },
+            line_style_new: LineStyle {
+                prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+                unchanged_style: ANSI_STYLE_NORMAL.with_color(Green),
+                midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+                highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+            },
+        }
+    }
+
+    pub(crate) fn yellow() -> Self {
+        Formatter {
+            line_style_old: LineStyle {
+                prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+                unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+                midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+                highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+            },
+            line_style_new: LineStyle {
+                prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+                unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+                midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+                highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+            },
         }
     }
 
@@ -144,10 +175,10 @@ impl Formatter {
         // First render() into strings, then to_lines() into lines
         let mut highlighted_lines = Vec::new();
         for (prefix, tokens) in old_prefixes.iter().zip(old_tokens.iter()) {
-            let text = render(&LINE_STYLE_OLD, prefix, tokens);
+            let text = render(&self.line_style_old, prefix, tokens);
             highlighted_lines.extend(to_lines(&text));
         }
-        let new_text = render(&LINE_STYLE_NEW, new_prefix, &new_tokens);
+        let new_text = render(&self.line_style_new, new_prefix, &new_tokens);
         highlighted_lines.extend(to_lines(&new_text));
 
         return highlighted_lines;
@@ -335,12 +366,7 @@ fn to_lines(text: &str) -> Vec<String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::ansi::Color::Green;
-    use crate::ansi::Color::Red;
-    use crate::ansi::Color::Yellow;
-    use crate::ansi::ANSI_STYLE_NORMAL;
-
+pub(crate) mod tests {
     use super::*;
 
     #[cfg(test)]
@@ -364,7 +390,7 @@ mod tests {
         }
     };
 
-    const FORMATTER: Formatter = Formatter {
+    pub(crate) const FORMATTER: Formatter = Formatter {
         line_style_old: LINE_STYLE_OLD,
         line_style_new: LINE_STYLE_NEW,
     };

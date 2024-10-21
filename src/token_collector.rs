@@ -3,7 +3,6 @@ use std::cmp;
 use crate::ansi::AnsiStyle;
 use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
-use crate::ansi::Color::Yellow;
 use crate::ansi::Weight;
 use crate::ansi::ANSI_STYLE_NORMAL;
 
@@ -31,24 +30,6 @@ pub(crate) struct LineStyle {
     pub(crate) midlighted_style: AnsiStyle,
     pub(crate) highlighted_style: AnsiStyle,
 }
-
-pub(crate) const LINE_STYLE_OLD: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
-        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-    }
-};
-
-pub(crate) const LINE_STYLE_NEW: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
-        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
-    }
-};
 
 pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
     LineStyle {
@@ -392,12 +373,31 @@ pub fn brighten_filename(row: &mut [StyledToken]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ansi::Color::Yellow;
     use crate::constants::GREEN;
     use crate::constants::NORMAL;
     use crate::constants::OLD;
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
+
+    const LINE_STYLE_OLD: LineStyle = {
+        LineStyle {
+            prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+            midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+            highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+        }
+    };
+
+    const LINE_STYLE_NEW: LineStyle = {
+        LineStyle {
+            prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+            midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+            highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+        }
+    };
 
     #[test]
     fn test_errorlight_nonleading_tabs() {
@@ -442,6 +442,9 @@ mod tests {
         );
         assert_eq!(rendered, format!("{GREEN}+hej{NORMAL}\n"));
     }
+
+
+FIXME: Why are the tests passing even though stuff is supposed to default to red / green?
 
     #[test]
     fn test_errorlight_trailing_whitespace() {
