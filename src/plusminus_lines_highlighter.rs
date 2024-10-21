@@ -1,7 +1,7 @@
 use threadpool::ThreadPool;
 
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
-use crate::refiner;
+use crate::refiner::Formatter;
 use crate::string_future::StringFuture;
 
 #[derive(Debug)]
@@ -209,7 +209,7 @@ impl PlusMinusLinesHighlighter {
         let return_me = StringFuture::from_function(
             move || {
                 let mut result = String::new();
-                for line in refiner::format(
+                for line in Formatter::format(
                     &prefixes.iter().map(String::as_str).collect::<Vec<&str>>(),
                     &texts.iter().map(String::as_str).collect::<Vec<&str>>(),
                 ) {
