@@ -15,10 +15,10 @@ Date:   Thu Dec 31 15:22:09 2020 +0100
  /// it.
  const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;
 
-[31m-[33mconst [7m[31mLARGE_BYTE_COUNT_CHANGE_PERCENT[27m[33m: usize = 100;[0m
-[31m-[33mconst [7m[31mSMALL_BYTE_COUNT_CHANGE[27m[33m: usize = 10;[0m
-[32m+[33mconst [7m[32mLARGE_COUNT_CHANGE_PERCENT[27m[33m: usize = 100;[0m
-[32m+[33mconst [7m[32mSMALL_COUNT_CHANGE[27m[33m: usize = 10;[0m
+[31m-const [7mLARGE_BYTE_COUNT_CHANGE_PERCENT[27m: usize = 100;[0m
+[31m-const [7mSMALL_BYTE_COUNT_CHANGE[27m: usize = 10;[0m
+[32m+const [7mLARGE_COUNT_CHANGE_PERCENT[27m: usize = 100;[0m
+[32m+const [7mSMALL_COUNT_CHANGE[27m: usize = 10;[0m
 
  /// Format old and new lines in OLD and NEW colors.
  ///
@@ -26,10 +26,10 @@ Date:   Thu Dec 31 15:22:09 2020 +0100
          return simple_format(old_text, new_text);
      }
 
-[31m-[33m    // [7m[31mThis check makes[27m[33m us faster, please use the benchmark.py script before and[0m
-[31m-    //[33m after if you change this.[0m
-[32m+[33m    // [7m[32mThese checks make[27m[33m us faster, please use the benchmark.py script before[0m
-[32m+    //[33m and after if you change this.[0m
+[31m-    // [7mThis check makes[27m us faster, please use the benchmark.py script before and[0m
+[31m-    // after if you change this.[0m
+[32m+    // [7mThese checks make[27m us faster, please use the benchmark.py script before[0m
+[32m+    // and after if you change this.[0m
      if is_large_byte_count_change(old_text, new_text) {
          return simple_format(old_text, new_text);
      }

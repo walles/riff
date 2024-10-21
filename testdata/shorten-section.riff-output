@@ -6,12 +6,12 @@
  -   url: /api/.*
      script: auto
  -   url: /(.*)
-[31m-[33m    static_files: ui/[7m[31mdist[27m[33m/\1[0m
-[31m-[33m    upload: ui/[7m[31mdist[27m[33m/(.*)[0m
+[31m-    static_files: ui/[7mdist[27m/\1[0m
+[31m-    upload: ui/[7mdist[27m/(.*)[0m
 [31m-error_handlers:[0m
 [31m--   file: ui/dist/default_error.html[0m
-[32m+[33m    static_files: ui/[7m[32mbuild[27m[33m/\1[0m
-[32m+[33m    upload: ui/[7m[32mbuild[27m[33m/(.*)[0m
+[32m+    static_files: ui/[7mbuild[27m/\1[0m
+[32m+    upload: ui/[7mbuild[27m/(.*)[0m
  env_variables:
      PGUSER: postgres
      CLOUD_SQL_CONNECTION_NAME: /cloudsql/animated-sniffle:europe-west1:pg-animated-sniffle

@@ -12,23 +12,23 @@ Date:   Tue Nov 17 08:44:29 2020 +0100
  * [Regexp](http://en.wikipedia.org/wiki/Regular_expression#Basic_concepts)
    search if your search string is a valid regexp
  * Supports displaying ANSI color coded texts (like the output from
-[31m-[33m  `git diff` for example)[0m
-[32m+[33m  `git diff` [7m[32m[| `riff`](https://github.com/walles/riff) [27m[33mfor example)[0m
+[31m-  `git diff` for example)[0m
+[32m+  `git diff` [7m[| `riff`](https://github.com/walles/riff) [27mfor example)[0m
  * Supports UTF-8 input and output
  * The position in the file is always shown
  
-[31m-[33mFor compatibility reasons, `moar`[31m [33muses the formats declared in these[0m
-[31m-[33menvironment variables when viewing man pages:[0m
-[32m+[7m[[27m[33mFor compatibility reasons[7m[32m](https://github.com/walles/moar/issues/14)[27m[33m, `moar`[0m
-[32m+[33muses the formats declared in these[32m [33menvironment variables when viewing man pages:[0m
+[31m-For compatibility reasons, `moar` uses the formats declared in these[0m
+[31m-environment variables when viewing man pages:[0m
+[32m+[7m[[27mFor compatibility reasons[7m](https://github.com/walles/moar/issues/14)[27m, `moar`[0m
+[32m+uses the formats declared in these environment variables when viewing man pages:[0m
  
  * `LESS_TERMCAP_md`: Bold
  * `LESS_TERMCAP_us`: Underline
  
-[31m-See[33m [[7m[31mhere[27m[33m](https://github.com/walles/[7m[31mmoar/issues/14[27m[33m)[31m for usage[33m [7m[31mexamples[27m[33m.[0m
+[31m-See [[7mhere[27m](https://github.com/walles/[7mmoar/issues/14[27m) for usage [7mexamples[27m.[0m
 [32m+Moar is used as the default pager by:[0m
-[32m+*[33m [[7m[32m`px` / `ptop`[27m[33m](https://github.com/walles/[7m[32mpx[27m[33m)[0m
-[32m+*[33m [7m[32m[`riff`](https://github.com/walles/riff)[0m
+[32m+* [[7m`px` / `ptop`[27m](https://github.com/walles/[7mpx[27m)[0m
+[32m+* [7m[`riff`](https://github.com/walles/riff)[0m
  
  Installing
  ----------
