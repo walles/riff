@@ -17,6 +17,8 @@ pub(crate) struct Formatter {
 }
 
 impl Formatter {
+    // The other LineStyles live in token_collector.rs
+
     pub(crate) fn default() -> Self {
         Formatter {
             line_style_old: LineStyle {

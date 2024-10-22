@@ -31,6 +31,8 @@ pub(crate) struct LineStyle {
     pub(crate) highlighted_style: AnsiStyle,
 }
 
+// The base line styles live in refiner.rs
+
 pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
