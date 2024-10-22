@@ -57,8 +57,8 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
  
      let comma = format!("{}, {}", YELLOW, NORMAL);
      return format!(
-[2m[31m-        "{}{} ({}){}",[0m
-[2m[32m+[0m        "{}{} ({}[7m[32m{}[0m){}",
+[31m-        "{}{} ({}){}",[0m
+[32m+        "{}{} ({}[7m{}[27m){}",[0m
          YELLOW,
          commit_part,
          parenthesis_parts
@@ -74,8 +74,8 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
 [1m--- [0mtestdata/[1mgit-commit-line.riff-output[0m
 [1m+++ [0mtestdata/[1mgit-commit-line.riff-output[0m
 [36m@@ -1,3 +1,3 @@[0m
-[2m[31m-commit b24b967d952a8b7cf538d57d12aae8019cedada2 (HEAD -> master, tag: 2.20.0, origin/master, origin/HEAD)[0m
-[2m[32m+[0mcommit b24b967d952a8b7cf538d57d12aae8019cedada2 (HEAD -> master, tag: 2.20.0, origin/master, origin/HEAD)
+[31m-commit b24b967d952a8b7cf538d57d12aae8019cedada2 (HEAD -> master, tag: 2.20.0, origin/master, origin/HEAD)[0m
+[32m+commit b24b967d952a8b7cf538d57d12aae8019cedada2 (HEAD -> master, tag: 2.20.0, origin/master, origin/HEAD)[0m
  Author: Johan Walles <johan.walles@gmail.com>
  Date:   Wed Sep 14 19:07:05 2022 +0200
 [2mdiff --git testdata/remove-file.riff-output testdata/remove-file.riff-output[0m
@@ -83,8 +83,8 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
 [1m--- [0mtestdata/[1mremove-file.riff-output[0m
 [1m+++ [0mtestdata/[1mremove-file.riff-output[0m
 [36m@@ -1,4 +1,4 @@[0m
-[2m[31m-commit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)[0m
-[2m[32m+[0mcommit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)
+[31m-commit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)[0m
+[32m+commit 90a1c38ad8b74134c24a4726f25958da4806738d (HEAD -> main)[0m
  Author: Johan Walles <johan.walles@gmail.com>
  Date:   Wed Sep 14 18:57:42 2022 +0200
  

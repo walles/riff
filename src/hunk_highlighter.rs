@@ -6,6 +6,7 @@ use crate::constants::NO_EOF_NEWLINE_COLOR;
 use crate::hunk_header::HunkHeader;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
 use crate::plusminus_lines_highlighter::PlusMinusLinesHighlighter;
+use crate::refiner::Formatter;
 use crate::string_future::StringFuture;
 
 #[derive(Debug)]
@@ -20,6 +21,8 @@ pub(crate) struct HunkLinesHighlighter {
 
     /// We'll count these values down as we consume lines.
     remaining_line_counts: Vec<usize>,
+
+    formatter: Formatter,
 }
 
 impl LinesHighlighter for HunkLinesHighlighter {
@@ -86,7 +89,7 @@ impl HunkLinesHighlighter {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
-    pub(crate) fn from_line(line: &str) -> Option<Self>
+    pub(crate) fn from_line(line: &str, formatter: Formatter) -> Option<Self>
     where
         Self: Sized,
     {
@@ -96,6 +99,7 @@ impl HunkLinesHighlighter {
                 remaining_line_counts: hunk_header.linecounts.clone(),
                 initial_line_counts: hunk_header.linecounts,
                 lines_highlighter: None,
+                formatter,
             });
         }
 
@@ -139,7 +143,9 @@ impl HunkLinesHighlighter {
                 return Ok(return_me);
             }
         }
-        if let Some(highlighter) = PlusMinusLinesHighlighter::from_line(line, prefix_length) {
+        if let Some(highlighter) =
+            PlusMinusLinesHighlighter::from_line(line, prefix_length, self.formatter)
+        {
             self.lines_highlighter = Some(Box::new(highlighter));
             return Ok(return_me);
         }
@@ -270,6 +276,7 @@ impl HunkLinesHighlighter {
 
 #[cfg(test)]
 mod tests {
+    use crate::refiner::tests::FORMATTER;
     use crate::{line_collector::NO_EOF_NEWLINE_MARKER_HOLDER, lines_highlighter::LineAcceptance};
 
     use super::*;
@@ -279,7 +286,7 @@ mod tests {
     fn test_happy_path() {
         let thread_pool = ThreadPool::new(1);
 
-        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@").unwrap();
+        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@", FORMATTER).unwrap();
 
         // First call to consume_line() should get us the hunk header
         let mut result = test_me
@@ -308,8 +315,8 @@ mod tests {
         assert_eq!(
             result.highlighted[0].get(),
             concat!(
-                "\u{1b}[2m\u{1b}[31m-Hello, my name is Johan\u{1b}[0m\n",
-                "\u{1b}[2m\u{1b}[32m+\u{1b}[0mHello, my \u{1b}[7m\u{1b}[32mfirst \u{1b}[0mname is Johan\n"
+                "\u{1b}[31m-\u{1b}[33mHello, my name is Johan\u{1b}[0m\n",
+                "\u{1b}[32m+\u{1b}[33mHello, my \u{1b}[7m\u{1b}[32mfirst \u{1b}[27m\u{1b}[33mname is Johan\u{1b}[0m\n"
             )
         );
         assert_eq!(result.highlighted[1].get(), " I like pie.\n");
@@ -320,7 +327,7 @@ mod tests {
 
     #[test]
     fn test_decrease_remaining_line_count() {
-        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@").unwrap();
+        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@", FORMATTER).unwrap();
         assert_eq!(test_me.remaining_line_counts, vec![2, 2]);
 
         test_me.decrease_remaining_line_counts("+").unwrap();
@@ -347,7 +354,7 @@ mod tests {
             *no_eof_newline_marker = Some("\\ No newline at end of file".to_string());
         }
 
-        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,1 +1,2 @@").unwrap();
+        let mut test_me = HunkLinesHighlighter::from_line("@@ -1,1 +1,2 @@", FORMATTER).unwrap();
         assert_eq!(test_me.remaining_line_counts, vec![1, 2]);
 
         let thread_pool = ThreadPool::new(1);
@@ -380,7 +387,8 @@ mod tests {
 
     #[test]
     fn test_decrease_remaining_line_count_merge() {
-        let mut test_me = HunkLinesHighlighter::from_line("@@@ -1,5 -1,5 +1,5 @@@").unwrap();
+        let mut test_me =
+            HunkLinesHighlighter::from_line("@@@ -1,5 -1,5 +1,5 @@@", FORMATTER).unwrap();
         assert_eq!(test_me.remaining_line_counts, vec![5, 5, 5]);
 
         test_me.decrease_remaining_line_counts(" -").unwrap();

@@ -1,7 +1,7 @@
 use threadpool::ThreadPool;
 
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter, Response};
-use crate::refiner;
+use crate::refiner::Formatter;
 use crate::string_future::StringFuture;
 
 #[derive(Debug)]
@@ -21,6 +21,8 @@ pub(crate) struct PlusMinusLinesHighlighter {
     prefixes: Vec<String>,
 
     last_seen_prefix: Option<String>,
+
+    formatter: Formatter,
 }
 
 impl LinesHighlighter for PlusMinusLinesHighlighter {
@@ -108,7 +110,11 @@ impl LinesHighlighter for PlusMinusLinesHighlighter {
 
 impl PlusMinusLinesHighlighter {
     #[must_use]
-    pub(crate) fn from_line(line: &str, prefix_length: usize) -> Option<Self> {
+    pub(crate) fn from_line(
+        line: &str,
+        prefix_length: usize,
+        formatter: Formatter,
+    ) -> Option<Self> {
         if line.len() < prefix_length {
             return None;
         }
@@ -124,6 +130,7 @@ impl PlusMinusLinesHighlighter {
             texts: vec![line.to_string() + "\n"],
             prefixes: vec![prefix.to_string()],
             last_seen_prefix: Some(prefix.to_string()),
+            formatter,
         });
     }
 
@@ -202,6 +209,7 @@ impl PlusMinusLinesHighlighter {
 
         let texts = self.texts.clone();
         let prefixes = self.prefixes.clone();
+        let formatter = self.formatter;
 
         self.texts.clear();
         self.prefixes.clear();
@@ -209,7 +217,7 @@ impl PlusMinusLinesHighlighter {
         let return_me = StringFuture::from_function(
             move || {
                 let mut result = String::new();
-                for line in refiner::format(
+                for line in formatter.format(
                     &prefixes.iter().map(String::as_str).collect::<Vec<&str>>(),
                     &texts.iter().map(String::as_str).collect::<Vec<&str>>(),
                 ) {
@@ -229,6 +237,7 @@ impl PlusMinusLinesHighlighter {
 #[cfg(test)]
 mod tests {
     use crate::lines_highlighter::LinesHighlighter;
+    use crate::refiner::tests::FORMATTER;
     use crate::{
         line_collector::NO_EOF_NEWLINE_MARKER_HOLDER, lines_highlighter::LineAcceptance,
         plusminus_lines_highlighter::PlusMinusLinesHighlighter,
@@ -244,7 +253,8 @@ mod tests {
             *no_eof_newline_marker = Some("\\ No newline at end of file".to_string());
         }
 
-        let mut test_me = PlusMinusLinesHighlighter::from_line("+No trailing newline", 1).unwrap();
+        let mut test_me =
+            PlusMinusLinesHighlighter::from_line("+No trailing newline", 1, FORMATTER).unwrap();
         assert_eq!(test_me.texts, vec!["No trailing newline\n"]);
         assert_eq!(test_me.prefixes, vec!["+"]);
 

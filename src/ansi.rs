@@ -1,6 +1,6 @@
 use crate::constants::{
     BOLD, DEFAULT_COLOR, FAINT, GREEN, INVERSE_VIDEO, NORMAL, NORMAL_INTENSITY, NO_INVERSE_VIDEO,
-    RED,
+    RED, YELLOW,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -8,6 +8,7 @@ pub enum Color {
     Default,
     Red,
     Green,
+    Yellow,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -72,6 +73,7 @@ impl AnsiStyle {
                 Color::Default => return_me.push_str(DEFAULT_COLOR),
                 Color::Red => return_me.push_str(RED),
                 Color::Green => return_me.push_str(GREEN),
+                Color::Yellow => return_me.push_str(YELLOW),
             }
         }
 

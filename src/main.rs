@@ -16,6 +16,7 @@ use git_version::git_version;
 use line_collector::LineCollector;
 use log::error;
 use logging::init_logger;
+use refiner::Formatter;
 use std::io::{self, IsTerminal};
 use std::panic;
 use std::path::{self, PathBuf};
@@ -39,8 +40,6 @@ mod refiner;
 mod string_future;
 mod token_collector;
 mod tokenizer;
-
-static mut NO_ADDS_ONLY_SPECIAL: bool = false;
 
 const HELP_TEXT_FOOTER: &str = r#"Installing riff in the $PATH:
   sudo cp riff /usr/local/bin
@@ -105,10 +104,13 @@ struct Options {
     #[arg(long)]
     no_pager: bool,
 
-    /// No special highlighting for lines that only add content
-    // Ref: https://github.com/walles/riff/issues/47
+    /// No effect, replaced by --unchanged-style
     #[arg(long)]
     no_adds_only_special: bool,
+
+    /// How will unchanged line parts be styled?
+    #[arg(long)]
+    unchanged_style: Option<UnchangedStyle>,
 
     /// `auto` = color if stdout is a terminal
     #[arg(long)]
@@ -118,7 +120,7 @@ struct Options {
     please_panic: bool,
 }
 
-#[derive(ValueEnum, Clone, Default)]
+#[derive(ValueEnum, Clone, Default, Debug)]
 enum ColorOption {
     On,
     Off,
@@ -137,6 +139,17 @@ impl ColorOption {
     }
 }
 
+/// How will unchanged line parts be styled?
+#[derive(ValueEnum, Clone, Default, Debug)]
+pub(crate) enum UnchangedStyle {
+    /// No special styling, just red / green like the rest of the line
+    #[default]
+    None,
+
+    /// Try it and report back!
+    Experimental,
+}
+
 fn format_error(message: String, line_number: usize, line: &[u8]) -> String {
     return format!(
         "On line {}: {}\n  Line {}: {}",
@@ -151,8 +164,9 @@ fn highlight_diff_or_exit<W: io::Write + Send + 'static>(
     input: &mut dyn io::Read,
     output: W,
     color: bool,
+    formatter: Formatter,
 ) {
-    if let Err(message) = highlight_diff(input, output, color) {
+    if let Err(message) = highlight_diff(input, output, color, formatter) {
         eprintln!("{}", message);
         exit(1);
     }
@@ -164,8 +178,9 @@ fn highlight_diff<W: io::Write + Send + 'static>(
     input: &mut dyn io::Read,
     output: W,
     color: bool,
+    formatter: Formatter,
 ) -> Result<(), String> {
-    let mut line_collector = LineCollector::new(output, color);
+    let mut line_collector = LineCollector::new(output, color, formatter);
 
     // Read input line by line, using from_utf8_lossy() to convert lines into
     // strings while handling invalid UTF-8 without crashing
@@ -219,7 +234,12 @@ fn highlight_diff<W: io::Write + Send + 'static>(
 ///
 /// Returns `true` if the pager was found, `false` otherwise.
 #[must_use]
-fn try_pager(input: &mut dyn io::Read, pager_name: &str, color: bool) -> bool {
+fn try_pager(
+    input: &mut dyn io::Read,
+    pager_name: &str,
+    color: bool,
+    formatter: Formatter,
+) -> bool {
     let mut command = Command::new(pager_name);
 
     if env::var(PAGER_FORKBOMB_STOP).is_ok() {
@@ -244,7 +264,7 @@ fn try_pager(input: &mut dyn io::Read, pager_name: &str, color: bool) -> bool {
         Ok(mut pager) => {
             let pager_stdin = pager.stdin.unwrap();
             pager.stdin = None;
-            highlight_diff_or_exit(input, pager_stdin, color);
+            highlight_diff_or_exit(input, pager_stdin, color, formatter);
 
             // FIXME: Report pager exit status if non-zero, together with
             // contents of pager stderr as well if possible.
@@ -279,20 +299,20 @@ fn panic_handler(panic_info: &panic::PanicHookInfo) {
 }
 
 /// Highlight the given stream, paging if stdout is a terminal
-fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool) {
+fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, formatter: Formatter) {
     if !io::stdout().is_terminal() {
         // We're being piped, just do stdin -> stdout
-        highlight_diff_or_exit(input, io::stdout(), color);
+        highlight_diff_or_exit(input, io::stdout(), color, formatter);
         return;
     }
 
     if no_pager {
-        highlight_diff_or_exit(input, io::stdout(), color);
+        highlight_diff_or_exit(input, io::stdout(), color, formatter);
         return;
     }
 
     if let Ok(pager_value) = env::var("PAGER") {
-        if try_pager(input, &pager_value, color) {
+        if try_pager(input, &pager_value, color, formatter) {
             return;
         }
 
@@ -300,16 +320,16 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool) {
         // doesn't exist.
     }
 
-    if try_pager(input, "moar", color) {
+    if try_pager(input, "moar", color, formatter) {
         return;
     }
 
-    if try_pager(input, "less", color) {
+    if try_pager(input, "less", color, formatter) {
         return;
     }
 
     // No pager found, wth?
-    highlight_diff_or_exit(input, io::stdout(), color);
+    highlight_diff_or_exit(input, io::stdout(), color, formatter);
 }
 
 /// `Not found`, `File`, `Directory` or `Not file not dir`
@@ -348,6 +368,7 @@ fn exec_diff_highlight(
     ignore_all_space: bool,
     no_pager: bool,
     color: bool,
+    formatter: Formatter,
 ) {
     let path1 = path::Path::new(path1);
     let path2 = path::Path::new(path2);
@@ -399,7 +420,7 @@ fn exec_diff_highlight(
     }
 
     let diff_stdout = diff_subprocess.stdout.as_mut().unwrap();
-    highlight_stream(diff_stdout, no_pager, color);
+    highlight_stream(diff_stdout, no_pager, color, formatter);
 
     let diff_result = diff_subprocess.wait().unwrap();
     let diff_exit_code = diff_result.code().unwrap_or(2);
@@ -461,9 +482,9 @@ fn main() {
         panic!("Panicking on purpose");
     }
 
-    unsafe {
-        // Nothing going on yet, updating this variable should be fine!
-        NO_ADDS_ONLY_SPECIAL = options.no_adds_only_special
+    let formatter = match options.unchanged_style.unwrap_or(UnchangedStyle::None) {
+        UnchangedStyle::None => Formatter::default(),
+        UnchangedStyle::Experimental => Formatter::experimental(),
     };
 
     if let (Some(file1), Some(file2)) = (options.x1, options.x2) {
@@ -478,6 +499,7 @@ fn main() {
                 .color
                 .unwrap_or(ColorOption::Auto)
                 .bool_or(io::stdout().is_terminal()),
+            formatter,
         );
         return;
     }
@@ -503,6 +525,7 @@ fn main() {
                 .color
                 .unwrap_or(ColorOption::Auto)
                 .bool_or(io::stdout().is_terminal()),
+            formatter,
         );
         return;
     }
@@ -524,6 +547,7 @@ fn main() {
             .color
             .unwrap_or(ColorOption::Auto)
             .bool_or(io::stdout().is_terminal()),
+        formatter,
     );
 
     let logs = logger.get_logs();
@@ -565,7 +589,12 @@ mod tests {
         );
 
         let file = tempfile::NamedTempFile::new().unwrap();
-        if let Err(error) = highlight_diff(&mut input, file.reopen().unwrap(), true) {
+        if let Err(error) = highlight_diff(
+            &mut input,
+            file.reopen().unwrap(),
+            true,
+            Formatter::experimental(),
+        ) {
             panic!("{}", error);
         }
         let actual = fs::read_to_string(file.path()).unwrap();
@@ -698,9 +727,12 @@ mod tests {
 
         println!("\n{}/{} examples failed", failure_count, example_count,);
 
-        if failing_example.is_some() {
+        if let Some(failing_example) = failing_example {
             println!();
-            println!("Example: {}", failing_example.unwrap());
+            println!("Example: {}", failing_example);
+            println!();
+            println!("==> Run \"./testdata-examples.sh\" to visualize changes / failures");
+            println!();
             assert_eq!(failing_example_actual, failing_example_expected);
 
             // Sometimes the previous assert doesn't trigger, so we put this one
@@ -729,6 +761,7 @@ mod tests {
             &mut fs::File::open(input_file).unwrap(),
             file.reopen().unwrap(),
             true,
+            Formatter::experimental(),
         ) {
             return Some(ExampleFailure {
                 diagnostics: format!("Highlighting failed: {}", error),
@@ -756,6 +789,7 @@ mod tests {
             &mut fs::File::open(input_file).unwrap(),
             file.reopen().unwrap(),
             false,
+            Formatter::default(),
         )
         .unwrap();
 

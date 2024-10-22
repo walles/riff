@@ -6,8 +6,8 @@
  use crate::refiner::to_highlighted_tokens;
  use crate::string_future::StringFuture;
  use crate::token_collector::{
-[2m[31m-    lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,[0m
-[2m[32m+[0m    [7m[32malign_tabs, [0mlowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,
+[31m-    lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,[0m
+[32m+    [7malign_tabs, [27mlowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,[0m
      LINE_STYLE_OLD_FILENAME,
  };
  

@@ -12,8 +12,8 @@ Date:   Tue Nov 17 08:44:29 2020 +0100
  * [Regexp](http://en.wikipedia.org/wiki/Regular_expression#Basic_concepts)
    search if your search string is a valid regexp
  * Supports displaying ANSI color coded texts (like the output from
-[2m[31m-  `git diff` for example)[0m
-[2m[32m+[0m  `git diff` [7m[32m[| `riff`](https://github.com/walles/riff) [0mfor example)
+[31m-  `git diff` for example)[0m
+[32m+  `git diff` [7m[| `riff`](https://github.com/walles/riff) [27mfor example)[0m
  * Supports UTF-8 input and output
  * The position in the file is always shown
  

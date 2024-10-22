@@ -11,7 +11,7 @@ pub(crate) enum Style {
     Lowlighted,          // Faint
     Context,             // Default
     Bright,              // Bold
-    DiffPartUnchanged,   // Red or Green, should be lower lighted than DiffPartMidlighted
+    DiffPartUnchanged,   // Yellow
     DiffPartMidlighted,  // Red or Green
     DiffPartHighlighted, // Inverse Red or Green
     Error,               // Inverse Red
@@ -23,54 +23,21 @@ pub(crate) struct StyledToken {
     pub(crate) style: Style,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct LineStyle {
-    prefix_style: AnsiStyle,
+    pub(crate) prefix_style: AnsiStyle,
     pub(crate) unchanged_style: AnsiStyle,
-    highlighted_style: AnsiStyle,
+    pub(crate) midlighted_style: AnsiStyle,
+    pub(crate) highlighted_style: AnsiStyle,
 }
 
-pub(crate) const LINE_STYLE_OLD: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
-        unchanged_style: ANSI_STYLE_NORMAL.with_color(Red),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-    }
-};
-
-pub(crate) const LINE_STYLE_OLD_FAINT: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_color(Red).with_weight(Weight::Faint),
-        unchanged_style: ANSI_STYLE_NORMAL.with_color(Red).with_weight(Weight::Faint),
-        highlighted_style: ANSI_STYLE_NORMAL
-            .with_color(Red)
-            .with_weight(Weight::Faint)
-            .with_inverse(true),
-    }
-};
-
-pub(crate) const LINE_STYLE_NEW: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
-        unchanged_style: ANSI_STYLE_NORMAL.with_color(Green),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
-    }
-};
-
-pub(crate) const LINE_STYLE_ADDS_ONLY: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL
-            .with_color(Green)
-            .with_weight(Weight::Faint),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
-    }
-};
+// The base line styles live in refiner.rs
 
 pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
-        unchanged_style: ANSI_STYLE_NORMAL.with_color(Red),
+        unchanged_style: ANSI_STYLE_NORMAL,
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
@@ -78,7 +45,8 @@ pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
 pub(crate) const LINE_STYLE_CONFLICT_OLD: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
-        unchanged_style: ANSI_STYLE_NORMAL.with_color(Red),
+        unchanged_style: ANSI_STYLE_NORMAL,
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
@@ -86,7 +54,8 @@ pub(crate) const LINE_STYLE_CONFLICT_OLD: LineStyle = {
 pub(crate) const LINE_STYLE_CONFLICT_NEW: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
-        unchanged_style: ANSI_STYLE_NORMAL.with_color(Green),
+        unchanged_style: ANSI_STYLE_NORMAL,
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
 };
@@ -95,6 +64,7 @@ pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
         unchanged_style: ANSI_STYLE_NORMAL,
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
     }
 };
@@ -103,6 +73,7 @@ pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
     LineStyle {
         prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
         unchanged_style: ANSI_STYLE_NORMAL,
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
         highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
     }
 };
@@ -141,7 +112,7 @@ pub(crate) fn render_row(
             Style::Lowlighted => ANSI_STYLE_NORMAL.with_weight(Weight::Faint),
             Style::Bright => ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
             Style::DiffPartUnchanged => line_style.unchanged_style,
-            Style::DiffPartMidlighted => line_style.unchanged_style,
+            Style::DiffPartMidlighted => line_style.midlighted_style,
             Style::DiffPartHighlighted => line_style.highlighted_style,
             Style::Error => ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
         };
@@ -303,46 +274,10 @@ pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
     new[new_tab_index_token].token = new_spaces;
 }
 
-/// If a line contains only plain tokens, style all tokens on that line as
-/// context. Lines are separated by newline tokens.
-///
-/// This can happen during conflicts highlighting.
-pub fn contextualize_unhighlighted_lines(tokens: &mut [StyledToken]) {
-    let mut line_start = 0;
-    for i in 0..tokens.len() {
-        if tokens[i].token != "\n" {
-            continue;
-        }
-
-        // Line ended
-
-        if tokens[line_start..(i + 1)]
-            .iter()
-            .all(|token| token.style == Style::DiffPartUnchanged)
-        {
-            // Line contains only plain tokens
-            for token in &mut tokens[line_start..i] {
-                token.style = Style::Context;
-            }
-        }
-        line_start = i + 1;
-    }
-
-    // Handle the last line
-    if tokens[line_start..]
-        .iter()
-        .all(|token| token.style == Style::DiffPartUnchanged)
-    {
-        for token in &mut tokens[line_start..] {
-            token.style = Style::Context;
-        }
-    }
-}
-
 /// Highlight single space between two highlighted tokens
 pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
     fn bridgable(candidate: &StyledToken) -> bool {
-        if candidate.style != Style::DiffPartUnchanged {
+        if candidate.style as u8 > Style::DiffPartUnchanged as u8 {
             return false;
         }
         if candidate.token.len() != 1 {
@@ -365,29 +300,6 @@ pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
 
         tokens[i].style = Style::DiffPartHighlighted;
     }
-}
-
-pub fn count_lines(tokens: &[StyledToken]) -> usize {
-    if tokens.is_empty() {
-        return 0;
-    }
-
-    let mut lines = 0;
-    let mut ends_with_newline = false;
-    for token in tokens {
-        if token.token == "\n" {
-            lines += 1;
-            ends_with_newline = true;
-            continue;
-        }
-        ends_with_newline = false;
-    }
-
-    if !ends_with_newline {
-        lines += 1;
-    }
-
-    return lines;
 }
 
 /// File timestamps are found after either a tab character or a double space
@@ -463,12 +375,31 @@ pub fn brighten_filename(row: &mut [StyledToken]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ansi::Color::Yellow;
     use crate::constants::GREEN;
     use crate::constants::NORMAL;
     use crate::constants::OLD;
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
+
+    const LINE_STYLE_OLD: LineStyle = {
+        LineStyle {
+            prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+            midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+            highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+        }
+    };
+
+    const LINE_STYLE_NEW: LineStyle = {
+        LineStyle {
+            prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+            midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+            highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+        }
+    };
 
     #[test]
     fn test_errorlight_nonleading_tabs() {
@@ -503,11 +434,11 @@ mod tests {
             &[
                 StyledToken {
                     token: "hej".to_string(),
-                    style: Style::DiffPartUnchanged,
+                    style: Style::DiffPartMidlighted,
                 },
                 StyledToken {
                     token: "\n".to_string(),
-                    style: Style::DiffPartUnchanged,
+                    style: Style::DiffPartMidlighted,
                 },
             ],
         );
@@ -556,7 +487,7 @@ mod tests {
         let actual = render(
             &LINE_STYLE_OLD,
             "-",
-            &[StyledToken::new(" ".to_string(), Style::DiffPartUnchanged)],
+            &[StyledToken::new(" ".to_string(), Style::DiffPartMidlighted)],
         );
 
         assert_eq!(actual, format!("{OLD}- {NORMAL}"));
@@ -624,8 +555,8 @@ mod tests {
             &LINE_STYLE_OLD,
             "-",
             &[
-                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
+                StyledToken::new("x".to_string(), Style::DiffPartMidlighted),
+                StyledToken::new("\t".to_string(), Style::DiffPartMidlighted),
             ],
         );
 

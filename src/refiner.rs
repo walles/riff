@@ -1,164 +1,191 @@
 use similar::capture_diff_slices;
 
+use crate::ansi::Color::Green;
+use crate::ansi::Color::Red;
+use crate::ansi::Color::Yellow;
+use crate::ansi::Weight::Faint;
+use crate::ansi::ANSI_STYLE_NORMAL;
 use crate::constants::*;
 use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::token_collector::*;
 use crate::tokenizer;
-use crate::NO_ADDS_ONLY_SPECIAL;
 
-/// Format old and new lines in OLD and NEW colors.
-///
-/// No intra-line refinement.
-#[must_use]
-fn format_simple(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
-    let mut lines: Vec<String> = Vec::new();
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Formatter {
+    line_style_old: LineStyle,
+    line_style_new: LineStyle,
+}
 
-    for (prefix, prefix_text) in prefixes.iter().zip(prefix_texts.iter()) {
-        let line_style = if prefix.contains('+') {
-            LINE_STYLE_NEW
-        } else {
-            LINE_STYLE_OLD
-        };
+impl Formatter {
+    // The other LineStyles live in token_collector.rs
 
-        // If the user adds a section with a missing trailing newline, we want
-        // to draw a highlighted-in-red newline symbol at the end of the last
-        // line.
-        let draw_missing_trailing_newline = prefix.contains('+') && !prefix_text.ends_with('\n');
+    pub(crate) fn default() -> Self {
+        Formatter {
+            line_style_old: LineStyle {
+                prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+                unchanged_style: ANSI_STYLE_NORMAL.with_color(Red),
+                midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+                highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+            },
+            line_style_new: LineStyle {
+                prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+                unchanged_style: ANSI_STYLE_NORMAL.with_color(Green),
+                midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+                highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+            },
+        }
+    }
 
-        let last_pos = prefix_text.lines().count() - 1;
-        for (pos, line) in prefix_text.lines().enumerate() {
-            let last_line = pos == last_pos;
+    pub(crate) fn experimental() -> Self {
+        Formatter {
+            line_style_old: LineStyle {
+                prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+                unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow).with_weight(Faint),
+                midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+                highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+            },
+            line_style_new: LineStyle {
+                prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+                unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+                midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+                highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+            },
+        }
+    }
 
-            let to_push = render_row(
-                &line_style,
-                prefix,
-                &[StyledToken::new(
-                    line.to_string(),
-                    Style::DiffPartMidlighted,
-                )],
-                false,
-            );
-            if last_line && draw_missing_trailing_newline {
-                lines.push(format!("{to_push}{OLD}{INVERSE_VIDEO}⏎{NORMAL}"));
+    /// Format old and new lines in OLD and NEW colors.
+    ///
+    /// No intra-line refinement.
+    #[must_use]
+    fn format_simple(&self, prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
+        let mut lines: Vec<String> = Vec::new();
+
+        for (prefix, prefix_text) in prefixes.iter().zip(prefix_texts.iter()) {
+            let line_style = if prefix.contains('+') {
+                &self.line_style_new
             } else {
-                lines.push(to_push);
+                &self.line_style_old
+            };
+
+            // If the user adds a section with a missing trailing newline, we want
+            // to draw a highlighted-in-red newline symbol at the end of the last
+            // line.
+            let draw_missing_trailing_newline =
+                prefix.contains('+') && !prefix_text.ends_with('\n');
+
+            let last_pos = prefix_text.lines().count() - 1;
+            for (pos, line) in prefix_text.lines().enumerate() {
+                let last_line = pos == last_pos;
+
+                let to_push = render_row(
+                    line_style,
+                    prefix,
+                    &[StyledToken::new(
+                        line.to_string(),
+                        Style::DiffPartMidlighted,
+                    )],
+                    false,
+                );
+                if last_line && draw_missing_trailing_newline {
+                    lines.push(format!("{to_push}{OLD}{INVERSE_VIDEO}⏎{NORMAL}"));
+                } else {
+                    lines.push(to_push);
+                }
+            }
+
+            if !prefix_text.ends_with('\n') {
+                let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
+                let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
+                lines.push(format!(
+                    "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
+                ));
             }
         }
 
-        if !prefix_text.ends_with('\n') {
-            let no_eof_newline_marker_guard = NO_EOF_NEWLINE_MARKER_HOLDER.lock().unwrap();
-            let no_eof_newline_marker = no_eof_newline_marker_guard.as_ref().unwrap();
-            lines.push(format!(
-                "{NO_EOF_NEWLINE_COLOR}{no_eof_newline_marker}{NORMAL}"
-            ));
+        return lines;
+    }
+
+    /// LCS is O(m * n) complexity. If it gets too complex, refining will take too
+    /// much time and memory, so we shouldn't.
+    ///
+    /// Ref: https://github.com/walles/riff/issues/35
+    fn too_large_to_refine(texts: &[&str]) -> bool {
+        let size = texts.iter().map(|text| text.len()).sum::<usize>();
+
+        // Around this point refining starts taking near one second on Johan's
+        // laptop. Numbers have been invented through experimentation.
+        return size > 13_000usize * 13_000usize;
+    }
+
+    /// Returns a vector of ANSI highlighted lines.
+    ///
+    /// `prefix_texts` are multi line strings. Having or not having trailing
+    /// newlines will affect tokenization. The lines are not expected to have any
+    /// prefixes like `+` or `-`.
+    ///
+    /// `prefixes` are the prefixes to use for each `prefix_texts` text.
+    #[must_use]
+    pub fn format(&self, prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
+        if prefixes.len() < 2 {
+            // Nothing to compare, we can't highlight anything
+            return self.format_simple(prefixes, prefix_texts);
         }
-    }
-
-    return lines;
-}
-
-/// LCS is O(m * n) complexity. If it gets too complex, refining will take too
-/// much time and memory, so we shouldn't.
-///
-/// Ref: https://github.com/walles/riff/issues/35
-fn too_large_to_refine(texts: &[&str]) -> bool {
-    let size = texts.iter().map(|text| text.len()).sum::<usize>();
-
-    // Around this point refining starts taking near one second on Johan's
-    // laptop. Numbers have been invented through experimentation.
-    return size > 13_000usize * 13_000usize;
-}
-
-/// Returns a vector of ANSI highlighted lines.
-///
-/// `prefix_texts` are multi line strings. Having or not having trailing
-/// newlines will affect tokenization. The lines are not expected to have any
-/// prefixes like `+` or `-`.
-///
-/// `prefixes` are the prefixes to use for each `prefix_texts` text.
-#[must_use]
-pub fn format(prefixes: &[&str], prefix_texts: &[&str]) -> Vec<String> {
-    if prefixes.len() < 2 {
-        // Nothing to compare, we can't highlight anything
-        return format_simple(prefixes, prefix_texts);
-    }
-    if !prefixes.iter().any(|prefix| prefix.contains('+')) {
-        // Nothing added, we can't highlight anything
-        return format_simple(prefixes, prefix_texts);
-    }
-
-    if too_large_to_refine(prefix_texts) {
-        return format_simple(prefixes, prefix_texts);
-    }
-
-    // This is what all old texts will be compared against
-    let new_text = prefix_texts.last().unwrap();
-    let new_prefix = prefixes.last().unwrap();
-
-    // These are all except for the last element
-    let old_prefixes = &prefixes[0..prefixes.len() - 1];
-    let old_prefix_texts = &prefix_texts[0..prefix_texts.len() - 1];
-
-    let mut old_tokens = vec![];
-    let mut new_tokens = vec![];
-    let mut old_highlights = false;
-    let mut new_unhighlighted = false;
-    for old_text in old_prefix_texts.iter() {
-        let (
-            old_tokens_internal,
-            new_tokens_internal,
-            old_highlights_internal,
-            new_unhighlighted_internal,
-        ) = to_highlighted_tokens(old_text, new_text, false);
-
-        old_tokens.push(old_tokens_internal);
-        old_highlights |= old_highlights_internal;
-        new_unhighlighted |= new_unhighlighted_internal;
-
-        if new_tokens.is_empty() {
-            // First iteration, just remember the new tokens
-            new_tokens = new_tokens_internal;
-            continue;
+        if !prefixes.iter().any(|prefix| prefix.contains('+')) {
+            // Nothing added, we can't highlight anything
+            return self.format_simple(prefixes, prefix_texts);
         }
 
-        // Subsequent iterations, merge the new token styles
-        for (new_token, new_token_internal) in new_tokens.iter_mut().zip(new_tokens_internal) {
-            if new_token_internal.style as u8 > new_token.style as u8 {
-                new_token.style = new_token_internal.style;
+        if Formatter::too_large_to_refine(prefix_texts) {
+            return self.format_simple(prefixes, prefix_texts);
+        }
+
+        // This is what all old texts will be compared against
+        let new_text = prefix_texts.last().unwrap();
+        let new_prefix = prefixes.last().unwrap();
+
+        // These are all except for the last element
+        let old_prefixes = &prefixes[0..prefixes.len() - 1];
+        let old_prefix_texts = &prefix_texts[0..prefix_texts.len() - 1];
+
+        let mut old_tokens = vec![];
+        let mut new_tokens = vec![];
+        for old_text in old_prefix_texts.iter() {
+            let (old_tokens_internal, new_tokens_internal) =
+                to_highlighted_tokens(old_text, new_text);
+
+            old_tokens.push(old_tokens_internal);
+
+            if new_tokens.is_empty() {
+                // First iteration, just remember the new tokens
+                new_tokens = new_tokens_internal;
+                continue;
+            }
+
+            // Subsequent iterations, merge the new token styles
+            for (new_token, new_token_internal) in new_tokens.iter_mut().zip(new_tokens_internal) {
+                if new_token_internal.style as u8 > new_token.style as u8 {
+                    new_token.style = new_token_internal.style;
+                }
             }
         }
-    }
 
-    // We should now have one token vector per old text
-    assert_eq!(old_tokens.len(), prefix_texts.len() - 1);
+        // We should now have one token vector per old text
+        assert_eq!(old_tokens.len(), prefix_texts.len() - 1);
 
-    // Now turn all our token vectors (all vectors in old_tokens plus
-    // new_tokens) into lines of highlighted text
-    let new_line_count = count_lines(&new_tokens);
-    let all_line_counts_match = old_tokens
-        .iter()
-        .all(|tokens| count_lines(tokens) == new_line_count);
+        // Now turn all our token vectors (all vectors in old_tokens plus
+        // new_tokens) into lines of highlighted text
 
-    let (old_style, new_style) = unsafe {
-        if NO_ADDS_ONLY_SPECIAL || old_highlights || new_unhighlighted || !all_line_counts_match {
-            // Classical highlighting
-            (LINE_STYLE_OLD, LINE_STYLE_NEW)
-        } else {
-            // Special adds-only highlighting
-            (LINE_STYLE_OLD_FAINT, LINE_STYLE_ADDS_ONLY)
+        // First render() into strings, then to_lines() into lines
+        let mut highlighted_lines = Vec::new();
+        for (prefix, tokens) in old_prefixes.iter().zip(old_tokens.iter()) {
+            let text = render(&self.line_style_old, prefix, tokens);
+            highlighted_lines.extend(to_lines(&text));
         }
-    };
+        let new_text = render(&self.line_style_new, new_prefix, &new_tokens);
+        highlighted_lines.extend(to_lines(&new_text));
 
-    // First render() into strings, then to_lines() into lines
-    let mut highlighted_lines = Vec::new();
-    for (prefix, tokens) in old_prefixes.iter().zip(old_tokens.iter()) {
-        let text = render(&old_style, prefix, tokens);
-        highlighted_lines.extend(to_lines(&text));
+        return highlighted_lines;
     }
-    let new_text = render(&new_style, new_prefix, &new_tokens);
-    highlighted_lines.extend(to_lines(&new_text));
-
-    return highlighted_lines;
 }
 
 fn should_highlight_change(tokens: &[&str], whitespace_only_is_fine: bool) -> bool {
@@ -202,8 +229,7 @@ fn is_whitepace_replacement(old_run: &[&str], new_run: &[&str]) -> bool {
 pub fn to_highlighted_tokens(
     old_text: &str,
     new_text: &str,
-    is_conflict: bool,
-) -> (Vec<StyledToken>, Vec<StyledToken>, bool, bool) {
+) -> (Vec<StyledToken>, Vec<StyledToken>) {
     // Find diffs between adds and removals
     let mut old_tokens = Vec::new();
     let mut new_tokens = Vec::new();
@@ -220,8 +246,6 @@ pub fn to_highlighted_tokens(
     }
 
     let diff = capture_diff_slices(similar::Algorithm::Patience, &tokenized_old, &tokenized_new);
-    let mut old_changes = false;
-    let mut new_unhighlighted = false;
     let mut old_start_of_line = true;
     let mut new_start_of_line = true;
     for change in diff.iter() {
@@ -254,7 +278,6 @@ pub fn to_highlighted_tokens(
                 let style = if should_highlight_change(&run, !new_start_of_line) {
                     Style::DiffPartHighlighted
                 } else {
-                    new_unhighlighted |= true;
                     Style::DiffPartMidlighted
                 };
                 for token in run.iter() {
@@ -275,7 +298,6 @@ pub fn to_highlighted_tokens(
                 };
                 for token in run.iter() {
                     old_tokens.push(StyledToken::new(token.to_string(), style));
-                    old_changes = true;
                 }
             }
 
@@ -294,13 +316,11 @@ pub fn to_highlighted_tokens(
                 {
                     Style::DiffPartHighlighted
                 } else {
-                    new_unhighlighted |= true;
                     Style::DiffPartMidlighted
                 };
 
                 for token in old_run.iter() {
                     old_tokens.push(StyledToken::new(token.to_string(), style));
-                    old_changes = true;
                 }
 
                 for token in new_run.iter() {
@@ -319,19 +339,13 @@ pub fn to_highlighted_tokens(
 
     // Refine old tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut old_tokens);
-    if is_conflict {
-        contextualize_unhighlighted_lines(&mut old_tokens);
-    }
 
     // Refine new tokens highlighting
     bridge_consecutive_highlighted_tokens(&mut new_tokens);
-    if is_conflict {
-        contextualize_unhighlighted_lines(&mut new_tokens);
-    }
     errorlight_trailing_whitespace(&mut new_tokens);
     errorlight_nonleading_tabs(&mut new_tokens);
 
-    return (old_tokens, new_tokens, old_changes, new_unhighlighted);
+    return (old_tokens, new_tokens);
 }
 
 /// Splits text into lines. If the text doesn't end in a newline, a no-newline
@@ -355,24 +369,47 @@ fn to_lines(text: &str) -> Vec<String> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
+    const LINE_STYLE_OLD: LineStyle = {
+        LineStyle {
+            prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+            midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+            highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+        }
+    };
+
+    const LINE_STYLE_NEW: LineStyle = {
+        LineStyle {
+            prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+            midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+            highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+        }
+    };
+
+    pub(crate) const FORMATTER: Formatter = Formatter {
+        line_style_old: LINE_STYLE_OLD,
+        line_style_new: LINE_STYLE_NEW,
+    };
+
     #[test]
     fn test_simple_format_adds_and_removes() {
         let empty: Vec<String> = Vec::new();
-        assert_eq!(format_simple(&[], &[]), empty);
+        assert_eq!(FORMATTER.format_simple(&[], &[]), empty);
 
         // Test adds-only
         assert_eq!(
-            format_simple(&["+"], &["a\n"]),
+            FORMATTER.format_simple(&["+"], &["a\n"]),
             ["".to_string() + GREEN + "+a" + NORMAL]
         );
         assert_eq!(
-            format_simple(&["+"], &["a\nb\n"]),
+            FORMATTER.format_simple(&["+"], &["a\nb\n"]),
             [
                 "".to_string() + GREEN + "+a" + NORMAL,
                 "".to_string() + GREEN + "+b" + NORMAL,
@@ -381,11 +418,11 @@ mod tests {
 
         // Test removes-only
         assert_eq!(
-            format_simple(&["-"], &["a\n"]),
+            FORMATTER.format_simple(&["-"], &["a\n"]),
             ["".to_string() + OLD + "-a" + NORMAL]
         );
         assert_eq!(
-            format_simple(&["-"], &["a\nb\n"]),
+            FORMATTER.format_simple(&["-"], &["a\nb\n"]),
             [
                 "".to_string() + OLD + "-a" + NORMAL,
                 "".to_string() + OLD + "-b" + NORMAL,
@@ -410,16 +447,13 @@ mod tests {
         let prefixes = vec!["+"];
         let texts = vec![text.as_str()];
 
-        let result = format_simple(&prefixes, &texts);
+        let result = FORMATTER.format_simple(&prefixes, &texts);
         assert_eq!(text.lines().count(), result.len());
     }
 
     #[test]
     fn test_quote_change() {
-        // FIXME: Get this from somewhere else?
-        const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
-
-        let result = format(
+        let result = FORMATTER.format(
             &["-", "+"],
             &[
                 "<unchanged text between quotes>\n",
@@ -430,10 +464,10 @@ mod tests {
             result,
             [
                 format!(
-                    "{OLD}-{INVERSE_VIDEO}<{NOT_INVERSE_VIDEO}unchanged text between quotes{INVERSE_VIDEO}>{NORMAL}"
+                    "{OLD}-{INVERSE_VIDEO}<{NO_INVERSE_VIDEO}{YELLOW}unchanged text between quotes{INVERSE_VIDEO}{OLD}>{NORMAL}"
                 ),
                 format!(
-                    "{GREEN}+{INVERSE_VIDEO}[{NOT_INVERSE_VIDEO}unchanged text between quotes{INVERSE_VIDEO}]{NORMAL}"
+                    "{GREEN}+{INVERSE_VIDEO}[{NO_INVERSE_VIDEO}{YELLOW}unchanged text between quotes{INVERSE_VIDEO}{GREEN}]{NORMAL}"
                 ),
             ]
         )
@@ -441,17 +475,17 @@ mod tests {
 
     #[test]
     fn test_almost_empty_changes() {
-        let result = format(&["-"], &["x\n"]);
+        let result = FORMATTER.format(&["-"], &["x\n"]);
         assert_eq!(result, [format!("{OLD}-x{NORMAL}"),]);
 
-        let result = format(&["+"], &["x\n"]);
+        let result = FORMATTER.format(&["+"], &["x\n"]);
         assert_eq!(result, [format!("{GREEN}+x{NORMAL}"),]);
     }
 
     #[test]
     fn test_space_highlighting() {
         // Add new initial spacing (indentation). We don't want to highlight indentation.
-        let (_, new_tokens, _, _) = to_highlighted_tokens("x", " x", false);
+        let (_, new_tokens) = to_highlighted_tokens("x", " x");
         assert_eq!(
             new_tokens,
             vec![
@@ -461,7 +495,7 @@ mod tests {
         );
 
         // Increase indentation. Do not highlight this.
-        let (_, new_tokens, _, _) = to_highlighted_tokens(" x", "  x", false);
+        let (_, new_tokens) = to_highlighted_tokens(" x", "  x");
         assert_eq!(
             new_tokens,
             vec![
@@ -474,7 +508,7 @@ mod tests {
         //
         // This particular example is from a Markdown heading where someone forgot
         // the space after the leading `#`.
-        let (_, new_tokens, _, _) = to_highlighted_tokens("#x", "# x", false);
+        let (_, new_tokens) = to_highlighted_tokens("#x", "# x");
         assert_eq!(
             new_tokens,
             vec![
@@ -485,7 +519,7 @@ mod tests {
         );
 
         // Increase internal space. We do not want to highlight this. Probably code reformatting.
-        let (_, new_tokens, _, _) = to_highlighted_tokens("x y", "x  y", false);
+        let (_, new_tokens) = to_highlighted_tokens("x y", "x  y");
         assert_eq!(
             new_tokens,
             vec![
@@ -496,7 +530,7 @@ mod tests {
         );
 
         // Remove trailing space. We do want to highlight this.
-        let (old_tokens, _, _, _) = to_highlighted_tokens("x ", "x", false);
+        let (old_tokens, _) = to_highlighted_tokens("x ", "x");
         assert_eq!(
             old_tokens,
             vec![
