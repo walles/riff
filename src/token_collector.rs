@@ -207,41 +207,6 @@ pub fn render_multiprefix(
     return rendered;
 }
 
-pub fn errorlight_trailing_whitespace(tokens: &mut [StyledToken]) {
-    let mut in_trailer = true;
-    for token in tokens.iter_mut().rev() {
-        if token.token == "\n" {
-            in_trailer = true;
-            continue;
-        }
-
-        if in_trailer && token.is_whitespace() {
-            token.style = Style::Error;
-            continue;
-        }
-
-        in_trailer = false;
-    }
-}
-
-pub fn errorlight_nonleading_tabs(tokens: &mut [StyledToken]) {
-    let mut leading = true;
-    for token in tokens.iter_mut() {
-        if token.token == "\n" {
-            leading = true;
-            continue;
-        }
-
-        if token.token != "\t" {
-            leading = false;
-        }
-
-        if token.token == "\t" && !leading {
-            token.style = Style::Error;
-        }
-    }
-}
-
 pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
     let old_tab_index_token = old.iter().position(|token| token.token == "\t");
     if old_tab_index_token.is_none() {
@@ -272,34 +237,6 @@ pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
 
     old[old_tab_index_token].token = old_spaces;
     new[new_tab_index_token].token = new_spaces;
-}
-
-/// Highlight single space between two highlighted tokens
-pub fn bridge_consecutive_highlighted_tokens(tokens: &mut [StyledToken]) {
-    fn bridgable(candidate: &StyledToken) -> bool {
-        if candidate.style as u8 > Style::DiffPartUnchanged as u8 {
-            return false;
-        }
-        if candidate.token.len() != 1 {
-            return false;
-        }
-
-        let rune = candidate.token.chars().next().unwrap();
-        return rune == ' ' || rune.is_ascii_punctuation();
-    }
-
-    for i in 1..(tokens.len() - 1) {
-        if tokens[i - 1].style != Style::DiffPartHighlighted
-            || tokens[i + 1].style != Style::DiffPartHighlighted
-        {
-            continue;
-        }
-        if bridgable(&tokens[i - 1]) || !bridgable(&tokens[i]) || bridgable(&tokens[i + 1]) {
-            continue;
-        }
-
-        tokens[i].style = Style::DiffPartHighlighted;
-    }
 }
 
 /// File timestamps are found after either a tab character or a double space
@@ -402,31 +339,6 @@ mod tests {
     };
 
     #[test]
-    fn test_errorlight_nonleading_tabs() {
-        let mut tokens = vec![
-            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("one".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("\n".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("two".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
-        ];
-        errorlight_nonleading_tabs(&mut tokens);
-
-        assert_eq!(
-            tokens,
-            vec![
-                StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new("one".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new("\n".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new("two".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new("\t".to_string(), Style::Error),
-            ]
-        );
-    }
-
-    #[test]
     fn test_basic() {
         let rendered = render(
             &LINE_STYLE_NEW,
@@ -446,42 +358,6 @@ mod tests {
     }
 
     #[test]
-    fn test_errorlight_trailing_whitespace() {
-        // Just a whitespace
-        let mut row = [StyledToken::new(" ".to_string(), Style::DiffPartUnchanged)];
-        errorlight_trailing_whitespace(&mut row);
-        assert_eq!(row, [StyledToken::new(" ".to_string(), Style::Error)]);
-
-        // Trailing whitespace
-        let mut row = [
-            StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new(" ".to_string(), Style::DiffPartUnchanged),
-        ];
-        errorlight_trailing_whitespace(&mut row);
-        assert_eq!(
-            row,
-            [
-                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new(" ".to_string(), Style::Error),
-            ]
-        );
-
-        // Leading whitespace
-        let mut row = [
-            StyledToken::new(" ".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-        ];
-        errorlight_trailing_whitespace(&mut row);
-        assert_eq!(
-            row,
-            [
-                StyledToken::new(" ".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-            ]
-        );
-    }
-
-    #[test]
     fn test_removed_trailing_whitespace() {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
@@ -491,61 +367,6 @@ mod tests {
         );
 
         assert_eq!(actual, format!("{OLD}- {NORMAL}"));
-    }
-
-    #[test]
-    fn test_add_nonleading_tab() {
-        // Trailing TAB
-        let mut row = [
-            StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
-        ];
-        errorlight_nonleading_tabs(&mut row);
-        assert_eq!(
-            row,
-            [
-                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new("\t".to_string(), Style::Error),
-            ]
-        );
-
-        // Middle TAB
-        let mut row = [
-            StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("y".to_string(), Style::DiffPartUnchanged),
-        ];
-        errorlight_nonleading_tabs(&mut row);
-        assert_eq!(
-            row,
-            [
-                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new("\t".to_string(), Style::Error),
-                StyledToken::new("y".to_string(), Style::DiffPartUnchanged),
-            ]
-        );
-
-        // Leading TAB (don't highlight)
-        let mut row = [
-            StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-        ];
-        errorlight_nonleading_tabs(&mut row);
-        assert_eq!(
-            row,
-            [
-                StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),
-                StyledToken::new("x".to_string(), Style::DiffPartUnchanged),
-            ]
-        );
-
-        // Single TAB (don't highlight because it is leading)
-        let mut row = [StyledToken::new("\t".to_string(), Style::DiffPartUnchanged)];
-        errorlight_nonleading_tabs(&mut row);
-        assert_eq!(
-            row,
-            [StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),]
-        );
     }
 
     #[test]
@@ -561,48 +382,5 @@ mod tests {
         );
 
         assert_eq!(actual, format!("{OLD}-x\t{NORMAL}"));
-    }
-
-    fn is_char_bridged(before: char, victim: char, after: char) -> bool {
-        let mut row = [
-            StyledToken::new(before.to_string(), Style::DiffPartHighlighted),
-            StyledToken::new(victim.to_string(), Style::DiffPartUnchanged),
-            StyledToken::new(after.to_string(), Style::DiffPartHighlighted),
-        ];
-
-        bridge_consecutive_highlighted_tokens(&mut row);
-
-        return row[1].style == Style::DiffPartHighlighted;
-    }
-
-    #[test]
-    fn test_bridge_consecutive_highlighted_tokens() {
-        assert!(is_char_bridged('a', ' ', 'b'));
-        assert!(is_char_bridged('>', ' ', '5'));
-        assert!(is_char_bridged('a', ' ', ' ')); // Because the second space is highlighted
-        assert!(!is_char_bridged('\'', '1', '\''));
-        assert!(is_char_bridged('a', '.', 'b')); // Bridge separators
-    }
-
-    #[test]
-    fn test_four_tokens_highlighting() {
-        let mut row = [
-            StyledToken::new("\n".to_string(), Style::DiffPartHighlighted),
-            StyledToken::new("*".to_string(), Style::DiffPartHighlighted),
-            StyledToken::new(" ".to_string(), Style::DiffPartUnchanged),
-            StyledToken::new("Hello".to_string(), Style::DiffPartHighlighted),
-        ];
-
-        bridge_consecutive_highlighted_tokens(&mut row);
-
-        assert_eq!(
-            row,
-            [
-                StyledToken::new("\n".to_string(), Style::DiffPartHighlighted),
-                StyledToken::new("*".to_string(), Style::DiffPartHighlighted),
-                StyledToken::new(" ".to_string(), Style::DiffPartHighlighted),
-                StyledToken::new("Hello".to_string(), Style::DiffPartHighlighted),
-            ]
-        );
     }
 }
