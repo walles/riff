@@ -593,7 +593,7 @@ mod tests {
             &mut input,
             file.reopen().unwrap(),
             true,
-            Formatter::experimental(),
+            Formatter::default(),
         ) {
             panic!("{}", error);
         }
@@ -761,7 +761,7 @@ mod tests {
             &mut fs::File::open(input_file).unwrap(),
             file.reopen().unwrap(),
             true,
-            Formatter::experimental(),
+            Formatter::default(),
         ) {
             return Some(ExampleFailure {
                 diagnostics: format!("Highlighting failed: {}", error),

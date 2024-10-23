@@ -18,6 +18,9 @@ set -e -o pipefail
 WORKFILE=$(mktemp)
 trap 'rm -f "$WORKFILE"' EXIT
 
+# Avoid any user specific customization while running the tests
+unset RIFF
+
 echo
 read -r -p "Run /tmp/before.sh in another tab to compare the output. Press Enter to continue."
 
