@@ -14,6 +14,10 @@ set -eu -o pipefail
 
 CROSSBUILD_MACOS_SDK="macosx15.0"
 
+# Git hooks can use this variable to avoid duplicating the CI work we do in here
+# anyway.
+export RIFF_RELEASING=true
+
 # If this fails, try "xcodebuild -showsdks" to find one that exists
 if ! xcrun -sdk $CROSSBUILD_MACOS_SDK --show-sdk-path >/dev/null; then
   echo >&2
