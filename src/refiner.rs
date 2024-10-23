@@ -217,9 +217,34 @@ fn is_whitepace_replacement(old_run: &[&str], new_run: &[&str]) -> bool {
     return old_whitespace_only && new_whitespace_only;
 }
 
-/// Returns two vectors for old and new sections. The first bool is true if
-/// there were any highlights found in the old text. The second bool is true if
-/// any highlights were removed for readability in the new text.
+fn push_styled_tokens(destination: &mut Vec<StyledToken>, run: Vec<&str>, style: Style) {
+    // Except for just pushing the tokens, any leading or trailing
+    // whitespace-only tokens in the run should always be midlighted.
+
+    let first_non_leading_whitespace_index = run
+        .iter()
+        .position(|token| !token.chars().all(|c| c.is_whitespace()));
+
+    let last_non_trailing_whitespace_index = run
+        .iter()
+        .rposition(|token| !token.chars().all(|c| c.is_whitespace()));
+
+    for (index, token) in run.iter().enumerate() {
+        let in_leading_whitespace = first_non_leading_whitespace_index.is_some()
+            && index < first_non_leading_whitespace_index.unwrap();
+        let in_trailing_whitespace = last_non_trailing_whitespace_index.is_some()
+            && index > last_non_trailing_whitespace_index.unwrap();
+        let style = if in_leading_whitespace || in_trailing_whitespace {
+            Style::DiffPartMidlighted
+        } else {
+            style
+        };
+
+        destination.push(StyledToken::new(token.to_string(), style));
+    }
+}
+
+/// Returns two vectors for old and new sections.
 ///
 /// `old_text` and `new_text` are multi line strings. Having or not having
 /// trailing newlines will affect tokenization. The lines are not expected to
@@ -280,9 +305,7 @@ pub fn to_highlighted_tokens(
                 } else {
                     Style::DiffPartMidlighted
                 };
-                for token in run.iter() {
-                    new_tokens.push(StyledToken::new(token.to_string(), style));
-                }
+                push_styled_tokens(&mut new_tokens, run, style);
             }
 
             similar::DiffOp::Delete {
@@ -296,9 +319,7 @@ pub fn to_highlighted_tokens(
                 } else {
                     Style::DiffPartMidlighted
                 };
-                for token in run.iter() {
-                    old_tokens.push(StyledToken::new(token.to_string(), style));
-                }
+                push_styled_tokens(&mut old_tokens, run, style);
             }
 
             similar::DiffOp::Replace {
@@ -319,13 +340,8 @@ pub fn to_highlighted_tokens(
                     Style::DiffPartMidlighted
                 };
 
-                for token in old_run.iter() {
-                    old_tokens.push(StyledToken::new(token.to_string(), style));
-                }
-
-                for token in new_run.iter() {
-                    new_tokens.push(StyledToken::new(token.to_string(), style));
-                }
+                push_styled_tokens(&mut old_tokens, old_run, style);
+                push_styled_tokens(&mut new_tokens, new_run, style);
             }
         }
 
@@ -759,6 +775,53 @@ pub(crate) mod tests {
         assert_eq!(
             row,
             [StyledToken::new("\t".to_string(), Style::DiffPartUnchanged),]
+        );
+    }
+
+    #[test]
+    fn test_push_styled_tokens() {
+        let mut tokens = Vec::new();
+        push_styled_tokens(&mut tokens, vec!["a", "b", "c"], Style::DiffPartHighlighted);
+        assert_eq!(
+            tokens,
+            vec![
+                StyledToken::new("a".to_string(), Style::DiffPartHighlighted),
+                StyledToken::new("b".to_string(), Style::DiffPartHighlighted),
+                StyledToken::new("c".to_string(), Style::DiffPartHighlighted),
+            ]
+        );
+
+        let mut tokens = Vec::new();
+        push_styled_tokens(&mut tokens, vec![" ", "b", "c"], Style::DiffPartHighlighted);
+        assert_eq!(
+            tokens,
+            vec![
+                StyledToken::new(" ".to_string(), Style::DiffPartMidlighted),
+                StyledToken::new("b".to_string(), Style::DiffPartHighlighted),
+                StyledToken::new("c".to_string(), Style::DiffPartHighlighted),
+            ]
+        );
+
+        let mut tokens = Vec::new();
+        push_styled_tokens(&mut tokens, vec!["a", "b", " "], Style::DiffPartHighlighted);
+        assert_eq!(
+            tokens,
+            vec![
+                StyledToken::new("a".to_string(), Style::DiffPartHighlighted),
+                StyledToken::new("b".to_string(), Style::DiffPartHighlighted),
+                StyledToken::new(" ".to_string(), Style::DiffPartMidlighted),
+            ]
+        );
+
+        let mut tokens = Vec::new();
+        push_styled_tokens(&mut tokens, vec![" ", "b", " "], Style::DiffPartHighlighted);
+        assert_eq!(
+            tokens,
+            vec![
+                StyledToken::new(" ".to_string(), Style::DiffPartMidlighted),
+                StyledToken::new("b".to_string(), Style::DiffPartHighlighted),
+                StyledToken::new(" ".to_string(), Style::DiffPartMidlighted),
+            ]
         );
     }
 }

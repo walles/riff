@@ -29,5 +29,5 @@ Date:   Thu Jan 25 08:57:37 2024 +0100
   This is placeholder line six.
 [31m- -> A prefix will be added to this line on main, a suffix on branch and the middle [7mwill be[27m changed during conflict resolution.[0m
 [31m -A prefix will be added to this line on main, a suffix on branch and the middle [7mwill be[27m changed during conflict resolution. <-[0m
-[32m++[7m-> [27mA prefix will be added to this line on main, a suffix on branch and the middle [7mwas[27m changed during conflict resolution.[7m <-[0m
+[32m++[7m->[27m A prefix will be added to this line on main, a suffix on branch and the middle [7mwas[27m changed during conflict resolution. [7m<-[0m
   This is placeholder line seven.

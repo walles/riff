@@ -13,7 +13,7 @@ Date:   Tue Nov 17 08:44:29 2020 +0100
    search if your search string is a valid regexp
  * Supports displaying ANSI color coded texts (like the output from
 [31m-  `git diff` for example)[0m
-[32m+  `git diff` [7m[| `riff`](https://github.com/walles/riff) [27mfor example)[0m
+[32m+  `git diff` [7m[| `riff`](https://github.com/walles/riff)[27m for example)[0m
  * Supports UTF-8 input and output
  * The position in the file is always shown
  

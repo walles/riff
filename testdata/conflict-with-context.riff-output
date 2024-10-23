@@ -20,7 +20,7 @@
 [7m +[27m[32m	}[0m
 [7m +[0m
 [7m +[27m[32m	firstHitPosition := p.findFirstHit(*lineNumber[0m, nil, false)
-[7m +[0m	if firstHitPosition == nil [7m[32m&& (*lineNumber != linenumbers.LineNumber{}) [0m{
+[7m +[0m	if firstHitPosition == nil [7m[32m&& (*lineNumber != linenumbers.LineNumber{})[27m [0m{
 [7m +[0m		// Try again from the top
 [7m +[0m		firstHitPosition = p.findFirstHit(linenumbers.LineNumber{}, lineNumber, false)
 [7m +[0m	}
@@ -37,7 +37,7 @@
 [7m +[0m	p.scrollPosition = *firstHitPosition
 [7m +[0m}
 [7m +[0m
-[7m +[0m// NOTE: When we search, we do that by looping over the *input lines*, not[7m[32m the[0m
+[7m +[0m// NOTE: When we search, we do that by looping over the *input lines*, not[32m [7mthe[0m
 [7m +[0m// screen lines. That's why [7m[32mstartPosition is[0m a [7m[32mLineNumber[0m rather than a
 [7m +[0m// scrollPosition[32m.[0m
 [7m +[27m[32m//[0m
@@ -72,7 +72,7 @@
 [7m++[27m[31m}[0m
 [7m++[0m
 [7m+ [0m// NOTE: When we search, we do that by looping over the *input lines*, not
-[7m+ [0m//[7m[31m the[0m screen lines. That's why [7m[31mwe're using[0m a[7m[31m line number[0m rather than a
+[7m+ [0m//[31m [7mthe[0m screen lines. That's why [7m[31mwe're using[0m a[31m [7mline number[0m rather than a
 [7m+ [0m// scrollPosition [31mfor[0m searching.
 [7m++=======[0m
 [7m+ [0m// NOTE: When we search, we do that by looping over the *input lines*, not

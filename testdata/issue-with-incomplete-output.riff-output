@@ -7,7 +7,7 @@
  use crate::string_future::StringFuture;
  use crate::token_collector::{
 [31m-    lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,[0m
-[32m+    [7malign_tabs, [27mlowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,[0m
+[32m+    [7malign_tabs,[27m lowlight_timestamp, render, unhighlight_git_prefix, LINE_STYLE_NEW_FILENAME,[0m
      LINE_STYLE_OLD_FILENAME,
  };
  
