@@ -608,6 +608,9 @@ mod tests {
 
     #[test]
     fn test_testdata_examples() {
+        // Prevent this test from being affected by the user's environment
+        env::remove_var("RIFF");
+
         // Example value: `/Users/johan/src/riff/target/debug/deps/riff-7a8916c06b0d3d6c`
         let exe_path = std::env::current_exe().unwrap();
 
@@ -733,7 +736,11 @@ mod tests {
             println!();
             println!("==> Run \"./testdata-examples.sh\" to visualize changes / failures");
             println!();
-            assert_eq!(failing_example_actual, failing_example_expected);
+
+            // Asserting strings equal will make us try to show the diff between
+            // the strings, which becomes too slow. Comparing booleans like this
+            // will not be slow, even on failure.
+            assert_eq!(failing_example_actual == failing_example_expected, true);
 
             // Sometimes the previous assert doesn't trigger, so we put this one
             // here as a safety measure. Do not remove it!!

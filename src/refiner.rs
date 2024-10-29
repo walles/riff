@@ -112,9 +112,9 @@ impl Formatter {
     fn too_large_to_refine(texts: &[&str]) -> bool {
         let size = texts.iter().map(|text| text.len()).sum::<usize>();
 
-        // Around this point refining starts taking near one second on Johan's
-        // laptop. Numbers have been invented through experimentation.
-        return size > 13_000usize * 13_000usize;
+        // This limit used to be higher, but then refining too long on Johan's
+        // laptop. This number is based on very limited experimentation.
+        return size > 300_000usize;
     }
 
     /// Returns a vector of ANSI highlighted lines.
