@@ -278,7 +278,21 @@ fn try_pager(
     }
 }
 
-fn panic_handler(panic_info: &panic::PanicHookInfo) {
+#[rustversion::since(1.81)]
+fn set_panic_hook() {
+    panic::set_hook(Box::new(|panic_info: &panic::PanicHookInfo| {
+        panic_handler(panic_info);
+    }));
+}
+
+#[rustversion::before(1.81)]
+fn set_panic_hook() {
+    panic::set_hook(Box::new(|panic_info: &panic::PanicInfo| {
+        panic_handler(panic_info);
+    }));
+}
+
+fn panic_handler<T: std::fmt::Debug>(panic_info: &T) {
     eprintln!("\n\n-v-v-v----------- RIFF CRASHED ---------------v-v-v-\n",);
 
     // Panic message
@@ -453,9 +467,7 @@ fn env_and_command_line() -> Vec<String> {
 }
 
 fn main() {
-    panic::set_hook(Box::new(|panic_info: &panic::PanicHookInfo| {
-        panic_handler(panic_info);
-    }));
+    set_panic_hook();
 
     let logger = init_logger().unwrap();
 
