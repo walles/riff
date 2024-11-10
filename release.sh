@@ -12,7 +12,8 @@
 
 set -eu -o pipefail
 
-CROSSBUILD_MACOS_SDK="macosx15.0"
+# List available SDKs using "xcodebuild -showsdks"
+CROSSBUILD_MACOS_SDK="macosx15.1"
 
 # Git hooks can use this variable to avoid duplicating the CI work we do in here
 # anyway.
