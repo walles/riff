@@ -75,21 +75,21 @@ const GIT_VERSION: &str = git_version!(cargo_prefix = "");
     after_help = HELP_TEXT_FOOTER,
     override_usage = r#"
   diff ... | riff [options...]
-  riff [-b] [-w] [options...] <F1> <F2>
+  riff [-b] [-w] [options...] <FD1> <FD2>
   riff [-b] [-w] [options...] --file <FILE>"#
 )]
 
 struct Options {
     /// First file or directory to compare
-    #[arg(requires("f2"))]
-    f1: Option<String>,
+    #[arg(requires("fd2"))]
+    fd1: Option<String>,
 
     /// Second file or directory to compare
     #[arg()]
-    f2: Option<String>,
+    fd2: Option<String>,
 
     /// Read diff or patch file
-    #[arg(long, short, conflicts_with_all = ["f1", "f2"])]
+    #[arg(long, short, conflicts_with_all = ["fd1", "fd2"])]
     file: Option<PathBuf>,
 
     /// Ignore changes in amount of whitespace
@@ -503,7 +503,7 @@ fn main() {
         UnchangedStyle::Experimental => Formatter::yellow(),
     };
 
-    if let (Some(file1), Some(file2)) = (options.f1, options.f2) {
+    if let (Some(file1), Some(file2)) = (options.fd1, options.fd2) {
         // "riff file1 file2"
         exec_diff_highlight(
             &file1,
