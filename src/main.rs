@@ -146,7 +146,10 @@ pub(crate) enum UnchangedStyle {
     #[default]
     None,
 
-    /// Try it and report back!
+    /// Old unchanged faint yellow, new unchanged plain yellow
+    Yellow,
+
+    /// Try it and report back! Same as yellow for now.
     Experimental,
 }
 
@@ -496,7 +499,8 @@ fn main() {
 
     let formatter = match options.unchanged_style.unwrap_or(UnchangedStyle::None) {
         UnchangedStyle::None => Formatter::default(),
-        UnchangedStyle::Experimental => Formatter::experimental(),
+        UnchangedStyle::Yellow => Formatter::yellow(),
+        UnchangedStyle::Experimental => Formatter::yellow(),
     };
 
     if let (Some(file1), Some(file2)) = (options.f1, options.f2) {

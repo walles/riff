@@ -36,7 +36,7 @@ impl Formatter {
         }
     }
 
-    pub(crate) fn experimental() -> Self {
+    pub(crate) fn yellow() -> Self {
         Formatter {
             line_style_old: LineStyle {
                 prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
@@ -112,8 +112,8 @@ impl Formatter {
     fn too_large_to_refine(texts: &[&str]) -> bool {
         let size = texts.iter().map(|text| text.len()).sum::<usize>();
 
-        // This limit used to be higher, but then refining too long on Johan's
-        // laptop. This number is based on very limited experimentation.
+        // This limit used to be higher, but then refining took too long on
+        // Johan's laptop. This number is based on very limited experimentation.
         return size > 300_000usize;
     }
 
