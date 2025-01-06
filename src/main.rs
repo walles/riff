@@ -7,6 +7,7 @@
 
 #[macro_use]
 extern crate lazy_static;
+extern crate pager;
 
 use backtrace::Backtrace;
 use clap::CommandFactory;
@@ -16,6 +17,7 @@ use git_version::git_version;
 use line_collector::LineCollector;
 use log::error;
 use logging::init_logger;
+use pager::Pager;
 use refiner::Formatter;
 use std::io::{self, IsTerminal};
 use std::panic;
@@ -233,52 +235,27 @@ fn highlight_diff<W: io::Write + Send + 'static>(
     return Ok(());
 }
 
-/// Try paging using the named pager (`$PATH` will be searched).
+/// Set up paging using the pager crate
 ///
-/// Returns `true` if the pager was found, `false` otherwise.
-#[must_use]
-fn try_pager(
-    input: &mut dyn io::Read,
-    pager_name: &str,
-    color: bool,
-    formatter: Formatter,
-) -> bool {
-    let mut command = Command::new(pager_name);
-
+fn setup_pager() {
     if env::var(PAGER_FORKBOMB_STOP).is_ok() {
         // Try preventing fork bombing if $PAGER is set to riff
-        return false;
+        env::set_var("PAGER", "less");
     }
-    command.env(PAGER_FORKBOMB_STOP, "1");
+    env::set_var(PAGER_FORKBOMB_STOP, "1");
 
     if env::var("LESS").is_err() {
         // Set by git when paging
-        command.env("LESS", "FRX");
+        env::set_var("LESS", "FRX");
     }
 
     if env::var("LV").is_err() {
         // Set by git when paging
-        command.env("LV", "-c");
+        env::set_var("LV", "-c");
     }
 
-    command.stdin(Stdio::piped());
-
-    match command.spawn() {
-        Ok(mut pager) => {
-            let pager_stdin = pager.stdin.unwrap();
-            pager.stdin = None;
-            highlight_diff_or_exit(input, pager_stdin, color, formatter);
-
-            // FIXME: Report pager exit status if non-zero, together with
-            // contents of pager stderr as well if possible.
-            pager.wait().expect("Waiting for pager failed");
-
-            return true;
-        }
-        Err(_) => {
-            return false;
-        }
-    }
+    // Only launches the pager if stdout is a tty
+    Pager::with_default_pager("less").setup();
 }
 
 #[rustversion::since(1.81)]
@@ -317,35 +294,10 @@ fn panic_handler<T: std::fmt::Debug>(panic_info: &T) {
 
 /// Highlight the given stream, paging if stdout is a terminal
 fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, formatter: Formatter) {
-    if !io::stdout().is_terminal() {
-        // We're being piped, just do stdin -> stdout
-        highlight_diff_or_exit(input, io::stdout(), color, formatter);
-        return;
+    if !no_pager {
+        setup_pager();
     }
 
-    if no_pager {
-        highlight_diff_or_exit(input, io::stdout(), color, formatter);
-        return;
-    }
-
-    if let Ok(pager_value) = env::var("PAGER") {
-        if try_pager(input, &pager_value, color, formatter) {
-            return;
-        }
-
-        // FIXME: Print warning at the end if $PAGER was set to something that
-        // doesn't exist.
-    }
-
-    if try_pager(input, "moar", color, formatter) {
-        return;
-    }
-
-    if try_pager(input, "less", color, formatter) {
-        return;
-    }
-
-    // No pager found, wth?
     highlight_diff_or_exit(input, io::stdout(), color, formatter);
 }
 

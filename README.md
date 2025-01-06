@@ -11,7 +11,6 @@ Unchanged parts of changed lines are shown in yellow.
 Much like `git`, Riff sends its output to a pager, trying these in order:
 
 1. Whatever is specified in the `$PAGER` environment variable
-1. [moar](https://github.com/walles/moar) because it is nice
 1. `less` because it is ubiquitous
 
 # Usage
