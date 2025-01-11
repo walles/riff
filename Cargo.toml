@@ -2,7 +2,7 @@
 
 [package]
 name = "riffdiff"                                             # Actually "riff", but that was already taken on crates.io
-version = "3.3.7"
+version = "3.3.8"
 authors = ["Johan Walles <johan.walles@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/walles/riff/"
