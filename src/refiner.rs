@@ -513,7 +513,7 @@ pub(crate) mod tests {
     /// hangs, that's probably what happened again.
     #[test]
     fn test_format_simple_complexity() {
-        // Values from whan this file was added in a single commit:
+        // Values from when this file was added in a single commit:
         // https://github.com/walles/moar/blob/59270d6f8cf454f7a79fcde36a7fcf794768ced9/sample-files/large-git-log-patch.txt
         let lines = 300_000;
         let line_length = 50;

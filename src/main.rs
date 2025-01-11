@@ -238,11 +238,15 @@ fn highlight_diff<W: io::Write + Send + 'static>(
 #[must_use]
 fn try_pager(
     input: &mut dyn io::Read,
-    pager_name: &str,
+    pager_space_separated: &str,
     color: bool,
     formatter: Formatter,
 ) -> bool {
-    let mut command = Command::new(pager_name);
+    let pager_cmdline: Vec<&str> = pager_space_separated.split_whitespace().collect();
+    let mut command = Command::new(pager_cmdline[0]);
+    for arg in pager_cmdline.iter().skip(1) {
+        command.arg(arg);
+    }
 
     if env::var(PAGER_FORKBOMB_STOP).is_ok() {
         // Try preventing fork bombing if $PAGER is set to riff
