@@ -78,7 +78,6 @@ const GIT_VERSION: &str = git_version!(cargo_prefix = "");
   riff [-b] [-w] [options...] <FD1> <FD2>
   riff [-b] [-w] [options...] --file <FILE>"#
 )]
-
 struct Options {
     /// First file or directory to compare
     #[arg(requires("fd2"))]
