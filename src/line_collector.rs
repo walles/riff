@@ -6,7 +6,7 @@ use crate::io::ErrorKind;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter};
 use crate::plusminus_header_highlighter::PlusMinusHeaderHighlighter;
 use crate::refiner::Formatter;
-use std::io::{self, BufWriter, Write};
+use std::io::{self, Write};
 use std::process::{self, exit};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 use std::sync::{Arc, Mutex};
@@ -52,13 +52,13 @@ fn get_fixed_highlight(line: &str) -> Option<&str> {
 }
 
 /// Write the string bytes to the stream.
-fn print<W: io::Write + Send>(stream: &mut BufWriter<W>, text: &str, strip_color: bool) {
+fn print(text: &str, strip_color: bool) {
     let result = if strip_color {
         let bytes = text.as_bytes().to_vec();
         let bytes = without_ansi_escape_codes(&bytes);
-        stream.write_all(&bytes)
+        io::stdout().write_all(&bytes)
     } else {
-        stream.write_all(text.as_bytes())
+        io::stdout().write_all(text.as_bytes())
     };
 
     if let Err(error) = result {
@@ -141,11 +141,7 @@ impl Drop for LineCollector {
 }
 
 impl LineCollector {
-    pub fn new<W: io::Write + Send + 'static>(
-        output: W,
-        color: bool,
-        formatter: Formatter,
-    ) -> LineCollector {
+    pub fn new(color: bool, formatter: Formatter) -> LineCollector {
         // This is how many entries we can look ahead. An "entry" in this case
         // being either a plain text section or an oldnew section.
         //
@@ -166,15 +162,13 @@ impl LineCollector {
         let thread_builder = thread::Builder::new().name("Output Printer Thread".to_string());
         let consumer = thread_builder
             .spawn(move || {
-                let mut output = BufWriter::new(output);
-
                 loop {
                     if let Ok(mut print_me) = queue_getter.recv() {
                         if print_me.is_empty() {
                             // Secret handshake received, done!
                             break;
                         }
-                        print(&mut output, print_me.get(), !color);
+                        print(print_me.get(), !color);
                     }
                 }
             })

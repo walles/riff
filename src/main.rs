@@ -162,13 +162,8 @@ fn format_error(message: String, line_number: usize, line: &[u8]) -> String {
     );
 }
 
-fn highlight_diff_or_exit<W: io::Write + Send + 'static>(
-    input: &mut dyn io::Read,
-    output: W,
-    color: bool,
-    formatter: Formatter,
-) {
-    if let Err(message) = highlight_diff(input, output, color, formatter) {
+fn highlight_diff_or_exit(input: &mut dyn io::Read, color: bool, formatter: Formatter) {
+    if let Err(message) = highlight_diff(input, color, formatter) {
         eprintln!("{}", message);
         exit(1);
     }
@@ -176,13 +171,12 @@ fn highlight_diff_or_exit<W: io::Write + Send + 'static>(
 
 /// Read `diff` output from `input` and write highlighted output to `output`.
 /// The actual highlighting is done using a `LineCollector`.
-fn highlight_diff<W: io::Write + Send + 'static>(
+fn highlight_diff(
     input: &mut dyn io::Read,
-    output: W,
     color: bool,
     formatter: Formatter,
 ) -> Result<(), String> {
-    let mut line_collector = LineCollector::new(output, color, formatter);
+    let mut line_collector = LineCollector::new(color, formatter);
 
     // Read input line by line, using from_utf8_lossy() to convert lines into
     // strings while handling invalid UTF-8 without crashing
@@ -270,19 +264,19 @@ fn panic_handler<T: std::fmt::Debug>(panic_info: &T) {
 fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, formatter: Formatter) {
     if !io::stdout().is_terminal() {
         // We're being piped, just do stdin -> stdout
-        highlight_diff_or_exit(input, io::stdout(), color, formatter);
+        highlight_diff_or_exit(input, color, formatter);
         return;
     }
 
     if no_pager {
-        highlight_diff_or_exit(input, io::stdout(), color, formatter);
+        highlight_diff_or_exit(input, color, formatter);
         return;
     }
 
     let pager_result = Pager::new()
         .with_custom_pager_env_var("RIFF_PAGER")
         .page_stdout(|| {
-            highlight_diff_or_exit(input, io::stdout(), color, formatter);
+            highlight_diff_or_exit(input, color, formatter);
         });
     if let Err(err) = pager_result {
         eprintln!("ERROR: Paging failed: {}", err);
