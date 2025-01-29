@@ -16,6 +16,7 @@ use git_version::git_version;
 use line_collector::LineCollector;
 use log::error;
 use logging::init_logger;
+use pager::Pager;
 use refiner::Formatter;
 use std::io::{self, IsTerminal};
 use std::panic;
@@ -34,6 +35,7 @@ mod hunk_highlighter;
 mod line_collector;
 mod lines_highlighter;
 mod logging;
+mod pager;
 mod plusminus_header_highlighter;
 mod plusminus_lines_highlighter;
 mod refiner;
@@ -58,8 +60,6 @@ Please copy the above crash report and report it at one of:
 * <https://github.com/walles/riff/issues> (preferred)
 * <johan.walles@gmail.com>
 "#;
-
-const PAGER_FORKBOMB_STOP: &str = "_RIFF_IGNORE_PAGER";
 
 // The empty cargo_prefix makes us use the Cargo.toml version number if we
 // cannot get it from git.
@@ -232,58 +232,6 @@ fn highlight_diff<W: io::Write + Send + 'static>(
     return Ok(());
 }
 
-/// Try paging using the named pager (`$PATH` will be searched).
-///
-/// Returns `true` if the pager was found, `false` otherwise.
-#[must_use]
-fn try_pager(
-    input: &mut dyn io::Read,
-    pager_space_separated: &str,
-    color: bool,
-    formatter: Formatter,
-) -> bool {
-    let pager_cmdline: Vec<&str> = pager_space_separated.split_whitespace().collect();
-    let mut command = Command::new(pager_cmdline[0]);
-    for arg in pager_cmdline.iter().skip(1) {
-        command.arg(arg);
-    }
-
-    if env::var(PAGER_FORKBOMB_STOP).is_ok() {
-        // Try preventing fork bombing if $PAGER is set to riff
-        return false;
-    }
-    command.env(PAGER_FORKBOMB_STOP, "1");
-
-    if env::var("LESS").is_err() {
-        // Set by git when paging
-        command.env("LESS", "FRX");
-    }
-
-    if env::var("LV").is_err() {
-        // Set by git when paging
-        command.env("LV", "-c");
-    }
-
-    command.stdin(Stdio::piped());
-
-    match command.spawn() {
-        Ok(mut pager) => {
-            let pager_stdin = pager.stdin.unwrap();
-            pager.stdin = None;
-            highlight_diff_or_exit(input, pager_stdin, color, formatter);
-
-            // FIXME: Report pager exit status if non-zero, together with
-            // contents of pager stderr as well if possible.
-            pager.wait().expect("Waiting for pager failed");
-
-            return true;
-        }
-        Err(_) => {
-            return false;
-        }
-    }
-}
-
 #[rustversion::since(1.81)]
 fn set_panic_hook() {
     panic::set_hook(Box::new(|panic_info: &panic::PanicHookInfo| {
@@ -331,25 +279,15 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, forma
         return;
     }
 
-    if let Ok(pager_value) = env::var("PAGER") {
-        if try_pager(input, &pager_value, color, formatter) {
-            return;
-        }
-
-        // FIXME: Print warning at the end if $PAGER was set to something that
-        // doesn't exist.
+    let pager_result = Pager::new()
+        .with_custom_pager_env_var("RIFF_PAGER")
+        .page_stdout(|| {
+            highlight_diff_or_exit(input, io::stdout(), color, formatter);
+        });
+    if let Err(err) = pager_result {
+        eprintln!("ERROR: Paging failed: {}", err);
+        exit(1);
     }
-
-    if try_pager(input, "moar", color, formatter) {
-        return;
-    }
-
-    if try_pager(input, "less", color, formatter) {
-        return;
-    }
-
-    // No pager found, wth?
-    highlight_diff_or_exit(input, io::stdout(), color, formatter);
 }
 
 /// `Not found`, `File`, `Directory` or `Not file not dir`

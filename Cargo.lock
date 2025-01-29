@@ -436,6 +436,7 @@ dependencies = [
  "regex",
  "rustversion",
  "similar",
+ "stdio-override",
  "tempfile",
  "threadpool",
 ]
@@ -471,6 +472,16 @@ name = "similar"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1de1d4f81173b03af4c0cbed3c898f6bff5b870e4a7f5d6f4057d62a7a4b686e"
+
+[[package]]
+name = "stdio-override"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cffa8a2e517b4e9f270c47e1c4120df90506d9451c1efa67e3698d66446d30ce"
+dependencies = [
+ "libc",
+ "winapi",
+]
 
 [[package]]
 name = "strsim"
