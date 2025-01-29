@@ -262,12 +262,6 @@ fn panic_handler<T: std::fmt::Debug>(panic_info: &T) {
 
 /// Highlight the given stream, paging if stdout is a terminal
 fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, formatter: Formatter) {
-    if !io::stdout().is_terminal() {
-        // We're being piped, just do stdin -> stdout
-        highlight_diff_or_exit(input, color, formatter);
-        return;
-    }
-
     if no_pager {
         highlight_diff_or_exit(input, color, formatter);
         return;

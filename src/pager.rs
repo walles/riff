@@ -1,5 +1,6 @@
 use std::{
-    env, error, fmt, io,
+    env, error, fmt,
+    io::{self, IsTerminal},
     process::{self, Command, Stdio},
 };
 use stdio_override::StdoutOverride;
@@ -121,6 +122,12 @@ impl Pager {
     }
 
     pub fn page_stdout(&mut self, f: impl FnOnce()) -> Result<(), Error> {
+        if !io::stdout().is_terminal() {
+            // stdout is not a terminal, don't page
+            f();
+            return Ok(());
+        }
+
         if let Some(pager_env_var) = &self.pager_env.take() {
             // Custom pager environment variable name set by developer
             if let Ok(pager_env) = env::var(pager_env_var) {
