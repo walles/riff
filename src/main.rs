@@ -9,6 +9,7 @@
 extern crate lazy_static;
 
 use backtrace::Backtrace;
+use capture::Capture;
 use clap::CommandFactory;
 use clap::Parser;
 use clap::ValueEnum;
@@ -16,7 +17,6 @@ use git_version::git_version;
 use line_collector::LineCollector;
 use log::error;
 use logging::init_logger;
-use pager::Pager;
 use refiner::Formatter;
 use std::io::{self, IsTerminal};
 use std::panic;
@@ -27,6 +27,7 @@ use std::str;
 use std::{env, fs::File};
 
 mod ansi;
+mod capture;
 mod commit_line;
 mod conflicts_highlighter;
 mod constants;
@@ -35,7 +36,6 @@ mod hunk_highlighter;
 mod line_collector;
 mod lines_highlighter;
 mod logging;
-mod pager;
 mod plusminus_header_highlighter;
 mod plusminus_lines_highlighter;
 mod refiner;
@@ -267,9 +267,10 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, forma
         return;
     }
 
-    let pager_result = Pager::new()
+    let pager_result = Capture::from_stdout()
+        .to_pager()
         .with_custom_pager_env_var("RIFF_PAGER")
-        .page_stdout(|| {
+        .run(|| {
             highlight_diff_or_exit(input, color, formatter);
         });
     if let Err(err) = pager_result {
@@ -533,20 +534,16 @@ mod tests {
             NORMAL
         );
 
-        let file = tempfile::NamedTempFile::new().unwrap();
-        if let Err(error) = highlight_diff(
-            &mut input,
-            file.reopen().unwrap(),
-            true,
-            Formatter::default(),
-        ) {
-            panic!("{}", error);
-        }
-        let actual = fs::read_to_string(file.path()).unwrap();
+        let output = Capture::from_stdout()
+            .to_string()
+            .run(|| {
+                highlight_diff(&mut input, true, Formatter::default()).unwrap();
+            })
+            .unwrap();
         // collect()ing into line vectors inside of this assert() statement
         // splits test failure output into lines, making it easier to digest.
         assert_eq!(
-            actual.lines().collect::<Vec<_>>(),
+            output.lines().collect::<Vec<_>>(),
             expected.lines().collect::<Vec<_>>()
         );
     }
@@ -708,19 +705,22 @@ mod tests {
         expected_output_file: &PathBuf,
     ) -> Option<ExampleFailure> {
         // Run highlighting on the file into a memory buffer
-        let file = tempfile::NamedTempFile::new().unwrap();
-        if let Err(error) = highlight_diff(
-            &mut fs::File::open(input_file).unwrap(),
-            file.reopen().unwrap(),
-            true,
-            Formatter::default(),
-        ) {
-            return Some(ExampleFailure {
-                diagnostics: format!("Highlighting failed: {}", error),
-                actual_result: "".to_string(),
-                expected_result: "".to_string(),
-            });
-        }
+        let result = Capture::from_stdout().to_string().run(|| {
+
+            FIXME: How do we return the highlighting error out of this inner function?
+
+            if let Err(error) = highlight_diff(
+                &mut fs::File::open(input_file).unwrap(),
+                true,
+                Formatter::default(),
+            ) {
+                return Some(ExampleFailure {
+                    diagnostics: format!("Highlighting failed: {}", error),
+                    actual_result: "".to_string(),
+                    expected_result: "".to_string(),
+                });
+            }
+        });
 
         let actual_result = fs::read_to_string(file.path()).unwrap();
 

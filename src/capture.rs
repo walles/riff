@@ -1,13 +1,48 @@
 use std::{
     env, error, fmt,
-    io::{self, IsTerminal},
+    io::{self, Read, Seek},
+    os::fd::AsRawFd,
     process::{self, Command, Stdio},
 };
-use stdio_override::StdoutOverride;
+use stdio_override::{StderrOverride, StdoutOverride};
 
 const PAGER_FORKBOMB_STOP: &str = "_PAGER_FORKBOMB_STOP";
 
-pub(crate) struct Pager {
+pub(crate) struct Capture {
+    // True: Capture stdout, False: Capture stderr
+    capture_stdout: bool,
+}
+
+impl Capture {
+    pub(crate) fn from_stdout() -> Self {
+        return Capture {
+            capture_stdout: true,
+        };
+    }
+
+    pub(crate) fn from_stderr() -> Self {
+        return Capture {
+            capture_stdout: false,
+        };
+    }
+
+    pub(crate) fn to_pager(&self) -> PagerSink {
+        return PagerSink {
+            capture_stdout: self.capture_stdout,
+            pager_env: None,
+        };
+    }
+
+    pub(crate) fn to_string(&self) -> StringSink {
+        return StringSink {
+            capture_stdout: self.capture_stdout,
+        };
+    }
+}
+
+pub(crate) struct PagerSink {
+    // True: Capture stdout, False: Capture stderr
+    capture_stdout: bool,
     pager_env: Option<String>,
 }
 
@@ -29,13 +64,10 @@ impl error::Error for Error {
     }
 }
 
-impl Pager {
-    pub fn new() -> Self {
-        return Pager { pager_env: None };
-    }
-
+impl PagerSink {
     pub fn with_custom_pager_env_var(&mut self, pager_env: &str) -> Self {
-        return Pager {
+        return PagerSink {
+            capture_stdout: self.capture_stdout,
             pager_env: Some(pager_env.to_string()),
         };
     }
@@ -76,26 +108,43 @@ impl Pager {
         return command.spawn();
     }
 
-    fn page_to_process(mut pager: process::Child, f: impl FnOnce()) -> Result<(), Error> {
+    fn page_to_process(&self, mut pager: process::Child, f: impl FnOnce()) -> Result<(), Error> {
         // If this unwrap() fails, there's probably something wrong with
         // try_page_stdout(). It should ensure we can access the pager's
         // stdin.
         let pager_stdin = pager.stdin.take().unwrap();
 
-        // Start capturing stdout
-        let stdout_capture = StdoutOverride::from_io(pager_stdin);
-        if let Err(e) = stdout_capture {
-            return Err(Error {
-                message: "Failed to override stdout".to_string(),
-                source: e,
-            });
+        if self.capture_stdout {
+            // Start capturing stdout
+            let stdout_capture = StdoutOverride::from_io(pager_stdin);
+            if let Err(e) = stdout_capture {
+                return Err(Error {
+                    message: "Failed to override stdout".to_string(),
+                    source: e,
+                });
+            }
+
+            // Call the function that will write to stdout
+            f();
+
+            // Stop capturing stdout
+            drop(stdout_capture);
+        } else {
+            // Start capturing stderr
+            let stderr_capture = StderrOverride::from_io(pager_stdin);
+            if let Err(e) = stderr_capture {
+                return Err(Error {
+                    message: "Failed to override stderr".to_string(),
+                    source: e,
+                });
+            }
+
+            // Call the function that will write to stderr
+            f();
+
+            // Stop capturing stderr
+            drop(stderr_capture);
         }
-
-        // Call the function that will write to stdout
-        f();
-
-        // Stop capturing stdout
-        drop(stdout_capture);
 
         // Wait for the pager to finish
         let wait_result = pager.wait();
@@ -121,19 +170,13 @@ impl Pager {
         return Ok(());
     }
 
-    pub fn page_stdout(&mut self, f: impl FnOnce()) -> Result<(), Error> {
-        if !io::stdout().is_terminal() {
-            // stdout is not a terminal, don't page
-            f();
-            return Ok(());
-        }
-
+    pub fn run(&mut self, f: impl FnOnce()) -> Result<(), Error> {
         if let Some(pager_env_var) = &self.pager_env.take() {
             // Custom pager environment variable name set by developer
             if let Ok(pager_env) = env::var(pager_env_var) {
                 // Custom pager environment variable set by user
                 match self.try_page_stdout(&pager_env) {
-                    Ok(pager) => return Self::page_to_process(pager, f),
+                    Ok(pager) => return self.page_to_process(pager, f),
 
                     // User explicitly set the custom PAGER variable. If that
                     // wasn't launchable, that's a failure.
@@ -152,7 +195,7 @@ impl Pager {
 
         if let Ok(pager_env) = env::var("PAGER") {
             match self.try_page_stdout(&pager_env) {
-                Ok(pager) => return Self::page_to_process(pager, f),
+                Ok(pager) => return self.page_to_process(pager, f),
 
                 // User explicitly set $PAGER. If that doesn't exist, that's a failure.
                 Err(e) => {
@@ -165,11 +208,11 @@ impl Pager {
         }
 
         if let Ok(pager) = self.try_page_stdout("moar") {
-            return Self::page_to_process(pager, f);
+            return self.page_to_process(pager, f);
         }
 
         if let Ok(pager) = self.try_page_stdout("less") {
-            return Self::page_to_process(pager, f);
+            return self.page_to_process(pager, f);
         }
 
         // No pager found, just do what git does and print to stdout:
@@ -177,5 +220,61 @@ impl Pager {
         f();
 
         return Ok(());
+    }
+}
+
+pub(crate) struct StringSink {
+    // True: Capture stdout, False: Capture stderr
+    capture_stdout: bool,
+}
+
+impl StringSink {
+    pub fn run(&self, f: impl FnOnce()) -> Result<String, Error> {
+        // Open a temporary file to capture the output. I have no idea how this
+        // could fail, let's just unwrap it. If somebody runs into problems,
+        // let's look into those when it happens.
+        let mut temp_file = tempfile::tempfile().unwrap();
+
+        if self.capture_stdout {
+            // Start capturing stdout
+            let stdout_capture = StdoutOverride::from_raw(temp_file.as_raw_fd());
+            if let Err(e) = stdout_capture {
+                return Err(Error {
+                    message: "Failed to override stdout".to_string(),
+                    source: e,
+                });
+            }
+
+            // Call the function that will write to stdout
+            f();
+
+            // Stop capturing stdout
+            drop(stdout_capture);
+        } else {
+            // Start capturing stderr
+            let stderr_capture = StderrOverride::from_io(temp_file.as_raw_fd());
+            if let Err(e) = stderr_capture {
+                return Err(Error {
+                    message: "Failed to override stderr".to_string(),
+                    source: e,
+                });
+            }
+
+            // Call the function that will write to stderr
+            f();
+
+            // Stop capturing stderr
+            drop(stderr_capture);
+        }
+
+        // Rewind the file to read the captured output
+        temp_file.seek(io::SeekFrom::Start(0)).unwrap();
+
+        // Read the captured output
+        let mut captured = String::new();
+        temp_file.read_to_string(&mut captured).unwrap();
+
+        // Return the captured output
+        return Ok(captured);
     }
 }
