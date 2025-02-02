@@ -162,20 +162,9 @@ fn format_error(message: String, line_number: usize, line: &[u8]) -> String {
     );
 }
 
-fn highlight_diff_or_exit(input: &mut dyn io::Read, color: bool, formatter: Formatter) {
-    if let Err(message) = highlight_diff(input, color, formatter) {
-        eprintln!("{}", message);
-        exit(1);
-    }
-}
-
 /// Read `diff` output from `input` and write highlighted output to `output`.
 /// The actual highlighting is done using a `LineCollector`.
-fn highlight_diff(
-    input: &mut dyn io::Read,
-    color: bool,
-    formatter: Formatter,
-) -> Result<(), String> {
+fn highlight_diff(input: &mut dyn io::Read, color: bool, formatter: Formatter) {
     let mut line_collector = LineCollector::new(color, formatter);
 
     // Read input line by line, using from_utf8_lossy() to convert lines into
@@ -222,8 +211,6 @@ fn highlight_diff(
             continue;
         }
     }
-
-    return Ok(());
 }
 
 #[rustversion::since(1.81)]
@@ -263,7 +250,7 @@ fn panic_handler<T: std::fmt::Debug>(panic_info: &T) {
 /// Highlight the given stream, paging if stdout is a terminal
 fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, formatter: Formatter) {
     if no_pager {
-        highlight_diff_or_exit(input, color, formatter);
+        highlight_diff(input, color, formatter);
         return;
     }
 
@@ -271,7 +258,7 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, forma
         .to_pager()
         .with_custom_pager_env_var("RIFF_PAGER")
         .run(|| {
-            highlight_diff_or_exit(input, color, formatter);
+            highlight_diff(input, color, formatter);
         });
     if let Err(err) = pager_result {
         eprintln!("ERROR: Paging failed: {}", err);
@@ -537,7 +524,7 @@ mod tests {
         let output = Capture::from_stdout()
             .to_string()
             .run(|| {
-                highlight_diff(&mut input, true, Formatter::default()).unwrap();
+                highlight_diff(&mut input, true, Formatter::default());
             })
             .unwrap();
         // collect()ing into line vectors inside of this assert() statement
@@ -705,24 +692,16 @@ mod tests {
         expected_output_file: &PathBuf,
     ) -> Option<ExampleFailure> {
         // Run highlighting on the file into a memory buffer
-        let result = Capture::from_stdout().to_string().run(|| {
-
-            FIXME: How do we return the highlighting error out of this inner function?
-
-            if let Err(error) = highlight_diff(
-                &mut fs::File::open(input_file).unwrap(),
-                true,
-                Formatter::default(),
-            ) {
-                return Some(ExampleFailure {
-                    diagnostics: format!("Highlighting failed: {}", error),
-                    actual_result: "".to_string(),
-                    expected_result: "".to_string(),
-                });
-            }
-        });
-
-        let actual_result = fs::read_to_string(file.path()).unwrap();
+        let actual_result = Capture::from_stdout()
+            .to_string()
+            .run(|| {
+                return highlight_diff(
+                    &mut fs::File::open(input_file).unwrap(),
+                    true,
+                    Formatter::default(),
+                );
+            })
+            .unwrap();
 
         // Load the corresponding .riff-output file into a string
         let expected_result = fs::read_to_string(expected_output_file).unwrap();
@@ -736,16 +715,17 @@ mod tests {
         }
 
         // Test that disabling color results in no escape codes
-        let file = tempfile::NamedTempFile::new().unwrap();
-        highlight_diff(
-            &mut fs::File::open(input_file).unwrap(),
-            file.reopen().unwrap(),
-            false,
-            Formatter::default(),
-        )
-        .unwrap();
+        let highlighted = Capture::from_stdout()
+            .to_string()
+            .run(|| {
+                highlight_diff(
+                    &mut fs::File::open(input_file).unwrap(),
+                    false,
+                    Formatter::default(),
+                )
+            })
+            .unwrap();
 
-        let highlighted = fs::read_to_string(file.path()).unwrap();
         if highlighted.contains('\x1b') {
             return Some(ExampleFailure {
                 diagnostics: "Escape codes found in the supposedly non-colored output".to_string(),
