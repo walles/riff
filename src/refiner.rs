@@ -347,10 +347,10 @@ pub fn to_highlighted_tokens(
 
         old_start_of_line = old_tokens
             .last()
-            .map_or(true, |token| token.token.ends_with('\n'));
+            .is_none_or(|token| token.token.ends_with('\n'));
         new_start_of_line = new_tokens
             .last()
-            .map_or(true, |token| token.token.ends_with('\n'));
+            .is_none_or(|token| token.token.ends_with('\n'));
     }
 
     // Refine old tokens highlighting
