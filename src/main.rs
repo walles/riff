@@ -753,6 +753,16 @@ mod tests {
             println!();
             println!("Example: {}", failing_example);
             println!();
+            println!("Actual {} highlighting:", failing_example);
+            for line in &failing_example_actual {
+                println!("  {}", line);
+            }
+            println!();
+            println!("Expected {} highlighting:", failing_example);
+            for line in &failing_example_expected {
+                println!("  {}", line);
+            }
+            println!();
             println!("==> Run \"./testdata-examples.sh\" to visualize changes / failures");
             println!();
 
