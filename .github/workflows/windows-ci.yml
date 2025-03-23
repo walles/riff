@@ -7,10 +7,13 @@ on:
 
 jobs:
   validate:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
 
-      # FIXME: Replace "build" with "test" once it passes on Windows.
+      # Verify we can build
       - run: cargo build --workspace
+
+      # Verify the tests pass
+      - run: cargo test --workspace
