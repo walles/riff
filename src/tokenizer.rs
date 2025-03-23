@@ -1,3 +1,22 @@
+fn is_word_part(character: char) -> bool {
+    if character == '_' {
+        return true;
+    }
+
+    if !character.is_alphanumeric() {
+        return false;
+    }
+
+    if ('\u{3040}'..='\u{30ff}').contains(&character) {
+        // Hiragana and Katakana.
+        //
+        // Neither has any spacing so we can't tell where words start and end. Treat them as individuals.
+        return false;
+    }
+
+    return true;
+}
+
 // FIXME: The doctest doesn't run on `cargo test`, why?
 /// Splits string into a vector of words. A word is any sequence of alphanumeric
 /// characters. Non-words get into the vector one and one.
@@ -13,7 +32,7 @@ pub fn tokenize(input: &str) -> Vec<&str> {
     for character in input.chars() {
         let mut still_in_run = false;
         if let (Some(start_index), Some(start_char)) = (run_start_byte_index, run_start_char) {
-            let current_is_word_part = (character == '_') || character.is_alphanumeric();
+            let current_is_word_part = is_word_part(character);
             let last_was_word_part = (start_char == '_') || start_char.is_alphanumeric();
             let still_in_word = current_is_word_part && last_was_word_part;
             let still_in_whitespace =
@@ -74,6 +93,14 @@ mod tests {
     fn test_words() {
         assert_eq!(tokenize("word"), ["word"]);
         assert_eq!(tokenize("Adam Bea"), ["Adam", " ", "Bea"]);
+    }
+
+    #[test]
+    fn test_cjk() {
+        assert_eq!(
+            tokenize("こんにちは。"),
+            ["こ", "ん", "に", "ち", "は", "。"]
+        );
     }
 
     #[test]
