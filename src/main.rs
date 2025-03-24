@@ -585,6 +585,7 @@ mod tests {
     use super::*;
     use std::{collections::HashSet, fs, path::PathBuf};
 
+    use base64::{engine::general_purpose, Engine};
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
@@ -680,8 +681,8 @@ mod tests {
 
         // Iterate over all the example output files
         let mut failing_example: Option<String> = None;
-        let mut failing_example_expected = vec![];
-        let mut failing_example_actual = vec![];
+        let mut failing_example_expected = String::new();
+        let mut failing_example_actual = String::new();
         let mut failure_count = 0;
         for expected_output_file in riff_output_files {
             let without_riff_output_extension =
@@ -698,8 +699,8 @@ mod tests {
             if !riff_input_file.is_file() {
                 if failing_example.is_none() {
                     failing_example = Some(expected_output_file.to_str().unwrap().to_string());
-                    failing_example_expected = vec![];
-                    failing_example_actual = vec![];
+                    failing_example_expected = String::new();
+                    failing_example_actual = String::new();
                 }
 
                 println!(
@@ -731,19 +732,8 @@ mod tests {
 
                 failing_example = Some(riff_input_file.to_str().unwrap().to_string());
 
-                let actual_lines: Vec<String> = failure
-                    .actual_result
-                    .split('\n')
-                    .map(str::to_string)
-                    .collect();
-                let expected_lines: Vec<String> = failure
-                    .expected_result
-                    .split('\n')
-                    .map(str::to_string)
-                    .collect();
-
-                failing_example_expected = expected_lines;
-                failing_example_actual = actual_lines;
+                failing_example_expected = failure.actual_result;
+                failing_example_actual = failure.expected_result;
             }
         }
 
@@ -754,14 +744,19 @@ mod tests {
             println!("Example: {}", failing_example);
             println!();
             println!("Actual {} highlighting:", failing_example);
-            for line in &failing_example_actual {
+            for line in failing_example_actual.lines() {
                 println!("  {}", line);
             }
             println!();
             println!("Expected {} highlighting:", failing_example);
-            for line in &failing_example_expected {
+            for line in failing_example_expected.lines() {
                 println!("  {}", line);
             }
+            println!();
+            println!(
+                "Actual as base64: {}",
+                general_purpose::STANDARD.encode(&failing_example_actual)
+            );
             println!();
             println!("==> Run \"./testdata-examples.sh\" to visualize changes / failures");
             println!();
