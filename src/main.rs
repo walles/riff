@@ -806,7 +806,7 @@ mod tests {
         // Load the corresponding .riff-output file into a string
         let expected_result = fs::read_to_string(expected_output_file).unwrap();
 
-        if actual_result != expected_result {
+        if !actual_result.lines().eq(expected_result.lines()) {
             return Some(ExampleFailure {
                 diagnostics: "Output mismatches".to_string(),
                 actual_result,
