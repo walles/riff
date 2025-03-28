@@ -80,7 +80,21 @@ pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
 
 impl StyledToken {
     pub fn new(token: String, style: Style) -> StyledToken {
-        return StyledToken { token, style };
+        if token.len() != 1 {
+            return StyledToken { token, style };
+        }
+
+        let character = token.chars().next().unwrap();
+        if character >= ' ' || character == '\x09' || character == '\x0a' {
+            return StyledToken { token, style };
+        }
+
+        // This is a special character, let's replace it with its Unicode symbol
+        let symbol = char::from_u32((character as u32) + 0x2400).unwrap_or(character);
+        return StyledToken {
+            token: symbol.to_string(),
+            style,
+        };
     }
 
     // Are all characters in this token whitespace?
@@ -382,5 +396,17 @@ mod tests {
         );
 
         assert_eq!(actual, format!("{OLD}-x\t{NORMAL}"));
+    }
+
+    #[test]
+    fn test_below_ascii_space() {
+        assert_eq!(
+            "␛",
+            StyledToken::new("\x1b".to_string(), Style::Context).token
+        );
+        assert_eq!(
+            "␇",
+            StyledToken::new("\x07".to_string(), Style::Context).token
+        );
     }
 }
