@@ -741,8 +741,8 @@ mod tests {
 
                 failing_example = Some(riff_input_file.to_str().unwrap().to_string());
 
-                failing_example_expected = failure.actual_result;
-                failing_example_actual = failure.expected_result;
+                failing_example_actual = failure.actual_result;
+                failing_example_expected = failure.expected_result;
             }
         }
 
