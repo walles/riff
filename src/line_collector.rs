@@ -221,8 +221,12 @@ impl LineCollector {
     /// The line parameter is expected *not* to end in a newline.
     ///
     /// Returns an error message on trouble.
-    pub fn consume_line(&mut self, raw_line: &[u8]) -> Result<(), String> {
-        let result = self.consume_line_internal(raw_line);
+    pub fn consume_line(
+        &mut self,
+        raw_line: &[u8],
+        strip_incoming_formatting: bool,
+    ) -> Result<(), String> {
+        let result = self.consume_line_internal(raw_line, strip_incoming_formatting);
         if result.is_ok() {
             return result;
         }
@@ -246,11 +250,19 @@ impl LineCollector {
         return result;
     }
 
-    fn consume_line_internal(&mut self, raw_line: &[u8]) -> Result<(), String> {
+    fn consume_line_internal(
+        &mut self,
+        raw_line: &[u8],
+        strip_incoming_formatting: bool,
+    ) -> Result<(), String> {
         // Strip out incoming ANSI formatting. This enables us to highlight
         // already-colored input.
-        let line = without_ansi_escape_codes(raw_line);
-        let line = String::from_utf8_lossy(&line).to_string();
+        let line = if strip_incoming_formatting {
+            let stripped = without_ansi_escape_codes(raw_line);
+            String::from_utf8_lossy(&stripped).to_string()
+        } else {
+            String::from_utf8_lossy(raw_line).to_string()
+        };
 
         if line.starts_with('\\') {
             {

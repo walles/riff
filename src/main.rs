@@ -189,6 +189,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(
     let mut line: Vec<u8> = Vec::new();
     let mut buf: [u8; 16384] = [0; 16384];
     let mut line_number = 1usize;
+    let mut stream_started_with_esc: Option<bool> = None;
     loop {
         let result = input.read(&mut buf);
         if result.is_err() {
@@ -196,11 +197,17 @@ fn highlight_diff<W: io::Write + Send + 'static>(
         }
 
         let read_count = result.unwrap();
+        if read_count > 0 && stream_started_with_esc.is_none() {
+            stream_started_with_esc = Some(buf[0] == b'\x1b');
+        }
+
         if read_count == 0 {
             // End of stream
             if !line.is_empty() {
                 // Stuff found on the last line without a trailing newline
-                if let Err(message) = line_collector.consume_line(&line) {
+                if let Err(message) =
+                    line_collector.consume_line(&line, stream_started_with_esc.unwrap_or(false))
+                {
                     error!("{}", format_error(message, line_number, &line));
                 }
             }
@@ -220,7 +227,9 @@ fn highlight_diff<W: io::Write + Send + 'static>(
             }
 
             // Line finished, consume it!
-            if let Err(message) = line_collector.consume_line(&line) {
+            if let Err(message) =
+                line_collector.consume_line(&line, stream_started_with_esc.unwrap_or(false))
+            {
                 error!("{}", format_error(message, line_number, &line));
             }
             line.clear();
@@ -732,8 +741,8 @@ mod tests {
 
                 failing_example = Some(riff_input_file.to_str().unwrap().to_string());
 
-                failing_example_expected = failure.actual_result;
-                failing_example_actual = failure.expected_result;
+                failing_example_actual = failure.actual_result;
+                failing_example_expected = failure.expected_result;
             }
         }
 

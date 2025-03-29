@@ -132,7 +132,6 @@ If you want to test the release script without actually releasing anything, do:
 
 ## Misc
 
-- Render ESC characters in the diff as Unicode ␛
 - `--help`: Only print installing-into-`$PATH` help if we aren't already being
   executed from inside of the `$PATH`
 - Add test for never changing the number of lines in the input, that
@@ -242,3 +241,4 @@ If you want to test the release script without actually releasing anything, do:
 - Make sure we can handle a `git` conflict
   resolution diff. File format is described at
   http://git-scm.com/docs/git-diff#_combined_diff_format.
+- Render ESC characters in the diff as Unicode ␛
