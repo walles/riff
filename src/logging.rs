@@ -18,7 +18,7 @@ impl log::Log for BufferLogger {
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let mut buffer = self.buffer.lock().unwrap();
-            if buffer.len() > 0 {
+            if !buffer.is_empty() {
                 writeln!(&mut *buffer).unwrap();
             }
             write!(
