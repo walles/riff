@@ -90,6 +90,9 @@ impl PlusMinusHeaderHighlighter {
         brighten_filename(&mut old_tokens);
         brighten_filename(&mut new_tokens);
 
+        hyperlink_filename(&mut old_tokens);
+        hyperlink_filename(&mut new_tokens);
+
         lowlight_dev_null(&mut old_tokens);
         lowlight_dev_null(&mut new_tokens);
 
