@@ -253,32 +253,38 @@ pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
     new[new_tab_index_token].token = new_spaces;
 }
 
-/// File timestamps are found after either a tab character or a double space
-pub fn lowlight_timestamp(row: &mut [StyledToken]) {
-    #[derive(PartialEq)]
-    enum State {
-        Initial,
-        InTimestamp,
+/// Splits a row into (filename, timestamp) slices.
+///
+/// Response slices may be empty.
+pub fn split_filename_and_timestamp(
+    row: &mut [StyledToken],
+) -> (&mut [StyledToken], &mut [StyledToken]) {
+    let mut split_index = None;
+    for (i, token) in row.iter().enumerate() {
+        if token.token == "\t" {
+            split_index = Some(i + 1);
+            break;
+        }
+        let is_multispace = token.token.len() > 1 && token.token.chars().all(|c| c == ' ');
+        if is_multispace {
+            split_index = Some(i + 1);
+            break;
+        }
     }
 
-    let mut state = State::Initial;
-    for token in row.iter_mut() {
-        match state {
-            State::Initial => {
-                let is_multispace = token.token.len() > 1 && token.token.chars().all(|c| c == ' ');
-                if token.token == "\t" || is_multispace {
-                    state = State::InTimestamp;
-                }
-            }
-            State::InTimestamp => {
-                // Intentionally left blank, no way out of this state
-            }
-        }
+    if let Some(idx) = split_index {
+        let (filename, timestamp) = row.split_at_mut(idx);
+        return (filename, timestamp);
+    }
 
-        if state == State::InTimestamp {
-            token.style = Style::Lowlighted;
-            continue;
-        }
+    (row, &mut [])
+}
+
+/// File timestamps are found after either a tab character or a double space
+pub fn lowlight_timestamp(row: &mut [StyledToken]) {
+    let (_filename, timestamp) = split_filename_and_timestamp(row);
+    for token in timestamp {
+        token.style = Style::Lowlighted;
     }
 }
 
@@ -321,6 +327,12 @@ pub fn brighten_filename(row: &mut [StyledToken]) {
         }
         token.style = Style::Bright;
     }
+}
+
+/// Note that the file name might end with one or more tabs followed by a
+/// timestamp, so it's not really just a file name.
+pub fn hyperlink_filename(row: &mut [StyledToken]) {
+    let (filename, _timestamp) = split_filename_and_timestamp(row);
 }
 
 pub fn lowlight_dev_null(row: &mut [StyledToken]) {
