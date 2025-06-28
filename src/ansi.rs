@@ -18,17 +18,19 @@ pub enum Weight {
     Faint,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AnsiStyle {
-    pub color: Color,
-    pub weight: Weight,
-    pub inverse: bool,
+    pub(crate) color: Color,
+    pub(crate) weight: Weight,
+    pub(crate) inverse: bool,
+    pub(crate) url: Option<url::Url>,
 }
 
 pub const ANSI_STYLE_NORMAL: AnsiStyle = AnsiStyle {
     color: Color::Default,
     weight: Weight::Normal,
     inverse: false,
+    url: None,
 };
 
 impl AnsiStyle {
@@ -80,27 +82,30 @@ impl AnsiStyle {
         return return_me;
     }
 
-    pub const fn with_color(&self, color: Color) -> AnsiStyle {
+    pub fn with_color(&self, color: Color) -> AnsiStyle {
         return AnsiStyle {
             color,
             weight: self.weight,
             inverse: self.inverse,
+            url: self.url.clone(),
         };
     }
 
-    pub const fn with_inverse(&self, inverse: bool) -> AnsiStyle {
+    pub fn with_inverse(&self, inverse: bool) -> AnsiStyle {
         return AnsiStyle {
             color: self.color,
             weight: self.weight,
             inverse,
+            url: self.url.clone(),
         };
     }
 
-    pub const fn with_weight(&self, weight: Weight) -> AnsiStyle {
+    pub fn with_weight(&self, weight: Weight) -> AnsiStyle {
         return AnsiStyle {
             color: self.color,
             weight,
             inverse: self.inverse,
+            url: self.url.clone(),
         };
     }
 }

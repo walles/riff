@@ -199,9 +199,9 @@ impl ConflictsHighlighter {
                 let (c1_tokens, c2_tokens) = refiner::diff(c1_or_newline, c2_or_newline);
 
                 let c1_style = if base_header.is_empty() {
-                    LINE_STYLE_CONFLICT_OLD
+                    LINE_STYLE_CONFLICT_OLD.clone()
                 } else {
-                    LINE_STYLE_CONFLICT_NEW
+                    LINE_STYLE_CONFLICT_NEW.clone()
                 };
                 let highlighted_c1 = token_collector::render(&c1_style, c1_prefix, &c1_tokens);
                 let highlighted_c2 =

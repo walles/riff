@@ -5,6 +5,7 @@ use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
 use crate::ansi::Weight;
 use crate::ansi::ANSI_STYLE_NORMAL;
+use once_cell::sync::Lazy;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Style {
@@ -24,7 +25,7 @@ pub(crate) struct StyledToken {
     pub(crate) url: Option<url::Url>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct LineStyle {
     pub(crate) prefix_style: AnsiStyle,
     pub(crate) unchanged_style: AnsiStyle,
@@ -34,50 +35,40 @@ pub(crate) struct LineStyle {
 
 // The base line styles live in refiner.rs
 
-pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-    }
-};
+pub(crate) static LINE_STYLE_CONFLICT_BASE: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+    prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+    unchanged_style: ANSI_STYLE_NORMAL,
+    midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+    highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+});
 
-pub(crate) const LINE_STYLE_CONFLICT_OLD: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-    }
-};
+pub(crate) static LINE_STYLE_CONFLICT_OLD: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+    prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+    unchanged_style: ANSI_STYLE_NORMAL,
+    midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+    highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+});
 
-pub(crate) const LINE_STYLE_CONFLICT_NEW: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
-    }
-};
+pub(crate) static LINE_STYLE_CONFLICT_NEW: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+    prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+    unchanged_style: ANSI_STYLE_NORMAL,
+    midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+    highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+});
 
-pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-    }
-};
+pub(crate) static LINE_STYLE_OLD_FILENAME: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+    prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
+    unchanged_style: ANSI_STYLE_NORMAL,
+    midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+    highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+});
 
-pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
-    }
-};
+pub(crate) static LINE_STYLE_NEW_FILENAME: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+    prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
+    unchanged_style: ANSI_STYLE_NORMAL,
+    midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+    highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+});
 
 impl StyledToken {
     pub fn new(token: String, style: Style) -> StyledToken {
@@ -126,7 +117,7 @@ pub(crate) fn render_row(
 
     // Render prefix
     rendered.push_str(&line_style.prefix_style.from(&current_style));
-    current_style = line_style.prefix_style;
+    current_style = line_style.prefix_style.clone();
     rendered.push_str(prefix);
 
     // Render tokens
@@ -135,9 +126,9 @@ pub(crate) fn render_row(
             Style::Context => ANSI_STYLE_NORMAL,
             Style::Lowlighted => ANSI_STYLE_NORMAL.with_weight(Weight::Faint),
             Style::Bright => ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
-            Style::DiffPartUnchanged => line_style.unchanged_style,
-            Style::DiffPartMidlighted => line_style.midlighted_style,
-            Style::DiffPartHighlighted => line_style.highlighted_style,
+            Style::DiffPartUnchanged => line_style.unchanged_style.clone(),
+            Style::DiffPartMidlighted => line_style.midlighted_style.clone(),
+            Style::DiffPartHighlighted => line_style.highlighted_style.clone(),
             Style::Error => ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
         };
 
@@ -397,28 +388,24 @@ mod tests {
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
-    const LINE_STYLE_OLD: LineStyle = {
-        LineStyle {
-            prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
-            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
-            midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
-            highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-        }
-    };
+    static LINE_STYLE_OLD: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+    });
 
-    const LINE_STYLE_NEW: LineStyle = {
-        LineStyle {
-            prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
-            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
-            midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
-            highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
-        }
-    };
+    static LINE_STYLE_NEW: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+    });
 
     #[test]
     fn test_basic() {
         let rendered = render(
-            &LINE_STYLE_NEW,
+            &*LINE_STYLE_NEW,
             "+",
             &[
                 StyledToken {
@@ -440,7 +427,7 @@ mod tests {
     fn test_removed_trailing_whitespace() {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
-            &LINE_STYLE_OLD,
+            &*LINE_STYLE_OLD,
             "-",
             &[StyledToken::new(" ".to_string(), Style::DiffPartMidlighted)],
         );
@@ -452,7 +439,7 @@ mod tests {
     fn test_removed_nonleading_tab() {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
-            &LINE_STYLE_OLD,
+            &*LINE_STYLE_OLD,
             "-",
             &[
                 StyledToken::new("x".to_string(), Style::DiffPartMidlighted),

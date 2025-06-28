@@ -303,7 +303,9 @@ impl LineCollector {
             }
         }
 
-        if let Some(hunk_highlighter) = HunkLinesHighlighter::from_line(&line, self.formatter) {
+        if let Some(hunk_highlighter) =
+            HunkLinesHighlighter::from_line(&line, self.formatter.clone())
+        {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(());

@@ -341,7 +341,7 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, forma
     }
 
     if let Ok(pager_value) = env::var("PAGER") {
-        if try_pager(input, &pager_value, color, formatter) {
+        if try_pager(input, &pager_value, color, formatter.clone()) {
             return;
         }
 
@@ -349,16 +349,16 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, forma
         // doesn't exist.
     }
 
-    if try_pager(input, "moar", color, formatter) {
+    if try_pager(input, "moar", color, formatter.clone()) {
         return;
     }
 
-    if try_pager(input, "less", color, formatter) {
+    if try_pager(input, "less", color, formatter.clone()) {
         return;
     }
 
     // No pager found, wth?
-    highlight_diff_or_exit(input, io::stdout(), color, formatter);
+    highlight_diff_or_exit(input, io::stdout(), color, formatter.clone());
 }
 
 /// `Not found`, `File`, `Directory` or `Not file not dir`
