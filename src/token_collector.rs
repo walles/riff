@@ -351,14 +351,17 @@ pub fn hyperlink_filename(row: &mut [StyledToken]) {
         return;
     }
 
-    let url_string = url::Url::from_file_path(&path).ok().map(|u| u.to_string());
-    if url_string.is_none() {
+    let url = url::Url::from_file_path(&path).ok();
+    if url.is_none() {
         return;
     }
 
-    let url_string = url_string.unwrap();
+    let url = url.unwrap();
 
-    FIXME: Hyperlink the tokens!
+    // Actually link the tokens
+    for token in filename_tokens.iter_mut() {
+        token.url = Some(url.clone());
+    }
 }
 
 pub fn lowlight_dev_null(row: &mut [StyledToken]) {
