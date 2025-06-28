@@ -1,5 +1,5 @@
-[1m--- [0m/tmp/dom/[7m[31mapa[27m[1m[39m.txt[22m[2m   2024-02-04 08:36:46[0m
-[1m+++ [0m/tmp/dom/[7m[32mbepa[27m[1m[39m.txt[22m[2m  2024-02-04 08:37:13[0m
+[1m--- [0m/tmp/dom/[7m[31mapa[27m[1m[39m.txt   [22m[2m2024-02-04 08:36:46[0m
+[1m+++ [0m/tmp/dom/[7m[32mbepa[27m[1m[39m.txt  [22m[2m2024-02-04 08:37:13[0m
 [36m@@ -1,2 +1,2 @@[0m
 [31m-[7mChange this[27m line[0m
 [32m+[7mThis[27m line [7mwas changed[0m
