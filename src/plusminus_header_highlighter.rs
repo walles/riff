@@ -1,13 +1,12 @@
 use threadpool::ThreadPool;
 
-use crate::constants::*;
 use crate::lines_highlighter::LineAcceptance;
 use crate::lines_highlighter::{LinesHighlighter, Response};
 use crate::refiner::diff;
 use crate::string_future::StringFuture;
 use crate::token_collector::{
-    align_tabs, brighten_filename, lowlight_timestamp, render, unhighlight_git_prefix,
-    LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
+    align_tabs, brighten_filename, lowlight_dev_null, lowlight_git_prefix, lowlight_timestamp,
+    render, Style, StyledToken, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
 };
 
 pub(crate) struct PlusMinusHeaderHighlighter {
@@ -60,78 +59,39 @@ impl PlusMinusHeaderHighlighter {
     }
 
     fn highlighted(&self) -> String {
+        let (mut old_tokens, mut new_tokens) = diff(&self.old_name, &self.new_name);
+
         if self.old_name == "/dev/null" {
-            // New file added
-            let mut highlighted = String::new();
-
-            highlighted.push_str(BOLD);
-            highlighted.push_str("--- ");
-            highlighted.push_str(NORMAL_INTENSITY);
-            highlighted.push_str(FAINT);
-            highlighted.push_str("/dev/null");
-            highlighted.push_str(NORMAL);
-            highlighted.push('\n');
-
-            highlighted.push_str(BOLD);
-            highlighted.push_str("+++ NEW ");
-            if let Some(no_prefix) = self.new_name.strip_prefix("b/") {
-                highlighted.push_str(NORMAL_INTENSITY);
-                highlighted.push_str(FAINT);
-                highlighted.push_str("b/");
-                highlighted.push_str(NORMAL_INTENSITY);
-                highlighted.push_str(BOLD);
-                highlighted.push_str(no_prefix);
-            } else {
-                highlighted.push_str(&self.new_name);
+            // Don't diff highlight vs "/dev/null"
+            for token in &mut new_tokens {
+                token.style = Style::Context;
             }
-            highlighted.push_str(NORMAL);
-            highlighted.push('\n');
-
-            return highlighted;
+            lowlight_git_prefix(&mut new_tokens);
+            new_tokens.insert(0, StyledToken::new("NEW ".to_string(), Style::Bright));
         }
 
         if self.new_name == "/dev/null" {
-            // File deleted
-            let mut highlighted = String::new();
-
-            highlighted.push_str(BOLD);
-            highlighted.push_str("--- DELETED ");
-            if let Some(no_prefix) = self.old_name.strip_prefix("a/") {
-                highlighted.push_str(NORMAL_INTENSITY);
-                highlighted.push_str(FAINT);
-                highlighted.push_str("a/");
-                highlighted.push_str(NORMAL_INTENSITY);
-                highlighted.push_str(BOLD);
-                highlighted.push_str(no_prefix);
-            } else {
-                highlighted.push_str(&self.old_name);
+            // Don't diff highlight vs "/dev/null"
+            for token in &mut old_tokens {
+                token.style = Style::Context;
             }
-            highlighted.push_str(NORMAL);
-            highlighted.push('\n');
-
-            highlighted.push_str(BOLD);
-            highlighted.push_str("+++ ");
-            highlighted.push_str(NORMAL_INTENSITY);
-            highlighted.push_str(FAINT);
-            highlighted.push_str("/dev/null");
-            highlighted.push_str(NORMAL);
-            highlighted.push('\n');
-
-            return highlighted;
+            lowlight_git_prefix(&mut old_tokens);
+            old_tokens.insert(0, StyledToken::new("DELETED ".to_string(), Style::Bright));
         }
-
-        let (mut old_tokens, mut new_tokens) = diff(&self.old_name, &self.new_name);
 
         brighten_filename(&mut old_tokens);
         brighten_filename(&mut new_tokens);
+
+        lowlight_dev_null(&mut old_tokens);
+        lowlight_dev_null(&mut new_tokens);
 
         lowlight_timestamp(&mut old_tokens);
         lowlight_timestamp(&mut new_tokens);
 
         align_tabs(&mut old_tokens, &mut new_tokens);
 
-        unhighlight_git_prefix(&mut old_tokens);
-        unhighlight_git_prefix(&mut new_tokens);
+        lowlight_git_prefix(&mut old_tokens);
+        lowlight_git_prefix(&mut new_tokens);
 
         let old_filename = render(&LINE_STYLE_OLD_FILENAME, "--- ", &old_tokens);
         let new_filename = render(&LINE_STYLE_NEW_FILENAME, "+++ ", &new_tokens);
@@ -149,6 +109,7 @@ impl PlusMinusHeaderHighlighter {
 #[cfg(test)]
 mod tests {
     use crate::ansi::without_ansi_escape_codes;
+    use crate::constants::*;
 
     use super::*;
 

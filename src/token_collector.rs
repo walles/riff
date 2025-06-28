@@ -286,7 +286,7 @@ pub fn lowlight_timestamp(row: &mut [StyledToken]) {
 ///
 /// They are just placeholders that do not indicate any changes introduced by
 /// the user.
-pub fn unhighlight_git_prefix(row: &mut [StyledToken]) {
+pub fn lowlight_git_prefix(row: &mut [StyledToken]) {
     if row.len() < 2 {
         return;
     }
@@ -320,6 +320,18 @@ pub fn brighten_filename(row: &mut [StyledToken]) {
             continue;
         }
         token.style = Style::Bright;
+    }
+}
+
+pub fn lowlight_dev_null(row: &mut [StyledToken]) {
+    if row.len() < 4 {
+        return;
+    }
+    if row[0].token == "/" && row[1].token == "dev" && row[2].token == "/" && row[3].token == "null"
+    {
+        for token in row {
+            token.style = Style::Lowlighted;
+        }
     }
 }
 
