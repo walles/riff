@@ -21,6 +21,7 @@ pub(crate) enum Style {
 pub(crate) struct StyledToken {
     pub(crate) token: String,
     pub(crate) style: Style,
+    pub(crate) url: Option<url::Url>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,12 +82,20 @@ pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
 impl StyledToken {
     pub fn new(token: String, style: Style) -> StyledToken {
         if token.len() != 1 {
-            return StyledToken { token, style };
+            return StyledToken {
+                token,
+                style,
+                url: None,
+            };
         }
 
         let character = token.chars().next().unwrap();
         if character >= ' ' || character == '\x09' || character == '\x0a' {
-            return StyledToken { token, style };
+            return StyledToken {
+                token,
+                style,
+                url: None,
+            };
         }
 
         // This is a special character, let's replace it with its Unicode symbol
@@ -94,6 +103,7 @@ impl StyledToken {
         return StyledToken {
             token: symbol.to_string(),
             style,
+            url: None,
         };
     }
 
@@ -414,10 +424,12 @@ mod tests {
                 StyledToken {
                     token: "hej".to_string(),
                     style: Style::DiffPartMidlighted,
+                    url: None,
                 },
                 StyledToken {
                     token: "\n".to_string(),
                     style: Style::DiffPartMidlighted,
+                    url: None,
                 },
             ],
         );
