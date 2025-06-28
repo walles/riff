@@ -150,8 +150,7 @@ impl Formatter {
         let mut old_tokens = vec![];
         let mut new_tokens = vec![];
         for old_text in old_prefix_texts.iter() {
-            let (old_tokens_internal, new_tokens_internal) =
-                to_highlighted_tokens(old_text, new_text);
+            let (old_tokens_internal, new_tokens_internal) = diff(old_text, new_text);
 
             old_tokens.push(old_tokens_internal);
 
@@ -244,17 +243,15 @@ fn push_styled_tokens(destination: &mut Vec<StyledToken>, run: Vec<&str>, style:
     }
 }
 
-/// Returns two vectors for old and new sections.
+/// Returns two vectors of highlighted tokens, one for the old text and one for
+/// the new.
 ///
 /// `old_text` and `new_text` are multi line strings. Having or not having
 /// trailing newlines will affect tokenization. The lines are not expected to
 /// have any prefixes like `+` or `-`.
 ///
 /// Conflict diffs are highlighted somewhat differently from regular diffs.
-pub fn to_highlighted_tokens(
-    old_text: &str,
-    new_text: &str,
-) -> (Vec<StyledToken>, Vec<StyledToken>) {
+pub fn diff(old_text: &str, new_text: &str) -> (Vec<StyledToken>, Vec<StyledToken>) {
     // Find diffs between adds and removals
     let mut old_tokens = Vec::new();
     let mut new_tokens = Vec::new();
@@ -564,7 +561,7 @@ pub(crate) mod tests {
     #[test]
     fn test_space_highlighting() {
         // Add new initial spacing (indentation). We don't want to highlight indentation.
-        let (_, new_tokens) = to_highlighted_tokens("x", " x");
+        let (_, new_tokens) = diff("x", " x");
         assert_eq!(
             new_tokens,
             vec![
@@ -574,7 +571,7 @@ pub(crate) mod tests {
         );
 
         // Increase indentation. Do not highlight this.
-        let (_, new_tokens) = to_highlighted_tokens(" x", "  x");
+        let (_, new_tokens) = diff(" x", "  x");
         assert_eq!(
             new_tokens,
             vec![
@@ -587,7 +584,7 @@ pub(crate) mod tests {
         //
         // This particular example is from a Markdown heading where someone forgot
         // the space after the leading `#`.
-        let (_, new_tokens) = to_highlighted_tokens("#x", "# x");
+        let (_, new_tokens) = diff("#x", "# x");
         assert_eq!(
             new_tokens,
             vec![
@@ -598,7 +595,7 @@ pub(crate) mod tests {
         );
 
         // Increase internal space. We do not want to highlight this. Probably code reformatting.
-        let (_, new_tokens) = to_highlighted_tokens("x y", "x  y");
+        let (_, new_tokens) = diff("x y", "x  y");
         assert_eq!(
             new_tokens,
             vec![
@@ -609,7 +606,7 @@ pub(crate) mod tests {
         );
 
         // Remove trailing space. We do want to highlight this.
-        let (old_tokens, _) = to_highlighted_tokens("x ", "x");
+        let (old_tokens, _) = diff("x ", "x");
         assert_eq!(
             old_tokens,
             vec![

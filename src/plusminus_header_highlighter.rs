@@ -3,7 +3,7 @@ use threadpool::ThreadPool;
 use crate::constants::*;
 use crate::lines_highlighter::LineAcceptance;
 use crate::lines_highlighter::{LinesHighlighter, Response};
-use crate::refiner::to_highlighted_tokens;
+use crate::refiner::diff;
 use crate::string_future::StringFuture;
 use crate::token_collector::{
     align_tabs, brighten_filename, lowlight_timestamp, render, unhighlight_git_prefix,
@@ -120,8 +120,7 @@ impl PlusMinusHeaderHighlighter {
             return highlighted;
         }
 
-        let (mut old_tokens, mut new_tokens) =
-            to_highlighted_tokens(&self.old_name, &self.new_name);
+        let (mut old_tokens, mut new_tokens) = diff(&self.old_name, &self.new_name);
 
         brighten_filename(&mut old_tokens);
         brighten_filename(&mut new_tokens);
