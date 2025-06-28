@@ -342,6 +342,7 @@ pub fn hyperlink_filename(row: &mut [StyledToken]) {
     let mut path = std::path::PathBuf::from(filename);
 
     if !path.is_absolute() {
+        // FIXME: Log or ignore if current_dir is not available?
         let current_dir = std::env::current_dir().unwrap();
         path = current_dir.join(path);
     }
@@ -349,6 +350,13 @@ pub fn hyperlink_filename(row: &mut [StyledToken]) {
     if !path.exists() {
         return;
     }
+
+    let url_string = url::Url::from_file_path(&path).ok().map(|u| u.to_string());
+    if url_string.is_none() {
+        return;
+    }
+
+    let url_string = url_string.unwrap();
 
     FIXME: Hyperlink the tokens!
 }
