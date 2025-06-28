@@ -332,7 +332,25 @@ pub fn brighten_filename(row: &mut [StyledToken]) {
 /// Note that the file name might end with one or more tabs followed by a
 /// timestamp, so it's not really just a file name.
 pub fn hyperlink_filename(row: &mut [StyledToken]) {
-    let (filename, _timestamp) = split_filename_and_timestamp(row);
+    let (filename_tokens, _timestamp) = split_filename_and_timestamp(row);
+
+    // Convert filename_tokens into a String
+    let mut filename = String::new();
+    for token in filename_tokens.iter() {
+        filename.push_str(&token.token);
+    }
+    let mut path = std::path::PathBuf::from(filename);
+
+    if !path.is_absolute() {
+        let current_dir = std::env::current_dir().unwrap();
+        path = current_dir.join(path);
+    }
+
+    if !path.exists() {
+        return;
+    }
+
+    FIXME: Hyperlink the tokens!
 }
 
 pub fn lowlight_dev_null(row: &mut [StyledToken]) {
