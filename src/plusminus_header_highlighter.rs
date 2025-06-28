@@ -61,23 +61,27 @@ impl PlusMinusHeaderHighlighter {
     fn highlighted(&self) -> String {
         let (mut old_tokens, mut new_tokens) = diff(&self.old_name, &self.new_name);
 
-        let new_prefix = if self.old_name == "/dev/null" {
+        // New file
+        if self.old_name == "/dev/null" {
             // Don't diff highlight vs "/dev/null"
             for token in &mut new_tokens {
                 token.style = Style::Context;
             }
-
+        }
+        let new_prefix = if self.old_name == "/dev/null" {
             Some(StyledToken::new("NEW ".to_string(), Style::Bright))
         } else {
             None
         };
 
-        let old_prefix = if self.new_name == "/dev/null" {
+        // Deleted file
+        if self.new_name == "/dev/null" {
             // Don't diff highlight vs "/dev/null"
             for token in &mut old_tokens {
                 token.style = Style::Context;
             }
-
+        }
+        let old_prefix = if self.new_name == "/dev/null" {
             Some(StyledToken::new("DELETED ".to_string(), Style::Bright))
         } else {
             None
