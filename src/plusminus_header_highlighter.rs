@@ -61,23 +61,27 @@ impl PlusMinusHeaderHighlighter {
     fn highlighted(&self) -> String {
         let (mut old_tokens, mut new_tokens) = diff(&self.old_name, &self.new_name);
 
-        if self.old_name == "/dev/null" {
+        let new_prefix = if self.old_name == "/dev/null" {
             // Don't diff highlight vs "/dev/null"
             for token in &mut new_tokens {
                 token.style = Style::Context;
             }
-            lowlight_git_prefix(&mut new_tokens);
-            new_tokens.insert(0, StyledToken::new("NEW ".to_string(), Style::Bright));
-        }
 
-        if self.new_name == "/dev/null" {
+            Some(StyledToken::new("NEW ".to_string(), Style::Bright))
+        } else {
+            None
+        };
+
+        let old_prefix = if self.new_name == "/dev/null" {
             // Don't diff highlight vs "/dev/null"
             for token in &mut old_tokens {
                 token.style = Style::Context;
             }
-            lowlight_git_prefix(&mut old_tokens);
-            old_tokens.insert(0, StyledToken::new("DELETED ".to_string(), Style::Bright));
-        }
+
+            Some(StyledToken::new("DELETED ".to_string(), Style::Bright))
+        } else {
+            None
+        };
 
         brighten_filename(&mut old_tokens);
         brighten_filename(&mut new_tokens);
@@ -92,6 +96,14 @@ impl PlusMinusHeaderHighlighter {
 
         lowlight_git_prefix(&mut old_tokens);
         lowlight_git_prefix(&mut new_tokens);
+
+        if let Some(prefix) = new_prefix {
+            new_tokens.insert(0, prefix);
+        }
+
+        if let Some(prefix) = old_prefix {
+            old_tokens.insert(0, prefix);
+        }
 
         let old_filename = render(&LINE_STYLE_OLD_FILENAME, "--- ", &old_tokens);
         let new_filename = render(&LINE_STYLE_NEW_FILENAME, "+++ ", &new_tokens);
