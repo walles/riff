@@ -11,7 +11,10 @@ use crate::token_collector::{
 };
 
 pub(crate) struct PlusMinusHeaderHighlighter {
+    /// May or may not end with one or more tabs + a timestamp string.
     old_name: String,
+
+    /// May or may not end with one or more tabs + a timestamp string.
     new_name: String,
 }
 
@@ -213,6 +216,32 @@ mod tests {
                 "\
                 {BOLD}--- {INVERSE_VIDEO}{NORMAL_INTENSITY}{OLD}x{NOT_INVERSE_VIDEO}{BOLD}{DEFAULT_COLOR}.txt{NORMAL}\n\
                 {BOLD}+++ {INVERSE_VIDEO}{NORMAL_INTENSITY}{GREEN}y{NOT_INVERSE_VIDEO}{BOLD}{DEFAULT_COLOR}.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
+
+    #[test]
+    fn test_new_file_header() {
+        let highlighted = highlight_header_lines("--- /dev/null", "+++ b/newfile.txt");
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- {NORMAL_INTENSITY}{FAINT}/dev/null{NORMAL}\n\
+                {BOLD}+++ NEW {NORMAL_INTENSITY}{FAINT}b/{NORMAL_INTENSITY}{BOLD}newfile.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
+
+    #[test]
+    fn test_deleted_file_header() {
+        let highlighted = highlight_header_lines("--- a/oldfile.txt", "+++ /dev/null");
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- DELETED {NORMAL_INTENSITY}{FAINT}a/{NORMAL_INTENSITY}{BOLD}oldfile.txt{NORMAL}\n\
+                {BOLD}+++ {NORMAL_INTENSITY}{FAINT}/dev/null{NORMAL}\n"
             ),
             highlighted
         );
