@@ -153,21 +153,24 @@ mod tests {
     const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
     const DEFAULT_COLOR: &str = "\x1b[39m";
 
-    #[test]
-    fn test_align_timestamps() {
-        let mut test_me =
-            PlusMinusHeaderHighlighter::from_line("--- x.txt\t2023-12-15 15:43:29").unwrap();
-        let mut response = test_me
-            .consume_line(
-                "+++ /Users/johan/src/riff/README.md\t2024-01-29 14:56:40",
-                &ThreadPool::new(1),
-            )
-            .unwrap();
+    fn highlight_header_lines(old_line: &str, new_line: &str) -> String {
+        let mut test_me = PlusMinusHeaderHighlighter::from_line(old_line).unwrap();
+        let mut response = test_me.consume_line(new_line, &ThreadPool::new(1)).unwrap();
         assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
         assert_eq!(1, response.highlighted.len());
 
-        let highlighted = response.highlighted[0].get().to_string().into_bytes();
-        let plain = String::from_utf8(without_ansi_escape_codes(&highlighted)).unwrap();
+        let highlighted = response.highlighted[0].get().to_string();
+        return highlighted;
+    }
+
+    #[test]
+    fn test_align_timestamps() {
+        let highlighted = highlight_header_lines(
+            "--- x.txt\t2023-12-15 15:43:29",
+            "+++ /Users/johan/src/riff/README.md\t2024-01-29 14:56:40",
+        );
+        let highlighted_bytes = highlighted.clone().into_bytes();
+        let plain = String::from_utf8(without_ansi_escape_codes(&highlighted_bytes)).unwrap();
 
         assert_eq!(
             "--- x.txt                            2023-12-15 15:43:29\n\
@@ -178,14 +181,7 @@ mod tests {
 
     #[test]
     fn test_brighten_filename() {
-        let mut test_me = PlusMinusHeaderHighlighter::from_line("--- a/x/y/z.txt").unwrap();
-        let mut response = test_me
-            .consume_line("+++ b/x/y/z.txt", &ThreadPool::new(1))
-            .unwrap();
-        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
-        assert_eq!(1, response.highlighted.len());
-
-        let highlighted = response.highlighted[0].get().to_string();
+        let highlighted = highlight_header_lines("--- a/x/y/z.txt", "+++ b/x/y/z.txt");
         assert_eq!(
             format!(
                 "\
@@ -198,14 +194,7 @@ mod tests {
 
     #[test]
     fn test_brighten_filename_without_path() {
-        let mut test_me = PlusMinusHeaderHighlighter::from_line("--- z.txt").unwrap();
-        let mut response = test_me
-            .consume_line("+++ z.txt", &ThreadPool::new(1))
-            .unwrap();
-        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
-        assert_eq!(1, response.highlighted.len());
-
-        let highlighted = response.highlighted[0].get().to_string();
+        let highlighted = highlight_header_lines("--- z.txt", "+++ z.txt");
         assert_eq!(
             format!(
                 "\
@@ -218,14 +207,7 @@ mod tests {
 
     #[test]
     fn test_brighten_file_rename() {
-        let mut test_me = PlusMinusHeaderHighlighter::from_line("--- x.txt").unwrap();
-        let mut response = test_me
-            .consume_line("+++ y.txt", &ThreadPool::new(1))
-            .unwrap();
-        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
-        assert_eq!(1, response.highlighted.len());
-
-        let highlighted = response.highlighted[0].get().to_string();
+        let highlighted = highlight_header_lines("--- x.txt", "+++ y.txt");
         assert_eq!(
             format!(
                 "\
