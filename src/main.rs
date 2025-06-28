@@ -169,7 +169,7 @@ fn highlight_diff_or_exit<W: io::Write + Send + 'static>(
     formatter: Formatter,
 ) {
     if let Err(message) = highlight_diff(input, output, color, formatter) {
-        eprintln!("{}", message);
+        eprintln!("{message}");
         exit(1);
     }
 }
@@ -493,11 +493,11 @@ fn main() {
             if e.kind() == clap::error::ErrorKind::DisplayHelp {
                 println!();
                 println!("Environment:");
-                println!("  RIFF={}", riff);
+                println!("  RIFF={riff}");
             } else {
                 eprintln!();
                 eprintln!("Environment:");
-                eprintln!("  RIFF={}", riff);
+                eprintln!("  RIFF={riff}");
             }
         }
 
@@ -582,7 +582,7 @@ fn main() {
     if !logs.is_empty() {
         // FIXME: Print version number and some error reporting header? With
         // links to the GitHub issue tracker?
-        eprintln!("{}", logs);
+        eprintln!("{logs}");
         exit(1);
     }
 }
@@ -699,7 +699,7 @@ mod tests {
 
             // Find the corresponding .diff file...
             let mut riff_input_file =
-                testdata_path.join(format!("{}.diff", without_riff_output_extension));
+                testdata_path.join(format!("{without_riff_output_extension}.diff"));
             // ... or just the corresponding whatever file.
             if !riff_input_file.is_file() {
                 // Used by the conflict-markers*.txt.riff-output files
@@ -712,10 +712,7 @@ mod tests {
                     failing_example_actual = String::new();
                 }
 
-                println!(
-                    "FAIL: No riff input file found for {:?}",
-                    expected_output_file
-                );
+                println!("FAIL: No riff input file found for {expected_output_file:?}");
                 failure_count += 1;
                 continue;
             }
@@ -746,20 +743,20 @@ mod tests {
             }
         }
 
-        println!("\n{}/{} examples failed", failure_count, example_count,);
+        println!("\n{failure_count}/{example_count} examples failed",);
 
         if let Some(failing_example) = failing_example {
             println!();
-            println!("Example: {}", failing_example);
+            println!("Example: {failing_example}");
             println!();
-            println!("Actual {} highlighting:", failing_example);
+            println!("Actual {failing_example} highlighting:");
             for line in failing_example_actual.lines() {
-                println!("  {}", line);
+                println!("  {line}");
             }
             println!();
-            println!("Expected {} highlighting:", failing_example);
+            println!("Expected {failing_example} highlighting:");
             for line in failing_example_expected.lines() {
-                println!("  {}", line);
+                println!("  {line}");
             }
             println!();
             println!(
@@ -773,7 +770,7 @@ mod tests {
             // Asserting strings equal will make us try to show the diff between
             // the strings, which becomes too slow. Comparing booleans like this
             // will not be slow, even on failure.
-            assert_eq!(failing_example_actual == failing_example_expected, true);
+            assert!(failing_example_actual == failing_example_expected);
 
             // Sometimes the previous assert doesn't trigger, so we put this one
             // here as a safety measure. Do not remove it!!
@@ -804,7 +801,7 @@ mod tests {
             Formatter::default(),
         ) {
             return Some(ExampleFailure {
-                diagnostics: format!("Highlighting failed: {}", error),
+                diagnostics: format!("Highlighting failed: {error}"),
                 actual_result: "".to_string(),
                 expected_result: "".to_string(),
             });

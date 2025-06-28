@@ -119,7 +119,7 @@ impl Drop for LineCollector {
                 .consume_eof(&self.thread_pool);
             if let Err(error) = result {
                 self.lines_highlighter = None;
-                eprintln!("ERROR at end of input: {}", error);
+                eprintln!("ERROR at end of input: {error}");
                 process::exit(1);
             }
 
@@ -242,8 +242,7 @@ impl LineCollector {
         let line = String::from_utf8_lossy(&line).to_string();
         self.print_queue_putter
             .send(StringFuture::from_string(format!(
-                "{}{}{}",
-                PARSE_ERROR, line, NORMAL
+                "{PARSE_ERROR}{line}{NORMAL}"
             )))
             .unwrap();
 
@@ -340,7 +339,7 @@ impl LineCollector {
 
         if line.starts_with('\\') {
             // "\ No newline at end of file"
-            self.consume_plain_line(&format!("{}{}{}", NO_EOF_NEWLINE_COLOR, line, NORMAL));
+            self.consume_plain_line(&format!("{NO_EOF_NEWLINE_COLOR}{line}{NORMAL}"));
             return Ok(());
         }
 

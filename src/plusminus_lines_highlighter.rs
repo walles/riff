@@ -61,8 +61,7 @@ impl LinesHighlighter for PlusMinusLinesHighlighter {
 
         if prefix.chars().any(|c| ![' ', '-', '+'].contains(&c)) {
             return Err(format!(
-                "Unexpected character in prefix <{prefix}>, only +, - and space allowed: <{}>",
-                prefix
+                "Unexpected character in prefix <{prefix}>, only +, - and space allowed: <{prefix}>"
             ));
         }
 
