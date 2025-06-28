@@ -5,8 +5,9 @@ use crate::lines_highlighter::{LinesHighlighter, Response};
 use crate::refiner::diff;
 use crate::string_future::StringFuture;
 use crate::token_collector::{
-    align_tabs, brighten_filename, lowlight_dev_null, lowlight_git_prefix, lowlight_timestamp,
-    render, Style, StyledToken, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
+    align_tabs, brighten_filename, hyperlink_filename, lowlight_dev_null, lowlight_git_prefix,
+    lowlight_timestamp, render, Style, StyledToken, LINE_STYLE_NEW_FILENAME,
+    LINE_STYLE_OLD_FILENAME,
 };
 
 pub(crate) struct PlusMinusHeaderHighlighter {
