@@ -344,6 +344,12 @@ pub fn hyperlink_filename(row: &mut [StyledToken]) {
     for token in filename_tokens.iter() {
         filename.push_str(&token.token);
     }
+
+    if filename == "/dev/null" {
+        // Hyperlinking /dev/null would just be confusing
+        return;
+    }
+
     let mut path = std::path::PathBuf::from(filename);
 
     if !path.is_absolute() {
