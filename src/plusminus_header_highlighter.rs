@@ -94,7 +94,7 @@ impl PlusMinusHeaderHighlighter {
         // If the old filename is not the same as the new, it means it's gone,
         // and any file we link to is likely to be the wrong one. So we only
         // hyperlink the old name if it is the same as the new name.
-        if old_tokens == new_tokens {
+        if same_paths(&mut old_tokens, &mut new_tokens) {
             hyperlink_filename(&mut old_tokens);
         }
         hyperlink_filename(&mut new_tokens);
@@ -129,6 +129,35 @@ impl PlusMinusHeaderHighlighter {
 
         return highlighted;
     }
+}
+
+/// Compare the file names, ignoring the leading "a/" or "b/" when they are present
+fn same_paths(old: &mut [StyledToken], new: &mut [StyledToken]) -> bool {
+    let (mut old_filename, _timestamp) = split_filename_and_timestamp(old);
+    let (mut new_filename, _timestamp) = split_filename_and_timestamp(new);
+
+    if old_filename.len() >= 2
+        && old_filename[0].token == "a"
+        && old_filename[1].token == "/"
+        && new_filename.len() >= 2
+        && new_filename[0].token == "b"
+        && new_filename[1].token == "/"
+    {
+        old_filename = &mut old_filename[2..];
+        new_filename = &mut new_filename[2..];
+    }
+
+    if old_filename.len() != new_filename.len() {
+        return false;
+    }
+
+    for (old_token, new_token) in old_filename.iter().zip(new_filename.iter()) {
+        if old_token.token != new_token.token {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /// If we get "x/y/z.txt", make "z.txt" bright.
@@ -410,5 +439,37 @@ mod tests {
         let url_canon = std::fs::canonicalize(&url_path).expect("URL file should exist");
         let readme_canon = std::fs::canonicalize("README.md").expect("README.md should exist");
         assert_eq!(url_canon, readme_canon, "Canonicalized paths should match");
+    }
+
+    #[test]
+    fn test_same_paths_with_and_without_prefixes() {
+        // Helper to create StyledToken from &str
+        fn tokens(s: &str) -> Vec<StyledToken> {
+            let mut v = Vec::new();
+            for c in s.chars() {
+                v.push(StyledToken::new(c.to_string(), Style::Context));
+            }
+            v
+        }
+
+        // Case 1: with a/ and b/ prefixes
+        let mut old = tokens("a/foo.txt");
+        let mut new = tokens("b/foo.txt");
+        assert!(same_paths(&mut old, &mut new));
+
+        // Case 2: without prefixes
+        let mut old = tokens("foo.txt");
+        let mut new = tokens("foo.txt");
+        assert!(same_paths(&mut old, &mut new));
+
+        // Case 3: different filenames
+        let mut old = tokens("a/bar.txt");
+        let mut new = tokens("b/foo.txt");
+        assert!(!same_paths(&mut old, &mut new));
+
+        // Case 4: one with prefix, one without
+        let mut old = tokens("a/foo.txt");
+        let mut new = tokens("foo.txt");
+        assert!(!same_paths(&mut old, &mut new));
     }
 }
