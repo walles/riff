@@ -352,6 +352,7 @@ pub fn hyperlink_filename(row: &mut [StyledToken]) {
 
     let mut path = std::path::PathBuf::from(filename);
 
+    // from_file_path() below requires an absolute path
     if !path.is_absolute() {
         // FIXME: Log or ignore if current_dir is not available?
         let current_dir = std::env::current_dir().unwrap();
@@ -364,6 +365,8 @@ pub fn hyperlink_filename(row: &mut [StyledToken]) {
 
     let url = url::Url::from_file_path(&path).ok();
     if url.is_none() {
+        // If we get here, maybe the absolutization under path.isAbsolute() a
+        // few lines up failed?
         return;
     }
 
@@ -470,5 +473,21 @@ mod tests {
             "␇",
             StyledToken::new("\x07".to_string(), Style::Context).token
         );
+    }
+
+    #[test]
+    fn test_hyperlink_filename_relative_path() {
+        // Arrange: create a row representing "README.md"
+        let mut row = vec![StyledToken::new("README.md".to_string(), Style::Context)];
+
+        // Act: call the function
+        hyperlink_filename(&mut row);
+
+        // Assert: the file:/// URL points to our README.md file
+        let url = row[0].url.as_ref().expect("Token should have a URL");
+        let url_path = url.to_file_path().expect("URL should be a file path");
+        let url_canon = std::fs::canonicalize(&url_path).expect("URL file should exist");
+        let readme_canon = std::fs::canonicalize("README.md").expect("README.md should exist");
+        assert_eq!(url_canon, readme_canon, "Canonicalized paths should match");
     }
 }
