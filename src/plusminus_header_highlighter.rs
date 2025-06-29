@@ -212,6 +212,13 @@ fn hyperlink_filename(row: &mut [StyledToken]) {
     }
 
     if !path.exists() {
+        if filename_tokens.len() >= 2
+            && (filename_tokens[0].token == "a" || filename_tokens[0].token == "b")
+            && filename_tokens[1].token == "/"
+        {
+            // Try again minus the git prefix ("a/" or "b/")
+            hyperlink_filename(&mut filename_tokens[2..]);
+        }
         return;
     }
 
@@ -438,6 +445,40 @@ mod tests {
         let url_path = url.to_file_path().expect("URL should be a file path");
         let url_canon = std::fs::canonicalize(&url_path).expect("URL file should exist");
         let readme_canon = std::fs::canonicalize("README.md").expect("README.md should exist");
+        assert_eq!(url_canon, readme_canon, "Canonicalized paths should match");
+    }
+
+    #[test]
+    fn test_hyperlink_filename_with_git_prefix() {
+        // Arrange: create a row representing "a/README.md"
+        let mut row_a = vec![
+            StyledToken::new("a".to_string(), Style::Context),
+            StyledToken::new("/".to_string(), Style::Context),
+            StyledToken::new("README.md".to_string(), Style::Context),
+        ];
+        hyperlink_filename(&mut row_a);
+        // Only the README.md token should have a URL
+        assert!(row_a[0].url.is_none(), "Prefix 'a' should not have a URL");
+        assert!(row_a[1].url.is_none(), "Prefix '/' should not have a URL");
+        let url = row_a[2].url.as_ref().expect("README.md should have a URL");
+        let url_path = url.to_file_path().expect("URL should be a file path");
+        let url_canon = std::fs::canonicalize(&url_path).expect("URL file should exist");
+        let readme_canon = std::fs::canonicalize("README.md").expect("README.md should exist");
+        assert_eq!(url_canon, readme_canon, "Canonicalized paths should match");
+
+        // Arrange: create a row representing "b/README.md"
+        let mut row_b = vec![
+            StyledToken::new("b".to_string(), Style::Context),
+            StyledToken::new("/".to_string(), Style::Context),
+            StyledToken::new("README.md".to_string(), Style::Context),
+        ];
+        hyperlink_filename(&mut row_b);
+        // Only the README.md token should have a URL
+        assert!(row_b[0].url.is_none(), "Prefix 'b' should not have a URL");
+        assert!(row_b[1].url.is_none(), "Prefix '/' should not have a URL");
+        let url = row_b[2].url.as_ref().expect("README.md should have a URL");
+        let url_path = url.to_file_path().expect("URL should be a file path");
+        let url_canon = std::fs::canonicalize(&url_path).expect("URL file should exist");
         assert_eq!(url_canon, readme_canon, "Canonicalized paths should match");
     }
 
