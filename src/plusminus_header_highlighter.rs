@@ -91,7 +91,12 @@ impl PlusMinusHeaderHighlighter {
         brighten_filename(&mut old_tokens);
         brighten_filename(&mut new_tokens);
 
-        hyperlink_filename(&mut old_tokens);
+        // If the old filename is not the same as the new, it means it's gone,
+        // and any file we link to is likely to be the wrong one. So we only
+        // hyperlink the old name if it is the same as the new name.
+        if old_tokens == new_tokens {
+            hyperlink_filename(&mut old_tokens);
+        }
         hyperlink_filename(&mut new_tokens);
 
         lowlight_dev_null(&mut old_tokens);
