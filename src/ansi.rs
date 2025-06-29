@@ -34,6 +34,15 @@ pub const ANSI_STYLE_NORMAL: AnsiStyle = AnsiStyle {
 };
 
 impl AnsiStyle {
+    fn should_add_url(new_url: &Option<url::Url>, old_url: &Option<url::Url>) -> bool {
+        match (new_url, old_url) {
+            (Some(_), None) => true,              // Adding a URL
+            (None, Some(_)) => true,              // Removing a URL
+            (Some(new), Some(old)) => new != old, // Changing the URL
+            _ => false,                           // No change in URL
+        }
+    }
+
     /// Renders a (possibly empty) ANSI escape sequence to switch to this style
     /// from the before style.
     pub fn from(&self, before: &AnsiStyle) -> String {
@@ -79,6 +88,16 @@ impl AnsiStyle {
             }
         }
 
+        if AnsiStyle::should_add_url(&self.url, &before.url) {
+            if let Some(url) = &self.url {
+                // Write the updated URL
+                return_me.push_str(&format!("\x1b]8;;{url}\x1b\\"));
+            } else {
+                // Remove the URL
+                return_me.push_str("\x1b]8;;\x1b\\");
+            }
+        }
+
         return return_me;
     }
 
@@ -106,6 +125,15 @@ impl AnsiStyle {
             weight,
             inverse: self.inverse,
             url: self.url.clone(),
+        };
+    }
+
+    pub fn with_url(&self, url: url::Url) -> AnsiStyle {
+        return AnsiStyle {
+            color: self.color,
+            weight: self.weight,
+            inverse: self.inverse,
+            url: Some(url),
         };
     }
 }

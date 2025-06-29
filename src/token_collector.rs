@@ -136,6 +136,10 @@ pub(crate) fn render_row(
             new_style = new_style.with_weight(Weight::Faint);
         }
 
+        if let Some(url) = &token.url {
+            new_style = new_style.with_url(url.clone());
+        }
+
         rendered.push_str(&new_style.from(&current_style));
         current_style = new_style;
         rendered.push_str(&token.token);
