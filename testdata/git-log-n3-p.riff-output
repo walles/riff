@@ -4,10 +4,10 @@ Date:   Mon Oct 24 00:32:27 2022 +0200
 
     Bump version number to 2.21.0
 
-[2mdiff --git Cargo.lock Cargo.lock[0m
+[2mdiff --git xxCargo.lock xxCargo.lock[0m
 [2mindex 860dfcd..ac98582 100644[0m
-[1m--- Cargo.lock[0m
-[1m+++ Cargo.lock[0m
+[1m--- xxCargo.lock[0m
+[1m+++ xxCargo.lock[0m
 [36m@@ -357,7 +357,7 @@ [1mdependencies = [[0m
  
  [[package]]
@@ -17,10 +17,10 @@ Date:   Mon Oct 24 00:32:27 2022 +0200
  dependencies = [
   "backtrace",
   "bytecount",
-[2mdiff --git Cargo.toml Cargo.toml[0m
+[2mdiff --git xxCargo.toml xxCargo.toml[0m
 [2mindex a9ed33a..6ac6ddc 100644[0m
-[1m--- Cargo.toml[0m
-[1m+++ Cargo.toml[0m
+[1m--- xxCargo.toml[0m
+[1m+++ xxCargo.toml[0m
 [36m@@ -2,7 +2,7 @@[0m
  
  [package]
@@ -39,9 +39,9 @@ Date:   Mon Oct 24 00:30:53 2022 +0200
     
     "commit" line is now highlighted in yellow.
 
-[2mdiff --git screenshot.png screenshot.png[0m
+[2mdiff --git xxscreenshot.png xxscreenshot.png[0m
 [2mindex 25ab17b..c7385d0 100644[0m
-[1mBinary files screenshot.png and screenshot.png differ[0m
+[1mBinary files xxscreenshot.png and xxscreenshot.png differ[0m
 
 [33m[48;5;17m[0Kcommit 8923ac0d11a3569d28786bd6da725869953f5fcb[0m
 Author: Johan Walles <johan.walles@gmail.com>
@@ -49,10 +49,10 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
 
     Fix trailing parenthesis coloring
 
-[2mdiff --git src/commit_line.rs src/commit_line.rs[0m
+[2mdiff --git xsrc/commit_line.rs xsrc/commit_line.rs[0m
 [2mindex 034b97e..7bcbf6b 100644[0m
-[1m--- [0msrc/[1mcommit_line.rs[0m
-[1m+++ [0msrc/[1mcommit_line.rs[0m
+[1m--- [0mxsrc/[1mcommit_line.rs[0m
+[1m+++ [0mxsrc/[1mcommit_line.rs[0m
 [36m@@ -26,13 +26,14 @@ [1mpub fn format_commit_line(line: &str) -> String {[0m
  
      let comma = format!("{}, {}", YELLOW, NORMAL);
@@ -69,19 +69,19 @@ Date:   Mon Oct 24 00:26:59 2022 +0200
          NORMAL
      );
  }
-[2mdiff --git testdata/git-commit-line.riff-output testdata/git-commit-line.riff-output[0m
+[2mdiff --git xtestdata/git-commit-line.riff-output xtestdata/git-commit-line.riff-output[0m
 [2mindex 0b42b6d..5edede3 100644[0m
-[1m--- [0mtestdata/[1mgit-commit-line.riff-output[0m
-[1m+++ [0mtestdata/[1mgit-commit-line.riff-output[0m
+[1m--- [0mxtestdata/[1mgit-commit-line.riff-output[0m
+[1m+++ [0mxtestdata/[1mgit-commit-line.riff-output[0m
 [36m@@ -1,3 +1,3 @@[0m
 [31m-␛[33mcommit b24b967d952a8b7cf538d57d12aae8019cedada2 (␛[1m␛[36mHEAD -> ␛[32mmaster␛[0m␛[33m, ␛[0m␛[1m␛[33mtag: 2.20.0␛[0m␛[33m, ␛[0m␛[1m␛[31morigin/master␛[0m␛[33m, ␛[0m␛[1m␛[31morigin/HEAD␛[0m)␛[0m[0m
 [32m+␛[33mcommit b24b967d952a8b7cf538d57d12aae8019cedada2 (␛[1m␛[36mHEAD -> ␛[32mmaster␛[0m␛[33m, ␛[0m␛[1m␛[33mtag: 2.20.0␛[0m␛[33m, ␛[0m␛[1m␛[31morigin/master␛[0m␛[33m, ␛[0m␛[1m␛[31morigin/HEAD␛[0m[7m␛[33m[27m)␛[0m[0m
  Author: Johan Walles <johan.walles@gmail.com>
  Date:   Wed Sep 14 19:07:05 2022 +0200
-[2mdiff --git testdata/remove-file.riff-output testdata/remove-file.riff-output[0m
+[2mdiff --git xtestdata/remove-file.riff-output xtestdata/remove-file.riff-output[0m
 [2mindex 46f5a18..5a64fa1 100644[0m
-[1m--- [0mtestdata/[1mremove-file.riff-output[0m
-[1m+++ [0mtestdata/[1mremove-file.riff-output[0m
+[1m--- [0mxtestdata/[1mremove-file.riff-output[0m
+[1m+++ [0mxtestdata/[1mremove-file.riff-output[0m
 [36m@@ -1,4 +1,4 @@[0m
 [31m-␛[33mcommit 90a1c38ad8b74134c24a4726f25958da4806738d (␛[1m␛[36mHEAD -> ␛[32mmain␛[0m)␛[0m[0m
 [32m+␛[33mcommit 90a1c38ad8b74134c24a4726f25958da4806738d (␛[1m␛[36mHEAD -> ␛[32mmain␛[0m[7m␛[33m[27m)␛[0m[0m

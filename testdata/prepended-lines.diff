@@ -1,7 +1,7 @@
 diff --git benchmark.py benchmark.py
 index a191ee0..d99c8a8 100755
---- benchmark.py
-+++ benchmark.py
+--- xxbenchmark.py
++++ xxbenchmark.py
 @@ -76,7 +76,9 @@ def gather_binaries():
      # Build the current version
      print()

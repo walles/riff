@@ -4,10 +4,10 @@ Date:   Tue Nov 17 08:44:29 2020 +0100
 
     Advertise px / ptop and riff
 
-[2mdiff --git README.md README.md[0m
+[2mdiff --git xxREADME.md xxREADME.md[0m
 [2mindex 88c1590..cfdaf0b 100644[0m
-[1m--- README.md[0m
-[1m+++ README.md[0m
+[1m--- xxREADME.md[0m
+[1m+++ xxREADME.md[0m
 [36m@@ -21,17 +21,19 @@ [1mDoing the right thing includes:[0m
  * [Regexp](http://en.wikipedia.org/wiki/Regular_expression#Basic_concepts)
    search if your search string is a valid regexp

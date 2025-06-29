@@ -4,10 +4,10 @@ Date:   Tue Nov 17 08:44:29 2020 +0100
 
     Advertise px / ptop and riff
 
-diff --git README.md README.md
+diff --git xxREADME.md xxREADME.md
 index 88c1590..cfdaf0b 100644
---- README.md
-+++ README.md
+--- xxREADME.md
++++ xxREADME.md
 @@ -21,17 +21,19 @@ Doing the right thing includes:
  * [Regexp](http://en.wikipedia.org/wiki/Regular_expression#Basic_concepts)
    search if your search string is a valid regexp

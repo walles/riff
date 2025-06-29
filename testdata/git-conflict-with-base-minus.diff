@@ -1,7 +1,7 @@
-diff --cc src/token_collector.rs
+diff --cc xsrc/token_collector.rs
 index b0b23a5,d8d6da8..0000000
---- src/token_collector.rs
-+++ src/token_collector.rs
+--- xsrc/token_collector.rs
++++ xsrc/token_collector.rs
 @@@ -34,47 -35,62 +34,95 @@@ pub(crate) struct LineStyle 
   }
   

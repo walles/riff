@@ -1,7 +1,7 @@
-[2mdiff --git src/plusminus_header_highlighter.rs src/plusminus_header_highlighter.rs[0m
+[2mdiff --git xsrc/plusminus_header_highlighter.rs xsrc/plusminus_header_highlighter.rs[0m
 [2mindex 5bb5056..c354931 100644[0m
-[1m--- [0msrc/[1mplusminus_header_highlighter.rs[0m
-[1m+++ [0msrc/[1mplusminus_header_highlighter.rs[0m
+[1m--- [0mxsrc/[1mplusminus_header_highlighter.rs[0m
+[1m+++ [0mxsrc/[1mplusminus_header_highlighter.rs[0m
 [36m@@ -6,7 +6,7 @@ [1muse crate::lines_highlighter::{LinesHighlighter, Response};[0m
  use crate::refiner::to_highlighted_tokens;
  use crate::string_future::StringFuture;
@@ -59,10 +59,10 @@
 [32m+        );[0m
 [32m+    }[0m
 [32m+}[0m
-[2mdiff --git src/token_collector.rs src/token_collector.rs[0m
+[2mdiff --git xsrc/token_collector.rs xsrc/token_collector.rs[0m
 [2mindex b58c50f..e4d4152 100644[0m
-[1m--- [0msrc/[1mtoken_collector.rs[0m
-[1m+++ [0msrc/[1mtoken_collector.rs[0m
+[1m--- [0mxsrc/[1mtoken_collector.rs[0m
+[1m+++ [0mxsrc/[1mtoken_collector.rs[0m
 [36m@@ -1,3 +1,5 @@[0m
 [32m+use std::cmp;[0m
 [32m+[0m
