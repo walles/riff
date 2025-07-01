@@ -224,11 +224,13 @@ fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
 /// - `prefix`: `a/`
 /// - `just_path`: `doc/`
 /// - `just_filename`: `c.txt`
+/// - `time_space`: `\t`
 /// - `timestamp`: `2023-12-15 15:43:29`
 fn split_row(
     look_for_git_prefixes: bool,
     row: &mut [StyledToken],
 ) -> (
+    &mut [StyledToken],
     &mut [StyledToken],
     &mut [StyledToken],
     &mut [StyledToken],
@@ -262,7 +264,13 @@ fn split_row(
     // To avoid multiple mutable borrows, split step by step
     let (row, timestamp) = row.split_at_mut(timestamp_start);
     let (prefix, rest) = row.split_at_mut(path_start);
-    let (path_and_filename, _space_plus_timestamp) = rest.split_at_mut(path_end - path_start);
+    let (path_and_filename, space_plus_timestamp) = rest.split_at_mut(path_end - path_start);
+    let time_space = if space_plus_timestamp.is_empty() {
+        &mut []
+    } else {
+        // If there is a space + timestamp, it should be the last token
+        &mut space_plus_timestamp[..1]
+    };
     let (just_path, just_filename) = if let Some(last_file_separator_index_from_path_start) =
         last_file_separator_index_from_path_start
     {
@@ -270,7 +278,7 @@ fn split_row(
     } else {
         path_and_filename.split_at_mut(0)
     };
-    return (prefix, just_path, just_filename, timestamp);
+    return (prefix, just_path, just_filename, time_space, timestamp);
 }
 
 fn have_git_prefixes(old_tokens: &[StyledToken], new_tokens: &[StyledToken]) -> bool {
@@ -296,9 +304,9 @@ fn have_git_prefixes(old_tokens: &[StyledToken], new_tokens: &[StyledToken]) -> 
 fn decorate_paths(old_tokens: &mut [StyledToken], new_tokens: &mut [StyledToken]) {
     let look_for_git_prefixes = have_git_prefixes(old_tokens, new_tokens);
 
-    let (old_prefix, old_just_path, old_just_filename, old_timestamp) =
+    let (old_prefix, old_just_path, old_just_filename, old_time_space, old_timestamp) =
         split_row(look_for_git_prefixes, old_tokens);
-    let (new_prefix, new_just_path, new_just_filename, new_timestamp) =
+    let (new_prefix, new_just_path, new_just_filename, new_time_space, new_timestamp) =
         split_row(look_for_git_prefixes, new_tokens);
 
     // Brighten file names
@@ -323,6 +331,14 @@ fn decorate_paths(old_tokens: &mut [StyledToken], new_tokens: &mut [StyledToken]
 
     lowlight_dev_null(old_just_path, old_just_filename);
     lowlight_dev_null(new_just_path, new_just_filename);
+
+    // Plain the spaces before the time stamps
+    old_time_space.iter_mut().for_each(|token| {
+        token.style = Style::Context;
+    });
+    new_time_space.iter_mut().for_each(|token| {
+        token.style = Style::Context;
+    });
 
     // Lowlight time stamps
     old_timestamp.iter_mut().for_each(|token| {
@@ -466,7 +482,8 @@ mod tests {
             .iter()
             .map(|s| StyledToken::new(s.to_string(), Style::Context))
             .collect();
-        let (prefix, just_path, just_filename, timestamp) = split_row(false, &mut tokens);
+        let (prefix, just_path, just_filename, time_space, timestamp) =
+            split_row(false, &mut tokens);
         assert_eq!(prefix.len(), 0);
         assert_eq!(
             just_path.iter().map(|t| &t.token).collect::<Vec<_>>(),
@@ -475,6 +492,10 @@ mod tests {
         assert_eq!(
             just_filename.iter().map(|t| &t.token).collect::<Vec<_>>(),
             ["c.txt"]
+        );
+        assert_eq!(
+            time_space,
+            [StyledToken::new("\t".to_string(), Style::Context)],
         );
         assert_eq!(
             timestamp.iter().map(|t| &t.token).collect::<Vec<_>>(),
@@ -498,7 +519,8 @@ mod tests {
         .iter()
         .map(|s| StyledToken::new(s.to_string(), Style::Context))
         .collect();
-        let (prefix, just_path, just_filename, timestamp) = split_row(true, &mut tokens);
+        let (prefix, just_path, just_filename, time_space, timestamp) =
+            split_row(true, &mut tokens);
         assert_eq!(
             prefix.iter().map(|t| &t.token).collect::<Vec<_>>(),
             ["a", &sep]
@@ -512,6 +534,10 @@ mod tests {
             ["c.txt"]
         );
         assert_eq!(
+            time_space,
+            [StyledToken::new("  ".to_string(), Style::Context)],
+        );
+        assert_eq!(
             timestamp.iter().map(|t| &t.token).collect::<Vec<_>>(),
             ["2023-12-15 15:43:29"]
         );
@@ -523,7 +549,8 @@ mod tests {
             .iter()
             .map(|s| StyledToken::new(s.to_string(), Style::Context))
             .collect();
-        let (prefix, just_path, just_filename, timestamp) = split_row(false, &mut tokens);
+        let (prefix, just_path, just_filename, time_space, timestamp) =
+            split_row(false, &mut tokens);
         assert_eq!(prefix.len(), 0);
         assert_eq!(
             just_path.iter().map(|t| &t.token).collect::<Vec<_>>(),
@@ -533,7 +560,8 @@ mod tests {
             just_filename.iter().map(|t| &t.token).collect::<Vec<_>>(),
             ["c.txt"]
         );
-        assert_eq!(timestamp.len(), 0);
+        assert_eq!(time_space, [],);
+        assert_eq!(timestamp, []);
     }
 
     #[test]
@@ -542,12 +570,17 @@ mod tests {
             .iter()
             .map(|s| StyledToken::new(s.to_string(), Style::Context))
             .collect();
-        let (prefix, just_path, just_filename, timestamp) = split_row(false, &mut tokens);
+        let (prefix, just_path, just_filename, time_space, timestamp) =
+            split_row(false, &mut tokens);
         assert_eq!(prefix.len(), 0);
         assert_eq!(just_path.len(), 0);
         assert_eq!(
             just_filename.iter().map(|t| &t.token).collect::<Vec<_>>(),
             ["README.md"]
+        );
+        assert_eq!(
+            time_space,
+            [StyledToken::new("\t".to_string(), Style::Context)],
         );
         assert_eq!(
             timestamp.iter().map(|t| &t.token).collect::<Vec<_>>(),
@@ -561,12 +594,17 @@ mod tests {
             .iter()
             .map(|s| StyledToken::new(s.to_string(), Style::Context))
             .collect();
-        let (prefix, just_path, just_filename, timestamp) = split_row(false, &mut tokens);
+        let (prefix, just_path, just_filename, time_space, timestamp) =
+            split_row(false, &mut tokens);
         assert_eq!(prefix.len(), 0);
         assert_eq!(just_path.len(), 0);
         assert_eq!(
             just_filename.iter().map(|t| &t.token).collect::<Vec<_>>(),
             ["README.md"]
+        );
+        assert_eq!(
+            time_space,
+            [StyledToken::new("\t".to_string(), Style::Context)],
         );
         assert_eq!(timestamp.len(), 0);
     }
