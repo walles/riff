@@ -28,7 +28,6 @@ path = "src/main.rs"
 [dependencies]
 similar = "2.6.0"
 regex = "1"
-lazy_static = "1.4.0"
 git-version = "0.3.4"
 backtrace = "0.3"
 bytecount = "0.6.2"

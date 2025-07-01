@@ -5,9 +5,6 @@
 // Fail build on Clippy warnings
 #![deny(warnings)]
 
-#[macro_use]
-extern crate lazy_static;
-
 use backtrace::Backtrace;
 use clap::CommandFactory;
 use clap::Parser;

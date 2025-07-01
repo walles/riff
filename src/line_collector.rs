@@ -6,6 +6,7 @@ use crate::io::ErrorKind;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter};
 use crate::plusminus_header_highlighter::PlusMinusHeaderHighlighter;
 use crate::refiner::Formatter;
+use once_cell::sync::Lazy;
 use std::io::{self, BufWriter, Write};
 use std::process::{self, exit};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
@@ -15,8 +16,8 @@ use std::thread::{self, JoinHandle};
 use crate::{constants::*, string_future::StringFuture};
 use threadpool::ThreadPool;
 
-lazy_static! {
-    static ref STATIC_HEADER_PREFIXES: Vec<(&'static str, &'static str)> = vec![
+static STATIC_HEADER_PREFIXES: Lazy<Vec<(&'static str, &'static str)>> = Lazy::new(|| {
+    vec![
         ("diff ", FAINT),
         ("index ", FAINT),
         ("Binary files ", BOLD),
@@ -27,17 +28,16 @@ lazy_static! {
         ("similarity index ", FAINT),
         ("new file mode ", FAINT),
         ("deleted file mode ", FAINT),
-    ];
+    ]
+});
 
-    /// This is the `\ No newline at end of file` string. But since it can come
-    /// in not-English as well as English, we take it from the input and store it
-    /// in this variable. None means we don't know yet.
-    ///
-    /// See also: https://github.com/walles/riff/issues/39
-    pub(crate) static ref NO_EOF_NEWLINE_MARKER_HOLDER: std::sync::Arc<
-        std::sync::Mutex<std::option::Option<std::string::String>>,
-    > = Arc::new(Mutex::<Option<String>>::new(None));
-}
+/// This is the `\ No newline at end of file` string. But since it can come in
+/// not-English as well as English, we take it from the input and store it in
+/// this variable. None means we don't know yet.
+///
+/// See also: https://github.com/walles/riff/issues/39
+pub(crate) static NO_EOF_NEWLINE_MARKER_HOLDER: Lazy<Arc<Mutex<Option<String>>>> =
+    Lazy::new(|| Arc::new(Mutex::<Option<String>>::new(None)));
 
 #[must_use]
 fn get_fixed_highlight(line: &str) -> Option<&str> {
