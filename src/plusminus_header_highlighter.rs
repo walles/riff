@@ -130,9 +130,13 @@ fn hyperlink_filename(just_path: &mut [StyledToken], just_filename: &mut [Styled
 
     // from_file_path() below requires an absolute path
     if !path.is_absolute() {
-        // FIXME: Log or ignore if current_dir is not available?
-        let current_dir = std::env::current_dir().unwrap();
-        path = current_dir.join(path);
+        let maybe_current_dir = std::env::current_dir();
+        if let Ok(current_dir) = maybe_current_dir {
+            path = current_dir.join(path);
+        } else {
+            // Getting the current directory failed, we can't hyperlink
+            return;
+        }
     }
 
     if !path.exists() {
