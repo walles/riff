@@ -1,4 +1,4 @@
-use std::cmp;
+use std::cmp::{self};
 
 use threadpool::ThreadPool;
 
@@ -88,27 +88,7 @@ impl PlusMinusHeaderHighlighter {
             None
         };
 
-        brighten_filename(&mut old_tokens);
-        brighten_filename(&mut new_tokens);
-
-        // If the old filename is not the same as the new, it means it's gone,
-        // and any file we link to is likely to be the wrong one. So we only
-        // hyperlink the old name if it is the same as the new name.
-        if same_paths(&mut old_tokens, &mut new_tokens) {
-            hyperlink_filename(&mut old_tokens);
-        }
-        hyperlink_filename(&mut new_tokens);
-
-        lowlight_dev_null(&mut old_tokens);
-        lowlight_dev_null(&mut new_tokens);
-
-        lowlight_timestamp(&mut old_tokens);
-        lowlight_timestamp(&mut new_tokens);
-
-        align_tabs(&mut old_tokens, &mut new_tokens);
-
-        lowlight_git_prefix(&mut old_tokens);
-        lowlight_git_prefix(&mut new_tokens);
+        decorate_paths(&mut old_tokens, &mut new_tokens);
 
         if let Some(prefix) = new_prefix {
             new_tokens.insert(0, prefix);
@@ -131,69 +111,13 @@ impl PlusMinusHeaderHighlighter {
     }
 }
 
-/// Compare the file names, ignoring the leading "a/" or "b/" when they are present
-fn same_paths(old: &mut [StyledToken], new: &mut [StyledToken]) -> bool {
-    let (mut old_filename, _timestamp) = split_filename_and_timestamp(old);
-    let (mut new_filename, _timestamp) = split_filename_and_timestamp(new);
-
-    if old_filename.len() >= 2
-        && old_filename[0].token == "a"
-        && old_filename[1].token == "/"
-        && new_filename.len() >= 2
-        && new_filename[0].token == "b"
-        && new_filename[1].token == "/"
-    {
-        old_filename = &mut old_filename[2..];
-        new_filename = &mut new_filename[2..];
-    }
-
-    if old_filename.len() != new_filename.len() {
-        return false;
-    }
-
-    for (old_token, new_token) in old_filename.iter().zip(new_filename.iter()) {
-        if old_token.token != new_token.token {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/// If we get "x/y/z.txt", make "z.txt" bright.
-///
-/// As an exception, if the file name is already highlighted, don't brighten it.
-fn brighten_filename(row: &mut [StyledToken]) {
-    let mut last_slash_index = None;
-    for (i, token) in row.iter().enumerate() {
-        if token.token == "/" {
-            last_slash_index = Some(i);
-        }
-    }
-
-    let to_brighten: &mut [StyledToken];
-    if let Some(last_slash_index) = last_slash_index {
-        to_brighten = &mut row[last_slash_index + 1..];
-    } else {
-        to_brighten = row;
-    }
-
-    for token in to_brighten {
-        if token.style == Style::DiffPartHighlighted {
-            continue;
-        }
-        token.style = Style::Bright;
-    }
-}
-
-/// Note that the file name might end with one or more tabs followed by a
-/// timestamp, so it's not really just a file name.
-fn hyperlink_filename(row: &mut [StyledToken]) {
-    let (filename_tokens, _timestamp) = split_filename_and_timestamp(row);
-
+fn hyperlink_filename(just_path: &mut [StyledToken], just_filename: &mut [StyledToken]) {
     // Convert filename_tokens into a String
     let mut filename = String::new();
-    for token in filename_tokens.iter() {
+    for token in just_path.iter() {
+        filename.push_str(&token.token);
+    }
+    for token in just_filename.iter() {
         filename.push_str(&token.token);
     }
 
@@ -212,13 +136,6 @@ fn hyperlink_filename(row: &mut [StyledToken]) {
     }
 
     if !path.exists() {
-        if filename_tokens.len() >= 2
-            && (filename_tokens[0].token == "a" || filename_tokens[0].token == "b")
-            && filename_tokens[1].token == "/"
-        {
-            // Try again minus the git prefix ("a/" or "b/")
-            hyperlink_filename(&mut filename_tokens[2..]);
-        }
         return;
     }
 
@@ -232,55 +149,35 @@ fn hyperlink_filename(row: &mut [StyledToken]) {
     let url = url.unwrap();
 
     // Actually link the tokens
-    for token in filename_tokens.iter_mut() {
+    for token in just_path.iter_mut() {
+        token.url = Some(url.clone());
+    }
+    for token in just_filename.iter_mut() {
         token.url = Some(url.clone());
     }
 }
 
-fn lowlight_dev_null(row: &mut [StyledToken]) {
-    if row.len() < 4 {
+fn lowlight_dev_null(just_path: &mut [StyledToken], just_filename: &mut [StyledToken]) {
+    if just_path.len() < 3 {
+        // Expected "/dev/"
         return;
     }
-    if row[0].token == "/" && row[1].token == "dev" && row[2].token == "/" && row[3].token == "null"
+    if just_filename.len() != 1 {
+        // Expected "null"
+        return;
+    }
+
+    if just_path[0].token == "/"
+        && just_path[1].token == "dev"
+        && just_path[2].token == "/"
+        && just_filename[0].token == "null"
     {
-        for token in row {
+        for token in just_path {
             token.style = Style::Lowlighted;
         }
-    }
-}
-
-/// Splits a row into (filename, timestamp) slices.
-///
-/// Response slices may be empty.
-fn split_filename_and_timestamp(
-    row: &mut [StyledToken],
-) -> (&mut [StyledToken], &mut [StyledToken]) {
-    let mut split_index = None;
-    for (i, token) in row.iter().enumerate() {
-        if token.token == "\t" {
-            split_index = Some(i + 1);
-            break;
+        for token in just_filename {
+            token.style = Style::Lowlighted;
         }
-        let is_multispace = token.token.len() > 1 && token.token.chars().all(|c| c == ' ');
-        if is_multispace {
-            split_index = Some(i + 1);
-            break;
-        }
-    }
-
-    if let Some(idx) = split_index {
-        let (filename, timestamp) = row.split_at_mut(idx);
-        return (filename, timestamp);
-    }
-
-    (row, &mut [])
-}
-
-/// File timestamps are found after either a tab character or a double space
-fn lowlight_timestamp(row: &mut [StyledToken]) {
-    let (_filename, timestamp) = split_filename_and_timestamp(row);
-    for token in timestamp {
-        token.style = Style::Lowlighted;
     }
 }
 
@@ -316,19 +213,134 @@ fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
     new[new_tab_index_token].token = new_spaces;
 }
 
-/// Unhighlight leading 'a/' or 'b/' in git diff file names.
+/// Splits a row into (prefix, just_path, full_path, just_filename, timestamp) slices.
 ///
-/// They are just placeholders that do not indicate any changes introduced by
-/// the user.
-fn lowlight_git_prefix(row: &mut [StyledToken]) {
-    if row.len() < 2 {
-        return;
-    }
+/// Let's say we have a row like this and `look_for_git_prefixes` is true:
+/// ```
+/// a/doc/c.txt\t2023-12-15 15:43:29
+/// ```
+///
+/// Then the result will be:
+/// - `prefix`: `a/`
+/// - `just_path`: `doc/`
+/// - `just_filename`: `c.txt`
+/// - `timestamp`: `2023-12-15 15:43:29`
+fn split_row(
+    look_for_git_prefixes: bool,
+    row: &mut [StyledToken],
+) -> (
+    &mut [StyledToken],
+    &mut [StyledToken],
+    &mut [StyledToken],
+    &mut [StyledToken],
+) {
+    let path_start = if look_for_git_prefixes
+        && row.len() >= 2
+        && row[0].token.len() == 1 // "a" or "b"
+        && (row[1].token == "/" || row[1].token == std::path::MAIN_SEPARATOR.to_string())
+    {
+        // If we have a git prefix, the path starts after the first two tokens
+        2
+    } else {
+        // Otherwise, it starts at the first token
+        0
+    };
 
-    if (row[0].token == "a" || row[0].token == "b") && row[1].token == "/" {
-        row[0].style = Style::Lowlighted;
-        row[1].style = Style::Lowlighted;
+    // Path ends where the timestamp starts, or at the end of the row if there is no timestamp
+    let path_end = row
+        .iter()
+        .position(|token| token.token == "\t" || token.token.chars().all(char::is_whitespace))
+        .unwrap_or(row.len());
+
+    let timestamp_start = cmp::min(path_end + 1, row.len());
+
+    let last_file_separator_index_from_path_start =
+        row[path_start..path_end].iter().rposition(|token| {
+            token.token == "/" || token.token == std::path::MAIN_SEPARATOR.to_string()
+        });
+
+    // To avoid multiple mutable borrows, split step by step
+    let (row, timestamp) = row.split_at_mut(timestamp_start);
+    let (prefix, rest) = row.split_at_mut(path_start);
+    let (path_and_filename, _space_plus_timestamp) = rest.split_at_mut(path_end - path_start);
+    let (just_path, just_filename) = if let Some(last_file_separator_index_from_path_start) =
+        last_file_separator_index_from_path_start
+    {
+        path_and_filename.split_at_mut(last_file_separator_index_from_path_start + 1)
+    } else {
+        path_and_filename.split_at_mut(0)
+    };
+    return (prefix, just_path, just_filename, timestamp);
+}
+
+fn have_git_prefixes(old_tokens: &[StyledToken], new_tokens: &[StyledToken]) -> bool {
+    // Both "a/..." and "/dev/null" count as having a git prefix.
+
+    let old_has_git_prefix = old_tokens.len() >= 2
+        && old_tokens[0].token == "a"
+        && (old_tokens[1].token == "/"
+            || old_tokens[1].token == std::path::MAIN_SEPARATOR.to_string());
+    let old_is_absolute = !old_tokens.is_empty() && old_tokens[0].token == "/"
+        || old_tokens[0].token == std::path::MAIN_SEPARATOR.to_string();
+
+    let new_has_git_prefix = new_tokens.len() >= 2
+        && new_tokens[0].token == "b"
+        && (new_tokens[1].token == "/"
+            || new_tokens[1].token == std::path::MAIN_SEPARATOR.to_string());
+    let new_is_absolute = !new_tokens.is_empty() && new_tokens[0].token == "/"
+        || new_tokens[0].token == std::path::MAIN_SEPARATOR.to_string();
+
+    return (old_has_git_prefix || old_is_absolute) && (new_has_git_prefix || new_is_absolute);
+}
+
+fn decorate_paths(old_tokens: &mut [StyledToken], new_tokens: &mut [StyledToken]) {
+    let look_for_git_prefixes = have_git_prefixes(old_tokens, new_tokens);
+
+    let (old_prefix, old_just_path, old_just_filename, old_timestamp) =
+        split_row(look_for_git_prefixes, old_tokens);
+    let (new_prefix, new_just_path, new_just_filename, new_timestamp) =
+        split_row(look_for_git_prefixes, new_tokens);
+
+    // Brighten file names
+    old_just_filename.iter_mut().for_each(|token| {
+        if token.style != Style::DiffPartHighlighted {
+            token.style = Style::Bright;
+        }
+    });
+    new_just_filename.iter_mut().for_each(|token| {
+        if token.style != Style::DiffPartHighlighted {
+            token.style = Style::Bright;
+        }
+    });
+
+    // If the old filename is not the same as the new, it means it's gone,
+    // and any file we link to is likely to be the wrong one. So we only
+    // hyperlink the old name if it is the same as the new name.
+    if old_just_path == new_just_path && old_just_filename == new_just_filename {
+        hyperlink_filename(old_just_path, old_just_filename);
     }
+    hyperlink_filename(new_just_path, new_just_filename);
+
+    lowlight_dev_null(old_just_path, old_just_filename);
+    lowlight_dev_null(new_just_path, new_just_filename);
+
+    // Lowlight time stamps
+    old_timestamp.iter_mut().for_each(|token| {
+        token.style = Style::Lowlighted;
+    });
+    new_timestamp.iter_mut().for_each(|token| {
+        token.style = Style::Lowlighted;
+    });
+
+    // Lowlight git prefixes
+    old_prefix.iter_mut().for_each(|token| {
+        token.style = Style::Lowlighted;
+    });
+    new_prefix.iter_mut().for_each(|token| {
+        token.style = Style::Lowlighted;
+    });
+
+    align_tabs(old_tokens, new_tokens);
 }
 
 #[cfg(test)]
@@ -355,14 +367,14 @@ mod tests {
     fn test_align_timestamps() {
         let highlighted = highlight_header_lines(
             "--- x.txt\t2023-12-15 15:43:29",
-            "+++ /Users/johan/src/riff/README.md\t2024-01-29 14:56:40",
+            "+++ /Users/johan/xsrc/riff/README.md\t2024-01-29 14:56:40",
         );
         let highlighted_bytes = highlighted.clone().into_bytes();
         let plain = String::from_utf8(without_ansi_escape_codes(&highlighted_bytes)).unwrap();
 
         assert_eq!(
-            "--- x.txt                            2023-12-15 15:43:29\n\
-            +++ /Users/johan/src/riff/README.md  2024-01-29 14:56:40\n",
+            "--- x.txt                             2023-12-15 15:43:29\n\
+             +++ /Users/johan/xsrc/riff/README.md  2024-01-29 14:56:40\n",
             plain.as_str()
         );
     }
@@ -438,7 +450,7 @@ mod tests {
         let mut row = vec![StyledToken::new("README.md".to_string(), Style::Context)];
 
         // Act: call the function
-        hyperlink_filename(&mut row);
+        hyperlink_filename(&mut [], &mut row);
 
         // Assert: the file:/// URL points to our README.md file
         let url = row[0].url.as_ref().expect("Token should have a URL");
@@ -449,68 +461,113 @@ mod tests {
     }
 
     #[test]
-    fn test_hyperlink_filename_with_git_prefix() {
-        // Arrange: create a row representing "a/README.md"
-        let mut row_a = vec![
-            StyledToken::new("a".to_string(), Style::Context),
-            StyledToken::new("/".to_string(), Style::Context),
-            StyledToken::new("README.md".to_string(), Style::Context),
-        ];
-        hyperlink_filename(&mut row_a);
-        // Only the README.md token should have a URL
-        assert!(row_a[0].url.is_none(), "Prefix 'a' should not have a URL");
-        assert!(row_a[1].url.is_none(), "Prefix '/' should not have a URL");
-        let url = row_a[2].url.as_ref().expect("README.md should have a URL");
-        let url_path = url.to_file_path().expect("URL should be a file path");
-        let url_canon = std::fs::canonicalize(&url_path).expect("URL file should exist");
-        let readme_canon = std::fs::canonicalize("README.md").expect("README.md should exist");
-        assert_eq!(url_canon, readme_canon, "Canonicalized paths should match");
-
-        // Arrange: create a row representing "b/README.md"
-        let mut row_b = vec![
-            StyledToken::new("b".to_string(), Style::Context),
-            StyledToken::new("/".to_string(), Style::Context),
-            StyledToken::new("README.md".to_string(), Style::Context),
-        ];
-        hyperlink_filename(&mut row_b);
-        // Only the README.md token should have a URL
-        assert!(row_b[0].url.is_none(), "Prefix 'b' should not have a URL");
-        assert!(row_b[1].url.is_none(), "Prefix '/' should not have a URL");
-        let url = row_b[2].url.as_ref().expect("README.md should have a URL");
-        let url_path = url.to_file_path().expect("URL should be a file path");
-        let url_canon = std::fs::canonicalize(&url_path).expect("URL file should exist");
-        assert_eq!(url_canon, readme_canon, "Canonicalized paths should match");
+    fn test_split_row_with_slash_separator() {
+        let mut tokens: Vec<StyledToken> = ["doc", "/", "c.txt", "\t", "2023-12-15 15:43:29"]
+            .iter()
+            .map(|s| StyledToken::new(s.to_string(), Style::Context))
+            .collect();
+        let (prefix, just_path, just_filename, timestamp) = split_row(false, &mut tokens);
+        assert_eq!(prefix.len(), 0);
+        assert_eq!(
+            just_path.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["doc", "/"]
+        );
+        assert_eq!(
+            just_filename.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["c.txt"]
+        );
+        assert_eq!(
+            timestamp.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["2023-12-15 15:43:29"]
+        );
     }
 
     #[test]
-    fn test_same_paths_with_and_without_prefixes() {
-        // Helper to create StyledToken from &str
-        fn tokens(s: &str) -> Vec<StyledToken> {
-            let mut v = Vec::new();
-            for c in s.chars() {
-                v.push(StyledToken::new(c.to_string(), Style::Context));
-            }
-            v
-        }
+    fn test_split_row_with_os_separator() {
+        let sep = std::path::MAIN_SEPARATOR.to_string();
+        let mut tokens: Vec<StyledToken> = [
+            "a",
+            &sep,
+            "doc",
+            &sep,
+            "c.txt",
+            // Time separator can be either a tab or two or more spaces
+            "  ",
+            "2023-12-15 15:43:29",
+        ]
+        .iter()
+        .map(|s| StyledToken::new(s.to_string(), Style::Context))
+        .collect();
+        let (prefix, just_path, just_filename, timestamp) = split_row(true, &mut tokens);
+        assert_eq!(
+            prefix.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["a", &sep]
+        );
+        assert_eq!(
+            just_path.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["doc", &sep]
+        );
+        assert_eq!(
+            just_filename.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["c.txt"]
+        );
+        assert_eq!(
+            timestamp.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["2023-12-15 15:43:29"]
+        );
+    }
 
-        // Case 1: with a/ and b/ prefixes
-        let mut old = tokens("a/foo.txt");
-        let mut new = tokens("b/foo.txt");
-        assert!(same_paths(&mut old, &mut new));
+    #[test]
+    fn test_split_row_timeless() {
+        let mut tokens: Vec<StyledToken> = ["doc", "/", "c.txt"]
+            .iter()
+            .map(|s| StyledToken::new(s.to_string(), Style::Context))
+            .collect();
+        let (prefix, just_path, just_filename, timestamp) = split_row(false, &mut tokens);
+        assert_eq!(prefix.len(), 0);
+        assert_eq!(
+            just_path.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["doc", "/"]
+        );
+        assert_eq!(
+            just_filename.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["c.txt"]
+        );
+        assert_eq!(timestamp.len(), 0);
+    }
 
-        // Case 2: without prefixes
-        let mut old = tokens("foo.txt");
-        let mut new = tokens("foo.txt");
-        assert!(same_paths(&mut old, &mut new));
+    #[test]
+    fn test_split_row_pathless() {
+        let mut tokens: Vec<StyledToken> = ["README.md", "\t", "2023-12-15 15:43:29"]
+            .iter()
+            .map(|s| StyledToken::new(s.to_string(), Style::Context))
+            .collect();
+        let (prefix, just_path, just_filename, timestamp) = split_row(false, &mut tokens);
+        assert_eq!(prefix.len(), 0);
+        assert_eq!(just_path.len(), 0);
+        assert_eq!(
+            just_filename.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["README.md"]
+        );
+        assert_eq!(
+            timestamp.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["2023-12-15 15:43:29"]
+        );
+    }
 
-        // Case 3: different filenames
-        let mut old = tokens("a/bar.txt");
-        let mut new = tokens("b/foo.txt");
-        assert!(!same_paths(&mut old, &mut new));
-
-        // Case 4: one with prefix, one without
-        let mut old = tokens("a/foo.txt");
-        let mut new = tokens("foo.txt");
-        assert!(!same_paths(&mut old, &mut new));
+    #[test]
+    fn test_split_row_separator_without_time() {
+        let mut tokens: Vec<StyledToken> = ["README.md", "\t"]
+            .iter()
+            .map(|s| StyledToken::new(s.to_string(), Style::Context))
+            .collect();
+        let (prefix, just_path, just_filename, timestamp) = split_row(false, &mut tokens);
+        assert_eq!(prefix.len(), 0);
+        assert_eq!(just_path.len(), 0);
+        assert_eq!(
+            just_filename.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["README.md"]
+        );
+        assert_eq!(timestamp.len(), 0);
     }
 }
