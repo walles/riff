@@ -1,10 +1,9 @@
-use std::cmp;
-
 use crate::ansi::AnsiStyle;
 use crate::ansi::Color::Green;
 use crate::ansi::Color::Red;
 use crate::ansi::Weight;
 use crate::ansi::ANSI_STYLE_NORMAL;
+use once_cell::sync::Lazy;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Style {
@@ -21,9 +20,10 @@ pub(crate) enum Style {
 pub(crate) struct StyledToken {
     pub(crate) token: String,
     pub(crate) style: Style,
+    pub(crate) url: Option<url::Url>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct LineStyle {
     pub(crate) prefix_style: AnsiStyle,
     pub(crate) unchanged_style: AnsiStyle,
@@ -33,60 +33,58 @@ pub(crate) struct LineStyle {
 
 // The base line styles live in refiner.rs
 
-pub(crate) const LINE_STYLE_CONFLICT_BASE: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-    }
-};
+pub(crate) static LINE_STYLE_CONFLICT_BASE: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+    prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+    unchanged_style: ANSI_STYLE_NORMAL,
+    midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+    highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+});
 
-pub(crate) const LINE_STYLE_CONFLICT_OLD: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-    }
-};
+pub(crate) static LINE_STYLE_CONFLICT_OLD: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+    prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+    unchanged_style: ANSI_STYLE_NORMAL,
+    midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+    highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+});
 
-pub(crate) const LINE_STYLE_CONFLICT_NEW: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
-    }
-};
+pub(crate) static LINE_STYLE_CONFLICT_NEW: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+    prefix_style: ANSI_STYLE_NORMAL.with_inverse(true),
+    unchanged_style: ANSI_STYLE_NORMAL,
+    midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+    highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+});
 
-pub(crate) const LINE_STYLE_OLD_FILENAME: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-    }
-};
+pub(crate) static LINE_STYLE_OLD_FILENAME: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+    prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
+    unchanged_style: ANSI_STYLE_NORMAL,
+    midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+    highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+});
 
-pub(crate) const LINE_STYLE_NEW_FILENAME: LineStyle = {
-    LineStyle {
-        prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
-        unchanged_style: ANSI_STYLE_NORMAL,
-        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
-        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
-    }
-};
+pub(crate) static LINE_STYLE_NEW_FILENAME: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+    prefix_style: ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
+    unchanged_style: ANSI_STYLE_NORMAL,
+    midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+    highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+});
 
 impl StyledToken {
     pub fn new(token: String, style: Style) -> StyledToken {
         if token.len() != 1 {
-            return StyledToken { token, style };
+            return StyledToken {
+                token,
+                style,
+                url: None,
+            };
         }
 
         let character = token.chars().next().unwrap();
         if character >= ' ' || character == '\x09' || character == '\x0a' {
-            return StyledToken { token, style };
+            return StyledToken {
+                token,
+                style,
+                url: None,
+            };
         }
 
         // This is a special character, let's replace it with its Unicode symbol
@@ -94,6 +92,7 @@ impl StyledToken {
         return StyledToken {
             token: symbol.to_string(),
             style,
+            url: None,
         };
     }
 
@@ -116,7 +115,7 @@ pub(crate) fn render_row(
 
     // Render prefix
     rendered.push_str(&line_style.prefix_style.from(&current_style));
-    current_style = line_style.prefix_style;
+    current_style = line_style.prefix_style.clone();
     rendered.push_str(prefix);
 
     // Render tokens
@@ -125,14 +124,18 @@ pub(crate) fn render_row(
             Style::Context => ANSI_STYLE_NORMAL,
             Style::Lowlighted => ANSI_STYLE_NORMAL.with_weight(Weight::Faint),
             Style::Bright => ANSI_STYLE_NORMAL.with_weight(Weight::Bold),
-            Style::DiffPartUnchanged => line_style.unchanged_style,
-            Style::DiffPartMidlighted => line_style.midlighted_style,
-            Style::DiffPartHighlighted => line_style.highlighted_style,
+            Style::DiffPartUnchanged => line_style.unchanged_style.clone(),
+            Style::DiffPartMidlighted => line_style.midlighted_style.clone(),
+            Style::DiffPartHighlighted => line_style.highlighted_style.clone(),
             Style::Error => ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
         };
 
         if force_faint {
             new_style = new_style.with_weight(Weight::Faint);
+        }
+
+        if let Some(url) = &token.url {
+            new_style = new_style.with_url(url.clone());
         }
 
         rendered.push_str(&new_style.from(&current_style));
@@ -221,120 +224,6 @@ pub fn render_multiprefix(
     return rendered;
 }
 
-pub(crate) fn align_tabs(old: &mut [StyledToken], new: &mut [StyledToken]) {
-    let old_tab_index_token = old.iter().position(|token| token.token == "\t");
-    if old_tab_index_token.is_none() {
-        return;
-    }
-    let old_tab_index_token = old_tab_index_token.unwrap();
-    let old_tab_index_char = old
-        .iter()
-        .take(old_tab_index_token)
-        .map(|token| token.token.chars().count())
-        .sum::<usize>();
-
-    let new_tab_index_token = new.iter().position(|token| token.token == "\t");
-    if new_tab_index_token.is_none() {
-        return;
-    }
-    let new_tab_index_token = new_tab_index_token.unwrap();
-    let new_tab_index_char = new
-        .iter()
-        .take(new_tab_index_token)
-        .map(|token| token.token.chars().count())
-        .sum::<usize>();
-
-    let old_spaces =
-        " ".repeat(2 + cmp::max(old_tab_index_char, new_tab_index_char) - old_tab_index_char);
-    let new_spaces =
-        " ".repeat(2 + cmp::max(old_tab_index_char, new_tab_index_char) - new_tab_index_char);
-
-    old[old_tab_index_token].token = old_spaces;
-    new[new_tab_index_token].token = new_spaces;
-}
-
-/// File timestamps are found after either a tab character or a double space
-pub fn lowlight_timestamp(row: &mut [StyledToken]) {
-    #[derive(PartialEq)]
-    enum State {
-        Initial,
-        InTimestamp,
-    }
-
-    let mut state = State::Initial;
-    for token in row.iter_mut() {
-        match state {
-            State::Initial => {
-                let is_multispace = token.token.len() > 1 && token.token.chars().all(|c| c == ' ');
-                if token.token == "\t" || is_multispace {
-                    state = State::InTimestamp;
-                }
-            }
-            State::InTimestamp => {
-                // Intentionally left blank, no way out of this state
-            }
-        }
-
-        if state == State::InTimestamp {
-            token.style = Style::Lowlighted;
-            continue;
-        }
-    }
-}
-
-/// Unhighlight leading 'a/' or 'b/' in git diff file names.
-///
-/// They are just placeholders that do not indicate any changes introduced by
-/// the user.
-pub fn lowlight_git_prefix(row: &mut [StyledToken]) {
-    if row.len() < 2 {
-        return;
-    }
-
-    if (row[0].token == "a" || row[0].token == "b") && row[1].token == "/" {
-        row[0].style = Style::Lowlighted;
-        row[1].style = Style::Lowlighted;
-    }
-}
-
-/// If we get "x/y/z.txt", make "z.txt" bright.
-///
-/// As an exception, if the file name is already highlighted, don't brighten it.
-pub fn brighten_filename(row: &mut [StyledToken]) {
-    let mut last_slash_index = None;
-    for (i, token) in row.iter().enumerate() {
-        if token.token == "/" {
-            last_slash_index = Some(i);
-        }
-    }
-
-    let to_brighten: &mut [StyledToken];
-    if let Some(last_slash_index) = last_slash_index {
-        to_brighten = &mut row[last_slash_index + 1..];
-    } else {
-        to_brighten = row;
-    }
-
-    for token in to_brighten {
-        if token.style == Style::DiffPartHighlighted {
-            continue;
-        }
-        token.style = Style::Bright;
-    }
-}
-
-pub fn lowlight_dev_null(row: &mut [StyledToken]) {
-    if row.len() < 4 {
-        return;
-    }
-    if row[0].token == "/" && row[1].token == "dev" && row[2].token == "/" && row[3].token == "null"
-    {
-        for token in row {
-            token.style = Style::Lowlighted;
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -346,37 +235,35 @@ mod tests {
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
-    const LINE_STYLE_OLD: LineStyle = {
-        LineStyle {
-            prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
-            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
-            midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
-            highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-        }
-    };
+    static LINE_STYLE_OLD: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+    });
 
-    const LINE_STYLE_NEW: LineStyle = {
-        LineStyle {
-            prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
-            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
-            midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
-            highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
-        }
-    };
+    static LINE_STYLE_NEW: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+    });
 
     #[test]
     fn test_basic() {
         let rendered = render(
-            &LINE_STYLE_NEW,
+            &*LINE_STYLE_NEW,
             "+",
             &[
                 StyledToken {
                     token: "hej".to_string(),
                     style: Style::DiffPartMidlighted,
+                    url: None,
                 },
                 StyledToken {
                     token: "\n".to_string(),
                     style: Style::DiffPartMidlighted,
+                    url: None,
                 },
             ],
         );
@@ -387,7 +274,7 @@ mod tests {
     fn test_removed_trailing_whitespace() {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
-            &LINE_STYLE_OLD,
+            &*LINE_STYLE_OLD,
             "-",
             &[StyledToken::new(" ".to_string(), Style::DiffPartMidlighted)],
         );
@@ -399,7 +286,7 @@ mod tests {
     fn test_removed_nonleading_tab() {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
-            &LINE_STYLE_OLD,
+            &*LINE_STYLE_OLD,
             "-",
             &[
                 StyledToken::new("x".to_string(), Style::DiffPartMidlighted),

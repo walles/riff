@@ -10,7 +10,7 @@ use crate::line_collector::NO_EOF_NEWLINE_MARKER_HOLDER;
 use crate::token_collector::*;
 use crate::tokenizer;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Formatter {
     line_style_old: LineStyle,
     line_style_new: LineStyle,
@@ -448,31 +448,28 @@ fn to_lines(text: &str) -> Vec<String> {
 pub(crate) mod tests {
     use super::*;
 
+    use once_cell::sync::Lazy;
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
-    const LINE_STYLE_OLD: LineStyle = {
-        LineStyle {
-            prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
-            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
-            midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
-            highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
-        }
-    };
+    pub(crate) static LINE_STYLE_OLD: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Red),
+        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Red),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Red).with_inverse(true),
+    });
 
-    const LINE_STYLE_NEW: LineStyle = {
-        LineStyle {
-            prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
-            unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
-            midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
-            highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
-        }
-    };
+    pub(crate) static LINE_STYLE_NEW: Lazy<LineStyle> = Lazy::new(|| LineStyle {
+        prefix_style: ANSI_STYLE_NORMAL.with_color(Green),
+        unchanged_style: ANSI_STYLE_NORMAL.with_color(Yellow),
+        midlighted_style: ANSI_STYLE_NORMAL.with_color(Green),
+        highlighted_style: ANSI_STYLE_NORMAL.with_color(Green).with_inverse(true),
+    });
 
-    pub(crate) const FORMATTER: Formatter = Formatter {
-        line_style_old: LINE_STYLE_OLD,
-        line_style_new: LINE_STYLE_NEW,
-    };
+    pub(crate) static FORMATTER: Lazy<Formatter> = Lazy::new(|| Formatter {
+        line_style_old: LINE_STYLE_OLD.clone(),
+        line_style_new: LINE_STYLE_NEW.clone(),
+    });
 
     #[test]
     fn test_simple_format_adds_and_removes() {

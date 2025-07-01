@@ -208,7 +208,7 @@ impl PlusMinusLinesHighlighter {
 
         let texts = self.texts.clone();
         let prefixes = self.prefixes.clone();
-        let formatter = self.formatter;
+        let formatter = self.formatter.clone();
 
         self.texts.clear();
         self.prefixes.clear();
@@ -253,7 +253,8 @@ mod tests {
         }
 
         let mut test_me =
-            PlusMinusLinesHighlighter::from_line("+No trailing newline", 1, FORMATTER).unwrap();
+            PlusMinusLinesHighlighter::from_line("+No trailing newline", 1, FORMATTER.clone())
+                .unwrap();
         assert_eq!(test_me.texts, vec!["No trailing newline\n"]);
         assert_eq!(test_me.prefixes, vec!["+"]);
 

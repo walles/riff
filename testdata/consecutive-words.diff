@@ -7,10 +7,10 @@ Date:   Thu Dec 31 15:22:09 2020 +0100
     If old text and new text have very different line counts, just do the
     simplistic highlighting.
 
-diff --git src/refiner.rs src/refiner.rs
+diff --git xsrc/refiner.rs xsrc/refiner.rs
 index d1ebdc1..40ae0df 100644
---- src/refiner.rs
-+++ src/refiner.rs
+--- xsrc/refiner.rs
++++ xsrc/refiner.rs
 @@ -15,8 +15,8 @@ use diffus::{
  /// it.
  const MAX_HIGHLIGHT_PERCENTAGE: usize = 30;

@@ -18,20 +18,35 @@ pub enum Weight {
     Faint,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AnsiStyle {
-    pub color: Color,
-    pub weight: Weight,
-    pub inverse: bool,
+    pub(crate) color: Color,
+    pub(crate) weight: Weight,
+    pub(crate) inverse: bool,
+    pub(crate) url: Option<url::Url>,
 }
 
 pub const ANSI_STYLE_NORMAL: AnsiStyle = AnsiStyle {
     color: Color::Default,
     weight: Weight::Normal,
     inverse: false,
+    url: None,
 };
 
 impl AnsiStyle {
+    fn should_add_url(new_url: &Option<url::Url>, old_url: &Option<url::Url>) -> bool {
+        match (new_url, old_url) {
+            (Some(_), None) => true,              // Adding a URL
+            (None, Some(_)) => true,              // Removing a URL
+            (Some(new), Some(old)) => new != old, // Changing the URL
+            _ => false,                           // No change in URL
+        }
+    }
+
+    fn normal_except_hyperlink(&self) -> bool {
+        self.color == Color::Default && self.weight == Weight::Normal && !self.inverse
+    }
+
     /// Renders a (possibly empty) ANSI escape sequence to switch to this style
     /// from the before style.
     pub fn from(&self, before: &AnsiStyle) -> String {
@@ -39,12 +54,23 @@ impl AnsiStyle {
             return String::from("");
         }
 
-        if self == &ANSI_STYLE_NORMAL {
-            // Special case for resetting to default style
-            return String::from(NORMAL);
+        let mut return_me = String::new();
+
+        if AnsiStyle::should_add_url(&self.url, &before.url) {
+            if let Some(url) = &self.url {
+                // Write the updated URL
+                return_me.push_str(&format!("\x1b]8;;{url}\x1b\\"));
+            } else {
+                // Remove the URL
+                return_me.push_str("\x1b]8;;\x1b\\");
+            }
         }
 
-        let mut return_me = String::new();
+        if self.normal_except_hyperlink() && !before.normal_except_hyperlink() {
+            // Special case for resetting to default style
+            return_me.push_str(NORMAL);
+            return return_me;
+        }
 
         if self.inverse && !before.inverse {
             // Inverse on
@@ -80,27 +106,39 @@ impl AnsiStyle {
         return return_me;
     }
 
-    pub const fn with_color(&self, color: Color) -> AnsiStyle {
+    pub fn with_color(&self, color: Color) -> AnsiStyle {
         return AnsiStyle {
             color,
             weight: self.weight,
             inverse: self.inverse,
+            url: self.url.clone(),
         };
     }
 
-    pub const fn with_inverse(&self, inverse: bool) -> AnsiStyle {
+    pub fn with_inverse(&self, inverse: bool) -> AnsiStyle {
         return AnsiStyle {
             color: self.color,
             weight: self.weight,
             inverse,
+            url: self.url.clone(),
         };
     }
 
-    pub const fn with_weight(&self, weight: Weight) -> AnsiStyle {
+    pub fn with_weight(&self, weight: Weight) -> AnsiStyle {
         return AnsiStyle {
             color: self.color,
             weight,
             inverse: self.inverse,
+            url: self.url.clone(),
+        };
+    }
+
+    pub fn with_url(&self, url: url::Url) -> AnsiStyle {
+        return AnsiStyle {
+            color: self.color,
+            weight: self.weight,
+            inverse: self.inverse,
+            url: Some(url),
         };
     }
 }
@@ -174,5 +212,86 @@ mod tests {
     fn test_multi_sgr() {
         let line = b"hel\x1b[33;34mlo".to_vec();
         assert_eq!(without_ansi_escape_codes(&line), b"hello");
+    }
+
+    #[test]
+    fn test_from_hyperlinked() {
+        use url::Url;
+
+        let url = Url::parse("https://example.com").unwrap();
+        let hyperlink = AnsiStyle {
+            color: Color::Default,
+            weight: Weight::Normal,
+            inverse: false,
+            url: Some(url.clone()),
+        };
+
+        // Plain to hyperlink: should emit OSC 8 with URL. Note that the URL has
+        // been normalized with a trailing slash, this is done by the URL
+        // library.
+        let seq1 = hyperlink.from(&ANSI_STYLE_NORMAL);
+        assert_eq!(seq1, "\x1b]8;;https://example.com/\x1b\\");
+
+        // Hyperlink to plain: should emit OSC 8 with empty URL (removes link)
+        let seq2 = ANSI_STYLE_NORMAL.from(&hyperlink);
+        assert_eq!(seq2, "\x1b]8;;\x1b\\");
+    }
+
+    #[test]
+    fn test_to_normal_from_all_attributes_hyperlink_and_non_hyperlink() {
+        use url::Url;
+
+        let url = Url::parse("https://example.com").unwrap();
+
+        // Color
+        let red = AnsiStyle {
+            color: Color::Red,
+            weight: Weight::Normal,
+            inverse: false,
+            url: None,
+        };
+        let red_link = AnsiStyle {
+            color: Color::Red,
+            weight: Weight::Normal,
+            inverse: false,
+            url: Some(url.clone()),
+        };
+        assert_eq!(ANSI_STYLE_NORMAL.from(&red), "\x1b[0m");
+        assert_eq!(ANSI_STYLE_NORMAL.from(&red_link), "\x1b]8;;\x1b\\\x1b[0m");
+
+        // Weight
+        let bold = AnsiStyle {
+            color: Color::Default,
+            weight: Weight::Bold,
+            inverse: false,
+            url: None,
+        };
+        let bold_link = AnsiStyle {
+            color: Color::Default,
+            weight: Weight::Bold,
+            inverse: false,
+            url: Some(url.clone()),
+        };
+        assert_eq!(ANSI_STYLE_NORMAL.from(&bold), "\x1b[0m");
+        assert_eq!(ANSI_STYLE_NORMAL.from(&bold_link), "\x1b]8;;\x1b\\\x1b[0m");
+
+        // Inverse
+        let inverse = AnsiStyle {
+            color: Color::Default,
+            weight: Weight::Normal,
+            inverse: true,
+            url: None,
+        };
+        let inverse_link = AnsiStyle {
+            color: Color::Default,
+            weight: Weight::Normal,
+            inverse: true,
+            url: Some(url),
+        };
+        assert_eq!(ANSI_STYLE_NORMAL.from(&inverse), "\x1b[0m");
+        assert_eq!(
+            ANSI_STYLE_NORMAL.from(&inverse_link),
+            "\x1b]8;;\x1b\\\x1b[0m"
+        );
     }
 }
