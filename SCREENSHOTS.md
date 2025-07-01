@@ -5,6 +5,13 @@ Screenshots are done using:
 - Terminal: [iTerm2](https://iterm2.com/)
 - Pager: [`moar`](https://github.com/walles/moar)
 
+## `screenshot.png`
+
+Scale your window to 92x28, then:
+
+- Get the moar source code: <https://github.com/walles/moar>
+- Do: `git -C ../moar show 9c91399309 | cargo run`
+
 ## `screenshot-git-merge.png`
 
 1. Scale your terminal window to 65x17
@@ -32,5 +39,5 @@ index 0399cd5,59727f0..0000000
 ## `screenshot-diff2-conflict.png`
 
 1. Scale your window to 72x10
-2. `cargo run < testdata/conflict-markers.txt.riff-output`
+2. `cargo run < testdata/conflict-markers.txt`
 3. Screenshot the window and store it as `screenshot-diff2-conflict.png`
