@@ -9,6 +9,8 @@
 #
 # Cross compile Linux from macOS:
 # * brew install FiloSottile/musl-cross/musl-cross
+#
+# Note config in .cargo/config.toml for this to work.
 
 set -eu -o pipefail
 
@@ -171,6 +173,13 @@ $LIVE && cp "target/riff-universal-apple-darwin-release" "riff-$EXPECTED_VERSION
 rustup target add x86_64-unknown-linux-musl
 cargo build --release --target=x86_64-unknown-linux-musl
 $LIVE && cp "target/x86_64-unknown-linux-musl/release/riff" "riff-$NEW_VERSION_NUMBER-x86_64-linux"
+
+# Build a Linux-ARM64 binary on macOS
+#
+# From: https://timryan.org/2018/07/27/cross-compiling-linux-binaries-from-macos.html
+rustup target add aarch64-unknown-linux-musl
+cargo build --release --target=aarch64-unknown-linux-musl
+$LIVE && cp "target/aarch64-unknown-linux-musl/release/riff" "riff-$NEW_VERSION_NUMBER-aarch64-linux"
 
 # Build a Windows binary on macOS
 #
