@@ -3,14 +3,14 @@
 Screenshots are done using:
 
 - Terminal: [iTerm2](https://iterm2.com/)
-- Pager: [`moar`](https://github.com/walles/moar)
+- Pager: [`moor`](https://github.com/walles/moor)
 
 ## `screenshot.png`
 
 Scale your window to 92x28, then:
 
-- Get the moar source code: <https://github.com/walles/moar>
-- Do: `git -C ../moar show 9c91399309 | cargo run`
+- Get the moor source code: <https://github.com/walles/moor>
+- Do: `git -C ../moor show 9c91399309 | cargo run`
 
 ## `screenshot-git-merge.png`
 

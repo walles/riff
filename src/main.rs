@@ -346,6 +346,11 @@ fn highlight_stream(input: &mut dyn io::Read, no_pager: bool, color: bool, forma
         // doesn't exist.
     }
 
+    if try_pager(input, "moor", color, formatter.clone()) {
+        return;
+    }
+
+    // Old name for moor: https://github.com/walles/moor/pull/305
     if try_pager(input, "moar", color, formatter.clone()) {
         return;
     }

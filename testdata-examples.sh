@@ -3,7 +3,7 @@
 # This script will figure out all testdata example mismatches.
 #
 # For each mismatch, it will create a /tmp/before.sh shell script that will show
-# the .riff-output flavor of the testdata example in moar.
+# the .riff-output flavor of the testdata example in moor.
 #
 # It will also show the actual output.
 #
@@ -41,7 +41,7 @@ for EXPECTED in testdata/*.riff-output; do
     cat <<EOF >/tmp/before.sh
 #!/bin/bash -e
 
-moar $EXPECTED
+moor $EXPECTED
 EOF
     chmod +x /tmp/before.sh
 
@@ -54,7 +54,7 @@ EOF
         continue
     fi
 
-    moar "$WORKFILE"
+    moor "$WORKFILE"
 
     echo
     echo -n "Update $EXPECTED? [y/N] "
