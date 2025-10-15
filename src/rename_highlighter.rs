@@ -1,6 +1,8 @@
 use crate::{
     lines_highlighter::{LineAcceptance, LinesHighlighter, Response},
+    refiner::diff,
     string_future::StringFuture,
+    token_collector::{render, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME},
 };
 
 // Parses sections looking like this:
@@ -51,10 +53,9 @@ impl RenameHighlighter {
     }
 
     fn highlighted(&self, new_name: String) -> String {
-        // FIXME: Placeholder
-        format!(
-            "rename from \x1b[1;31m{}\x1b[0m\nrename to \x1b[1;32m{}\x1b[0m",
-            self.old_name, new_name
-        )
+        let (old_tokens, new_tokens) = diff(&self.old_name, &new_name);
+        let old_filename = render(&LINE_STYLE_OLD_FILENAME, "", &old_tokens);
+        let new_filename = render(&LINE_STYLE_NEW_FILENAME, "", &new_tokens);
+        return format!("rename from {}\nrename to {}\n", old_filename, new_filename);
     }
 }
