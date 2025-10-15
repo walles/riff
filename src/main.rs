@@ -248,6 +248,10 @@ fn try_pager(
     color: bool,
     formatter: Formatter,
 ) -> bool {
+    if pager_space_separated.is_empty() {
+        return false;
+    }
+
     let pager_cmdline: Vec<&str> = pager_space_separated.split_whitespace().collect();
     let mut command = Command::new(pager_cmdline[0]);
     for arg in pager_cmdline.iter().skip(1) {
