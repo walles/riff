@@ -1,0 +1,4 @@
+[2mdiff --git a/hello.txt b/yello.txt[0m
+[2msimilarity index 100%[0m
+[2mrename from [0;7;31mhello[0m.txt
+[1mrename to [0;7;32myello[0m.txt
