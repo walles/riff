@@ -6,6 +6,7 @@ use crate::io::ErrorKind;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter};
 use crate::plusminus_header_highlighter::PlusMinusHeaderHighlighter;
 use crate::refiner::Formatter;
+use crate::rename_highlighter::RenameHighlighter;
 use once_cell::sync::Lazy;
 use std::io::{self, BufWriter, Write};
 use std::process::{self, exit};
@@ -320,6 +321,12 @@ impl LineCollector {
         if let Some(conflicts_highlighter) = ConflictsHighlighter::from_line(&line) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(conflicts_highlighter));
+            return Ok(());
+        }
+
+        if let Some(rename_highlighter) = RenameHighlighter::from_line(&line) {
+            self.drain_plain();
+            self.lines_highlighter = Some(Box::new(rename_highlighter));
             return Ok(());
         }
 

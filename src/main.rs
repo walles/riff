@@ -34,6 +34,7 @@ mod logging;
 mod plusminus_header_highlighter;
 mod plusminus_lines_highlighter;
 mod refiner;
+mod rename_highlighter;
 mod string_future;
 mod token_collector;
 mod tokenizer;
