@@ -1,5 +1,6 @@
 use crate::{
     lines_highlighter::{LineAcceptance, LinesHighlighter, Response},
+    plusminus_header_highlighter::decorate_paths,
     refiner::diff,
     string_future::StringFuture,
     token_collector::{render, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME},
@@ -55,12 +56,14 @@ impl RenameHighlighter {
     fn highlighted(&self, new_name: String) -> String {
         use crate::constants::{BOLD, NORMAL};
 
-        let (old_tokens, new_tokens) = diff(&self.old_name, &new_name);
+        let (mut old_tokens, mut new_tokens) = diff(&self.old_name, &new_name);
         let old_filename = render(&LINE_STYLE_OLD_FILENAME, "", &old_tokens);
         let new_filename = render(&LINE_STYLE_NEW_FILENAME, "", &new_tokens);
 
+        decorate_paths(&mut old_tokens, &mut new_tokens);
+
         return format!(
-            "rename from {old_filename}{NORMAL}\n{BOLD}rename to{NORMAL} {new_filename}{NORMAL}\n"
+            "rename from {old_filename}{NORMAL}\n{BOLD}rename to {new_filename}{NORMAL}\n"
         );
     }
 }

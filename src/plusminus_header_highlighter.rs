@@ -311,7 +311,7 @@ fn have_git_prefixes(old_tokens: &[StyledToken], new_tokens: &[StyledToken]) -> 
     return (old_has_git_prefix || old_is_absolute) && (new_has_git_prefix || new_is_absolute);
 }
 
-fn decorate_paths(old_tokens: &mut [StyledToken], new_tokens: &mut [StyledToken]) {
+pub(crate) fn decorate_paths(old_tokens: &mut [StyledToken], new_tokens: &mut [StyledToken]) {
     let look_for_git_prefixes = have_git_prefixes(old_tokens, new_tokens);
 
     let old_split = split_row(look_for_git_prefixes, old_tokens);
