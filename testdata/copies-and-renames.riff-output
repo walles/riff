@@ -7,8 +7,8 @@
 [2mindex 0000000..bf9ccc7[0m
 [2mdiff --git LICENSE LICENSE.txt[0m
 [2msimilarity index 92%[0m
-[2mrename from LICENSE[0m
-[1mrename to LICENSE.txt[0m
+rename from [1m[0mLICENSE[0m
+[1mrename to [1m[0mLICENSE[7m[32m.txt[0m[0m
 [2mindex 7548f52..63df2dc 100644[0m
 [1m--- LICENSE[0m
 [1m+++ LICENSE[7m[22m[32m.txt[0m
