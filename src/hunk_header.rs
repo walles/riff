@@ -26,6 +26,17 @@ pub(crate) struct HunkHeader {
 
 pub(crate) const HUNK_HEADER: &str = "\x1b[36m"; // Cyan
 
+fn hyperlink(string: &str, url: Option<url::Url>, line_number: usize) -> String {
+    if let Some(url) = url {
+        format!(
+            "\x1b]8;;{}#L{}\x1b\\{}\x1b]8;;\x1b\\",
+            url, line_number, string
+        )
+    } else {
+        string.to_string()
+    }
+}
+
 impl HunkHeader {
     /// Parse a hunk header from a line of text.
     ///
@@ -110,7 +121,7 @@ impl HunkHeader {
     }
 
     /// Render into an ANSI highlighted string, not ending in a newline.
-    pub fn render(&self) -> String {
+    pub fn render(&self, url: Option<url::Url>) -> String {
         let mut rendered = String::new();
         rendered.push_str(HUNK_HEADER);
         rendered.push_str(&self.ats);
@@ -134,7 +145,7 @@ impl HunkHeader {
         if let Some(title) = &self.title {
             rendered.push(' ');
             rendered.push_str(BOLD);
-            rendered.push_str(title);
+            rendered.push_str(&hyperlink(title, url, self.starts.last().cloned().unwrap()));
         }
 
         rendered.push_str(NORMAL);
