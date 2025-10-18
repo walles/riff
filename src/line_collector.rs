@@ -319,6 +319,8 @@ impl LineCollector {
         }
 
         if let Some(conflicts_highlighter) = ConflictsHighlighter::from_line(&line) {
+            // We get here if the input is not a diff, but some random file
+            // containing merge conflict markers.
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(conflicts_highlighter));
             return Ok(());
