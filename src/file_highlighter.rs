@@ -81,10 +81,10 @@ impl LinesHighlighter for FileHighlighter {
             });
         }
 
-        // Otherwise, treat as plain line (metadata, blank, etc)
+        // Otherwise we're done
         return Ok(Response {
-            line_accepted: LineAcceptance::AcceptedWantMore,
-            highlighted: vec![StringFuture::from_string(line.to_string() + "\n")],
+            line_accepted: LineAcceptance::RejectedDone,
+            highlighted: vec![],
         });
     }
 
