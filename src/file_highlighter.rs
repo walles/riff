@@ -181,40 +181,43 @@ impl FileHighlighter {
 /// This function will try to find the file, either by the passed-in name or by
 /// stripping a/ or b/ prefixes.
 fn hyperlink_filename(filename: &str) -> Option<url::Url> {
-    let mut path = std::path::PathBuf::from(filename);
-    if !path.exists() {
-        // Try stripping git-style prefixes and see if we can find the file then
-        let stripped = filename
-            .strip_prefix("a/")
-            .or_else(|| filename.strip_prefix("b/"));
-        if let Some(stripped) = stripped {
-            path = std::path::PathBuf::from(stripped);
-        } else {
-            return None;
+    let mut raw_candidates: Vec<&str> = Vec::new();
+    raw_candidates.push(filename);
+    if let Some(no_a_prefix) = filename.strip_prefix("a/") {
+        raw_candidates.push(no_a_prefix);
+    }
+    if let Some(no_b_prefix) = filename.strip_prefix("b/") {
+        raw_candidates.push(no_b_prefix);
+    }
+
+    for candidate in raw_candidates {
+        if candidate == "/dev/null" {
+            continue;
+        }
+
+        let mut path = std::path::PathBuf::from(candidate);
+        if !path.is_absolute() {
+            if let Ok(cwd) = std::env::current_dir() {
+                path = cwd.join(&path);
+            }
+        }
+
+        if !path.exists() {
+            continue;
+        }
+
+        // Try canonicalize for nicer / realpath output, fall back if it fails.
+        let canonical = path.canonicalize().unwrap_or(path);
+        if canonical == std::path::Path::new("/dev/null") {
+            continue;
+        }
+
+        if let Ok(url) = url::Url::from_file_path(&canonical) {
+            return Some(url);
         }
     }
 
-    // from_file_path() below requires an absolute path
-    if !path.is_absolute() {
-        if let Ok(canonicalized) = path.canonicalize() {
-            path = canonicalized;
-        } else {
-            // Canonicalization failed, we can't hyperlink
-            return None;
-        }
-    }
-
-    if !path.exists() {
-        return None;
-    }
-
-    if path == std::path::Path::new("/dev/null") {
-        // Hyperlinking /dev/null would just be confusing
-        return None;
-    }
-
-    let url = url::Url::from_file_path(&path).ok()?;
-    Some(url)
+    return None;
 }
 
 fn hyperlink_tokenized(just_path: &mut [StyledToken], just_filename: &mut [StyledToken]) {
