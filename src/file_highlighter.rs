@@ -44,10 +44,10 @@ impl LinesHighlighter for FileHighlighter {
         }
 
         // We are now past the --- / +++ headers and are dealing with the body
-
+        let mut highlights: Vec<StringFuture> = Vec::new();
         if let Some(ref mut highlighter) = self.sub_highlighter {
             let resp = highlighter.consume_line(line, thread_pool)?;
-            let highlights = resp.highlighted;
+            highlights = resp.highlighted;
             match resp.line_accepted {
                 LineAcceptance::AcceptedWantMore => {
                     return Ok(Response {
@@ -77,14 +77,14 @@ impl LinesHighlighter for FileHighlighter {
             self.sub_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(Response {
                 line_accepted: LineAcceptance::AcceptedWantMore,
-                highlighted: vec![],
+                highlighted: highlights,
             });
         }
 
         // Otherwise we're done
         return Ok(Response {
             line_accepted: LineAcceptance::RejectedDone,
-            highlighted: vec![],
+            highlighted: highlights,
         });
     }
 
