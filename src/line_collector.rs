@@ -1,10 +1,10 @@
 use crate::ansi::without_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
 use crate::conflicts_highlighter::ConflictsHighlighter;
+use crate::file_highlighter::FileHighlighter;
 use crate::hunk_highlighter::HunkLinesHighlighter;
 use crate::io::ErrorKind;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter};
-use crate::plusminus_header_highlighter::PlusMinusHeaderHighlighter;
 use crate::refiner::Formatter;
 use crate::rename_highlighter::RenameHighlighter;
 use once_cell::sync::Lazy;
@@ -304,17 +304,17 @@ impl LineCollector {
             }
         }
 
+        if let Some(file_highlighter) = FileHighlighter::from_line(&line) {
+            self.drain_plain();
+            self.lines_highlighter = Some(Box::new(file_highlighter));
+            return Ok(());
+        }
+
         if let Some(hunk_highlighter) =
             HunkLinesHighlighter::from_line(&line, self.formatter.clone())
         {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(hunk_highlighter));
-            return Ok(());
-        }
-
-        if let Some(plusminus_header_highlighter) = PlusMinusHeaderHighlighter::from_line(&line) {
-            self.drain_plain();
-            self.lines_highlighter = Some(Box::new(plusminus_header_highlighter));
             return Ok(());
         }
 

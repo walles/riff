@@ -1,6 +1,6 @@
 use crate::{
+    file_highlighter::decorate_paths,
     lines_highlighter::{LineAcceptance, LinesHighlighter, Response},
-    plusminus_header_highlighter::decorate_paths,
     refiner::diff,
     string_future::StringFuture,
     token_collector::{render, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME},

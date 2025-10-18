@@ -10,7 +10,7 @@ use crate::token_collector::{
     render, Style, StyledToken, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
 };
 
-pub(crate) struct PlusMinusHeaderHighlighter {
+pub(crate) struct FileHighlighter {
     /// May or may not end with one or more tabs + a timestamp string.
     old_name: String,
 
@@ -18,7 +18,7 @@ pub(crate) struct PlusMinusHeaderHighlighter {
     new_name: String,
 }
 
-impl LinesHighlighter for PlusMinusHeaderHighlighter {
+impl LinesHighlighter for FileHighlighter {
     fn consume_line(&mut self, line: &str, _thread_pool: &ThreadPool) -> Result<Response, String> {
         assert!(!self.old_name.is_empty());
         assert!(self.new_name.is_empty());
@@ -39,7 +39,7 @@ impl LinesHighlighter for PlusMinusHeaderHighlighter {
     }
 }
 
-impl PlusMinusHeaderHighlighter {
+impl FileHighlighter {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
@@ -51,7 +51,7 @@ impl PlusMinusHeaderHighlighter {
             return None;
         }
 
-        let highlighter = PlusMinusHeaderHighlighter {
+        let highlighter = FileHighlighter {
             old_name: line.strip_prefix("--- ").unwrap().to_string(),
             new_name: String::new(),
         };
@@ -380,7 +380,7 @@ mod tests {
     const DEFAULT_COLOR: &str = "\x1b[39m";
 
     fn highlight_header_lines(old_line: &str, new_line: &str) -> String {
-        let mut test_me = PlusMinusHeaderHighlighter::from_line(old_line).unwrap();
+        let mut test_me = FileHighlighter::from_line(old_line).unwrap();
         let mut response = test_me.consume_line(new_line, &ThreadPool::new(1)).unwrap();
         assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
         assert_eq!(1, response.highlighted.len());
