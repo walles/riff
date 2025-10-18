@@ -145,7 +145,13 @@ impl HunkHeader {
         if let Some(title) = &self.title {
             rendered.push(' ');
             rendered.push_str(BOLD);
-            rendered.push_str(&hyperlink(title, url, self.starts.last().cloned().unwrap()));
+            if let Some(last_start) = self.starts.last().cloned() {
+                rendered.push_str(&hyperlink(title, url, last_start));
+            } else {
+                // No start lines parsed; render plain title without hyperlink.
+                // We should never get here.
+                rendered.push_str(title);
+            }
         }
 
         rendered.push_str(NORMAL);
