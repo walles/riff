@@ -605,24 +605,29 @@ mod tests {
     #[cfg(test)]
     use pretty_assertions::assert_eq;
 
-    fn new(text: &str) -> String {
-        return format!("{GREEN}{text}{NORMAL}");
-    }
-
     #[test]
     fn test_trailing_newline_context() {
-        let mut input = "@@ -1,1 +1,2 @@\n+bepa\n apa\n\\ No newline at end of file\n".as_bytes();
+        let mut input = "--- a/foo.txt\n+++ b/foo.txt\n@@ -1,1 +1,2 @@\n+bepa\n apa\n\\ No newline at end of file\n".as_bytes();
 
-        let expected = format!(
-            "{}{}{}\n{}\n{}\n{}\\ No newline at end of file{}\n",
-            HUNK_HEADER,
-            "@@ -1,1 +1,2 @@",
-            NORMAL,
-            new("+bepa"),
-            " apa",
-            NO_EOF_NEWLINE_COLOR,
-            NORMAL
-        );
+        let expected = [
+            format!(
+                "{}--- {}{}a/{}{}foo.txt{}",
+                BOLD, NORMAL_INTENSITY, FAINT, NORMAL_INTENSITY, BOLD, NORMAL
+            ),
+            format!(
+                "{}+++ {}{}b/{}{}foo.txt{}",
+                BOLD, NORMAL_INTENSITY, FAINT, NORMAL_INTENSITY, BOLD, NORMAL
+            ),
+            format!("{}@@ -1,1 +1,2 @@{}", HUNK_HEADER, NORMAL),
+            format!("{}+bepa{}", GREEN, NORMAL),
+            " apa".to_string(),
+            format!(
+                "{}\\ No newline at end of file{}",
+                NO_EOF_NEWLINE_COLOR, NORMAL
+            ),
+        ]
+        .join("\n")
+            + "\n";
 
         let file = tempfile::NamedTempFile::new().unwrap();
         if let Err(error) = highlight_diff(
