@@ -1,3 +1,5 @@
+--- src/file.rs
++++ src/file.rs
 @@ -442,9 +438,9 @@ mod tests {
              println!("Evaluating example file <{}>...", diff.to_str().unwrap());
 
