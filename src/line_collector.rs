@@ -2,7 +2,6 @@ use crate::ansi::without_ansi_escape_codes;
 use crate::commit_line::format_commit_line;
 use crate::conflicts_highlighter::ConflictsHighlighter;
 use crate::file_highlighter::FileHighlighter;
-use crate::hunk_highlighter::HunkLinesHighlighter;
 use crate::io::ErrorKind;
 use crate::lines_highlighter::{LineAcceptance, LinesHighlighter};
 use crate::refiner::Formatter;
@@ -304,17 +303,9 @@ impl LineCollector {
             }
         }
 
-        if let Some(file_highlighter) = FileHighlighter::from_line(&line) {
+        if let Some(file_highlighter) = FileHighlighter::from_line(&line, self.formatter.clone()) {
             self.drain_plain();
             self.lines_highlighter = Some(Box::new(file_highlighter));
-            return Ok(());
-        }
-
-        if let Some(hunk_highlighter) =
-            HunkLinesHighlighter::from_line(&line, self.formatter.clone())
-        {
-            self.drain_plain();
-            self.lines_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(());
         }
 
