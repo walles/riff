@@ -178,18 +178,34 @@ impl FileHighlighter {
     }
 }
 
-// FIXME: Should this function try stripping git prefixes like "a/" and "b/"?
+/// This function will try to find the file, either by the passed-in name or by
+/// stripping a/ or b/ prefixes.
 fn hyperlink_filename(filename: &str) -> Option<url::Url> {
     let mut path = std::path::PathBuf::from(filename);
+    if !path.exists() {
+        // Try stripping git-style prefixes and see if we can find the file then
+        let stripped = filename
+            .strip_prefix("a/")
+            .or_else(|| filename.strip_prefix("b/"));
+        if let Some(stripped) = stripped {
+            path = std::path::PathBuf::from(stripped);
+        } else {
+            return None;
+        }
+    }
 
     // from_file_path() below requires an absolute path
     if !path.is_absolute() {
-        if let Ok(current_dir) = std::env::current_dir() {
-            path = current_dir.join(path);
+        if let Ok(canonicalized) = path.canonicalize() {
+            path = canonicalized;
         } else {
-            // Getting the current directory failed, we can't hyperlink
+            // Canonicalization failed, we can't hyperlink
             return None;
         }
+    }
+
+    if !path.exists() {
+        return None;
     }
 
     if path == std::path::Path::new("/dev/null") {
@@ -197,18 +213,8 @@ fn hyperlink_filename(filename: &str) -> Option<url::Url> {
         return None;
     }
 
-    if !path.exists() {
-        return None;
-    }
-
-    let url = url::Url::from_file_path(&path).ok();
-    if url.is_none() {
-        // If we get here, maybe the absolutization under path.isAbsolute() a
-        // few lines up failed?
-        return None;
-    }
-
-    return url;
+    let url = url::Url::from_file_path(&path).ok()?;
+    Some(url)
 }
 
 fn hyperlink_tokenized(just_path: &mut [StyledToken], just_filename: &mut [StyledToken]) {
@@ -579,6 +585,44 @@ mod tests {
         assert!(
             url_opt.is_some(),
             "Expected Some(url::Url) for existing relative path"
+        );
+        let url = url_opt.unwrap();
+        assert_eq!(url.scheme(), "file", "Scheme should be file");
+        let path_from_url = url.to_file_path().expect("Should convert URL back to path");
+        assert!(path_from_url.exists(), "Path from URL should exist");
+
+        let expected = std::fs::canonicalize("README.md").expect("Canonicalize README.md");
+        let actual = std::fs::canonicalize(&path_from_url).expect("Canonicalize URL path");
+        assert_eq!(actual, expected, "Canonical paths must match");
+    }
+
+    #[test]
+    fn test_hyperlink_filename_missing_file() {
+        // Act: call the function directly
+        let url_opt = super::hyperlink_filename("does-not-exist.txt");
+
+        // Assert: we got Some(url) and it resolves back to the same file
+        assert!(
+            url_opt.is_none(),
+            "Expected None for non-existing relative path"
+        );
+    }
+
+    #[test]
+    fn test_hyperlink_filename_git_prefix() {
+        // Arrange: ensure the relative path exists (defensive check)
+        assert!(
+            std::path::Path::new("README.md").exists(),
+            "README.md should exist in crate root"
+        );
+
+        // Act: call the function with git-style prefix
+        let url_opt = super::hyperlink_filename("a/README.md");
+
+        // Assert: we got Some(url) and it resolves back to the same file
+        assert!(
+            url_opt.is_some(),
+            "Expected Some(url::Url) for git-style prefixed path"
         );
         let url = url_opt.unwrap();
         assert_eq!(url.scheme(), "file", "Scheme should be file");
