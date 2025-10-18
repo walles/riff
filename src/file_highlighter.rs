@@ -565,6 +565,32 @@ mod tests {
     }
 
     #[test]
+    fn test_hyperlink_filename_happy_path() {
+        // Arrange: ensure the relative path exists (defensive check)
+        assert!(
+            std::path::Path::new("README.md").exists(),
+            "README.md should exist in crate root"
+        );
+
+        // Act: call the function directly
+        let url_opt = super::hyperlink_filename("README.md");
+
+        // Assert: we got Some(url) and it resolves back to the same file
+        assert!(
+            url_opt.is_some(),
+            "Expected Some(url::Url) for existing relative path"
+        );
+        let url = url_opt.unwrap();
+        assert_eq!(url.scheme(), "file", "Scheme should be file");
+        let path_from_url = url.to_file_path().expect("Should convert URL back to path");
+        assert!(path_from_url.exists(), "Path from URL should exist");
+
+        let expected = std::fs::canonicalize("README.md").expect("Canonicalize README.md");
+        let actual = std::fs::canonicalize(&path_from_url).expect("Canonicalize URL path");
+        assert_eq!(actual, expected, "Canonical paths must match");
+    }
+
+    #[test]
     fn test_split_row_with_slash_separator() {
         let mut tokens: Vec<StyledToken> = ["doc", "/", "c.txt", "\t", "2023-12-15 15:43:29"]
             .iter()
