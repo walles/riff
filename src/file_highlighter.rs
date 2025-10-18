@@ -10,32 +10,92 @@ use crate::token_collector::{
     render, Style, StyledToken, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
 };
 
+use crate::hunk_highlighter::HunkLinesHighlighter;
+use crate::refiner::Formatter;
+
 pub(crate) struct FileHighlighter {
     /// May or may not end with one or more tabs + a timestamp string.
     old_name: String,
 
     /// May or may not end with one or more tabs + a timestamp string.
     new_name: String,
+
+    /// Used when spawning hunk highlighters
+    formatter: Formatter,
+
+    // Current hunk highlighter, if any
+    sub_highlighter: Option<Box<dyn LinesHighlighter>>,
 }
 
 impl LinesHighlighter for FileHighlighter {
-    fn consume_line(&mut self, line: &str, _thread_pool: &ThreadPool) -> Result<Response, String> {
+    fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String> {
         assert!(!self.old_name.is_empty());
-        assert!(self.new_name.is_empty());
 
-        if let Some(new_name) = line.strip_prefix("+++ ") {
-            self.new_name.push_str(new_name);
+        if self.new_name.is_empty() {
+            // Header phase: waiting for +++
+            if let Some(new_name) = line.strip_prefix("+++ ") {
+                self.new_name.push_str(new_name);
+                return Ok(Response {
+                    line_accepted: LineAcceptance::AcceptedWantMore,
+                    highlighted: vec![StringFuture::from_string(self.highlighted())],
+                });
+            }
+            return Err("--- was not followed by +++".to_string());
+        }
+
+        // We are now past the --- / +++ headers and are dealing with the body
+
+        if let Some(ref mut highlighter) = self.sub_highlighter {
+            let resp = highlighter.consume_line(line, thread_pool)?;
+            let highlights = resp.highlighted;
+            match resp.line_accepted {
+                LineAcceptance::AcceptedWantMore => {
+                    return Ok(Response {
+                        line_accepted: LineAcceptance::AcceptedWantMore,
+                        highlighted: highlights,
+                    });
+                }
+                LineAcceptance::AcceptedDone => {
+                    self.sub_highlighter = None;
+                    return Ok(Response {
+                        line_accepted: LineAcceptance::AcceptedWantMore,
+                        highlighted: highlights,
+                    });
+                }
+                LineAcceptance::RejectedDone => {
+                    self.sub_highlighter = None;
+
+                    // Fall through here and let the outer logic do its thing
+                }
+            }
+        }
+
+        // Not in a sub-highlighter: look for hunk header
+        if let Some(hunk_highlighter) =
+            HunkLinesHighlighter::from_line(line, self.formatter.clone())
+        {
+            self.sub_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(Response {
-                line_accepted: LineAcceptance::AcceptedDone,
-                highlighted: vec![StringFuture::from_string(self.highlighted())],
+                line_accepted: LineAcceptance::AcceptedWantMore,
+                highlighted: vec![],
             });
         }
 
-        return Err("--- was not followed by +++".to_string());
+        // Otherwise, treat as plain line (metadata, blank, etc)
+        return Ok(Response {
+            line_accepted: LineAcceptance::AcceptedWantMore,
+            highlighted: vec![StringFuture::from_string(line.to_string() + "\n")],
+        });
     }
 
-    fn consume_eof(&mut self, _thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
-        return Err("Input ended early, --- should have been followed by +++".to_string());
+    fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
+        if self.new_name.is_empty() {
+            return Err("Input ended early, --- should have been followed by +++".to_string());
+        }
+        if let Some(ref mut sub) = self.sub_highlighter {
+            return sub.consume_eof(thread_pool);
+        }
+        Ok(vec![])
     }
 }
 
@@ -43,7 +103,7 @@ impl FileHighlighter {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
-    pub(crate) fn from_line(line: &str) -> Option<Self>
+    pub(crate) fn from_line(line: &str, formatter: Formatter) -> Option<Self>
     where
         Self: Sized,
     {
@@ -54,9 +114,11 @@ impl FileHighlighter {
         let highlighter = FileHighlighter {
             old_name: line.strip_prefix("--- ").unwrap().to_string(),
             new_name: String::new(),
+            formatter,
+            sub_highlighter: None,
         };
 
-        return Some(highlighter);
+        Some(highlighter)
     }
 
     fn highlighted(&self) -> String {
@@ -379,13 +441,20 @@ mod tests {
     const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
     const DEFAULT_COLOR: &str = "\x1b[39m";
 
+    use crate::refiner::tests::FORMATTER;
     fn highlight_header_lines(old_line: &str, new_line: &str) -> String {
-        let mut test_me = FileHighlighter::from_line(old_line).unwrap();
-        let mut response = test_me.consume_line(new_line, &ThreadPool::new(1)).unwrap();
-        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
+        let mut test_me = FileHighlighter::from_line(old_line, FORMATTER.clone()).unwrap();
+        let response = test_me.consume_line(new_line, &ThreadPool::new(1)).unwrap();
+        assert_eq!(LineAcceptance::AcceptedWantMore, response.line_accepted);
         assert_eq!(1, response.highlighted.len());
 
-        let highlighted = response.highlighted[0].get().to_string();
+        let highlighted = response
+            .highlighted
+            .into_iter()
+            .next()
+            .unwrap()
+            .get()
+            .to_string();
         return highlighted;
     }
 
