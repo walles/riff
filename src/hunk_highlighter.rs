@@ -89,13 +89,17 @@ impl HunkLinesHighlighter {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
-    pub(crate) fn from_line(line: &str, formatter: Formatter) -> Option<Self>
+    pub(crate) fn from_line(
+        line: &str,
+        formatter: Formatter,
+        file_url: &Option<url::Url>,
+    ) -> Option<Self>
     where
         Self: Sized,
     {
         if let Some(hunk_header) = HunkHeader::parse(line) {
             return Some(HunkLinesHighlighter {
-                hunk_header: Some(hunk_header.render()),
+                hunk_header: Some(hunk_header.render(file_url)),
                 remaining_line_counts: hunk_header.linecounts.clone(),
                 initial_line_counts: hunk_header.linecounts,
                 lines_highlighter: None,
@@ -287,7 +291,7 @@ mod tests {
         let thread_pool = ThreadPool::new(1);
 
         let mut test_me =
-            HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@", FORMATTER.clone()).unwrap();
+            HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@", FORMATTER.clone(), &None).unwrap();
 
         // First call to consume_line() should get us the hunk header
         let mut result = test_me
@@ -329,7 +333,7 @@ mod tests {
     #[test]
     fn test_decrease_remaining_line_count() {
         let mut test_me =
-            HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@", FORMATTER.clone()).unwrap();
+            HunkLinesHighlighter::from_line("@@ -1,2 +1,2 @@", FORMATTER.clone(), &None).unwrap();
         assert_eq!(test_me.remaining_line_counts, vec![2, 2]);
 
         test_me.decrease_remaining_line_counts("+").unwrap();
@@ -357,7 +361,7 @@ mod tests {
         }
 
         let mut test_me =
-            HunkLinesHighlighter::from_line("@@ -1,1 +1,2 @@", FORMATTER.clone()).unwrap();
+            HunkLinesHighlighter::from_line("@@ -1,1 +1,2 @@", FORMATTER.clone(), &None).unwrap();
         assert_eq!(test_me.remaining_line_counts, vec![1, 2]);
 
         let thread_pool = ThreadPool::new(1);
@@ -391,7 +395,8 @@ mod tests {
     #[test]
     fn test_decrease_remaining_line_count_merge() {
         let mut test_me =
-            HunkLinesHighlighter::from_line("@@@ -1,5 -1,5 +1,5 @@@", FORMATTER.clone()).unwrap();
+            HunkLinesHighlighter::from_line("@@@ -1,5 -1,5 +1,5 @@@", FORMATTER.clone(), &None)
+                .unwrap();
         assert_eq!(test_me.remaining_line_counts, vec![5, 5, 5]);
 
         test_me.decrease_remaining_line_counts(" -").unwrap();

@@ -23,8 +23,11 @@ pub(crate) struct FileHighlighter {
     /// Used when spawning hunk highlighters
     formatter: Formatter,
 
-    // Current hunk highlighter, if any
+    /// Current hunk highlighter, if any
     sub_highlighter: Option<Box<dyn LinesHighlighter>>,
+
+    /// URL to the file we're currently highlighting, if any
+    url: Option<url::Url>,
 }
 
 impl LinesHighlighter for FileHighlighter {
@@ -35,6 +38,7 @@ impl LinesHighlighter for FileHighlighter {
             // Header phase: waiting for +++
             if let Some(new_name) = line.strip_prefix("+++ ") {
                 self.new_name.push_str(new_name);
+                self.url = hyperlink_filename(new_name);
                 return Ok(Response {
                     line_accepted: LineAcceptance::AcceptedWantMore,
                     highlighted: vec![StringFuture::from_string(self.highlighted())],
@@ -72,7 +76,7 @@ impl LinesHighlighter for FileHighlighter {
 
         // Not in a sub-highlighter: look for hunk header
         if let Some(hunk_highlighter) =
-            HunkLinesHighlighter::from_line(line, self.formatter.clone())
+            HunkLinesHighlighter::from_line(line, self.formatter.clone(), &self.url)
         {
             self.sub_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(Response {
@@ -116,6 +120,7 @@ impl FileHighlighter {
             new_name: String::new(),
             formatter,
             sub_highlighter: None,
+            url: None, // Will be set in consume_line() based on the +++ line
         };
 
         Some(highlighter)
@@ -173,7 +178,40 @@ impl FileHighlighter {
     }
 }
 
-fn hyperlink_filename(just_path: &mut [StyledToken], just_filename: &mut [StyledToken]) {
+// FIXME: Should this function try stripping git prefixes like "a/" and "b/"?
+fn hyperlink_filename(filename: &str) -> Option<url::Url> {
+    let mut path = std::path::PathBuf::from(filename);
+
+    // from_file_path() below requires an absolute path
+    if !path.is_absolute() {
+        if let Ok(current_dir) = std::env::current_dir() {
+            path = current_dir.join(path);
+        } else {
+            // Getting the current directory failed, we can't hyperlink
+            return None;
+        }
+    }
+
+    if path == std::path::Path::new("/dev/null") {
+        // Hyperlinking /dev/null would just be confusing
+        return None;
+    }
+
+    if !path.exists() {
+        return None;
+    }
+
+    let url = url::Url::from_file_path(&path).ok();
+    if url.is_none() {
+        // If we get here, maybe the absolutization under path.isAbsolute() a
+        // few lines up failed?
+        return None;
+    }
+
+    return url;
+}
+
+fn hyperlink_tokenized(just_path: &mut [StyledToken], just_filename: &mut [StyledToken]) {
     // Convert filename_tokens into a String
     let mut filename = String::new();
     for token in just_path.iter() {
@@ -183,43 +221,14 @@ fn hyperlink_filename(just_path: &mut [StyledToken], just_filename: &mut [Styled
         filename.push_str(&token.token);
     }
 
-    if filename == "/dev/null" {
-        // Hyperlinking /dev/null would just be confusing
-        return;
-    }
-
-    let mut path = std::path::PathBuf::from(filename);
-
-    // from_file_path() below requires an absolute path
-    if !path.is_absolute() {
-        let maybe_current_dir = std::env::current_dir();
-        if let Ok(current_dir) = maybe_current_dir {
-            path = current_dir.join(path);
-        } else {
-            // Getting the current directory failed, we can't hyperlink
-            return;
+    if let Some(url) = hyperlink_filename(&filename) {
+        // Actually link the tokens
+        for token in just_path.iter_mut() {
+            token.url = Some(url.clone());
         }
-    }
-
-    if !path.exists() {
-        return;
-    }
-
-    let url = url::Url::from_file_path(&path).ok();
-    if url.is_none() {
-        // If we get here, maybe the absolutization under path.isAbsolute() a
-        // few lines up failed?
-        return;
-    }
-
-    let url = url.unwrap();
-
-    // Actually link the tokens
-    for token in just_path.iter_mut() {
-        token.url = Some(url.clone());
-    }
-    for token in just_filename.iter_mut() {
-        token.url = Some(url.clone());
+        for token in just_filename.iter_mut() {
+            token.url = Some(url.clone());
+        }
     }
 }
 
@@ -397,9 +406,9 @@ pub(crate) fn decorate_paths(old_tokens: &mut [StyledToken], new_tokens: &mut [S
     if old_split.just_path == new_split.just_path
         && old_split.just_filename == new_split.just_filename
     {
-        hyperlink_filename(old_split.just_path, old_split.just_filename);
+        hyperlink_tokenized(old_split.just_path, old_split.just_filename);
     }
-    hyperlink_filename(new_split.just_path, new_split.just_filename);
+    hyperlink_tokenized(new_split.just_path, new_split.just_filename);
 
     lowlight_dev_null(old_split.just_path, old_split.just_filename);
     lowlight_dev_null(new_split.just_path, new_split.just_filename);
@@ -545,7 +554,7 @@ mod tests {
         let mut row = vec![StyledToken::new("README.md".to_string(), Style::Context)];
 
         // Act: call the function
-        hyperlink_filename(&mut [], &mut row);
+        hyperlink_tokenized(&mut [], &mut row);
 
         // Assert: the file:/// URL points to our README.md file
         let url = row[0].url.as_ref().expect("Token should have a URL");
