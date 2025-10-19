@@ -121,7 +121,7 @@ impl HunkHeader {
     }
 
     /// Render into an ANSI highlighted string, not ending in a newline.
-    pub fn render(&self, url: &Option<url::Url>) -> String {
+    pub fn render(&self, url: &Option<url::Url>) -> Result<String, String> {
         let mut rendered = String::new();
         rendered.push_str(HUNK_HEADER);
         rendered.push_str(&self.ats);
@@ -148,15 +148,16 @@ impl HunkHeader {
             if let Some(last_start) = self.starts.last().cloned() {
                 rendered.push_str(&hyperlink(title, url, last_start));
             } else {
-                // No start lines parsed; render plain title without hyperlink.
-                // We should never get here.
-                rendered.push_str(title);
+                return Err(format!(
+                    "HunkHeader has no start lines when rendering title: {:?}",
+                    self
+                ));
             }
         }
 
         rendered.push_str(NORMAL);
 
-        return rendered;
+        return Ok(rendered);
     }
 }
 

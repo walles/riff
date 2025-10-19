@@ -76,7 +76,7 @@ impl LinesHighlighter for FileHighlighter {
 
         // Not in a sub-highlighter: look for hunk header
         if let Some(hunk_highlighter) =
-            HunkLinesHighlighter::from_line(line, self.formatter.clone(), &self.url)
+            HunkLinesHighlighter::from_line(line, self.formatter.clone(), &self.url)?
         {
             self.sub_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(Response {

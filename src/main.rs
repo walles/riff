@@ -11,7 +11,6 @@ use clap::Parser;
 use clap::ValueEnum;
 use git_version::git_version;
 use line_collector::LineCollector;
-use log::error;
 use logging::init_logger;
 use refiner::Formatter;
 use std::io::{self, IsTerminal};
@@ -206,7 +205,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(
                 if let Err(message) =
                     line_collector.consume_line(&line, stream_started_with_esc.unwrap_or(false))
                 {
-                    error!("{}", format_error(message, line_number, &line));
+                    log::error!("{}", format_error(message, line_number, &line));
                 }
             }
             break;
@@ -228,7 +227,7 @@ fn highlight_diff<W: io::Write + Send + 'static>(
             if let Err(message) =
                 line_collector.consume_line(&line, stream_started_with_esc.unwrap_or(false))
             {
-                error!("{}", format_error(message, line_number, &line));
+                log::error!("{}", format_error(message, line_number, &line));
             }
             line.clear();
             line_number += 1;
