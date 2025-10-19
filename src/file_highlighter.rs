@@ -133,7 +133,7 @@ impl FileHighlighter {
             url: None, // Will be set in consume_line() based on the +++ line
         };
 
-        Some(highlighter)
+        return Some(highlighter);
     }
 
     fn highlighted(&self) -> String {
