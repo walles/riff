@@ -30,6 +30,16 @@ pub(crate) struct FileHighlighter {
     url: Option<url::Url>,
 }
 
+/// Remove trailing diff timestamp from a string, retaining only the filename
+/// portion. Separator is either a tab or two spaces.
+fn without_timestamp(name: &str) -> &str {
+    if let Some(idx) = name.rfind('\t').or_else(|| name.rfind("  ")) {
+        return &name[..idx];
+    } else {
+        return name;
+    }
+}
+
 impl LinesHighlighter for FileHighlighter {
     fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String> {
         assert!(!self.old_name.is_empty());
@@ -38,7 +48,7 @@ impl LinesHighlighter for FileHighlighter {
             // Header phase: waiting for +++
             if let Some(new_name) = line.strip_prefix("+++ ") {
                 self.new_name.push_str(new_name);
-                self.url = hyperlink_filename(new_name);
+                self.url = hyperlink_filename(without_timestamp(new_name));
                 return Ok(Response {
                     line_accepted: LineAcceptance::AcceptedWantMore,
                     highlighted: vec![StringFuture::from_string(self.highlighted())],
@@ -490,6 +500,28 @@ mod tests {
              +++ /Users/johan/xsrc/riff/README.md  2024-01-29 14:56:40\n",
             plain.as_str()
         );
+    }
+
+    #[test]
+    fn test_header_with_timestamp_should_hyperlink() {
+        // Desired behavior: timestamps in --- / +++ lines should NOT block
+        // hyperlink creation. Currently this will FAIL because url stays None.
+        let mut test_me =
+            FileHighlighter::from_line("--- README.md\t2024-01-01 12:00:00", FORMATTER.clone())
+                .unwrap();
+        let response = test_me
+            .consume_line("+++ README.md\t2024-01-02 12:00:00", &ThreadPool::new(1))
+            .unwrap();
+        assert_eq!(LineAcceptance::AcceptedWantMore, response.line_accepted);
+
+        let path = test_me
+            .url
+            .unwrap()
+            .to_file_path()
+            .expect("Hyperlink should be a file path");
+        let canonical = std::fs::canonicalize(&path).expect("Path should canonicalize");
+        let expected = std::fs::canonicalize("README.md").expect("README.md should exist");
+        assert_eq!(canonical, expected, "Hyperlink should point to README.md");
     }
 
     #[test]
