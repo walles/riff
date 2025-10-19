@@ -10,40 +10,114 @@ use crate::token_collector::{
     render, Style, StyledToken, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
 };
 
-pub(crate) struct PlusMinusHeaderHighlighter {
+use crate::hunk_highlighter::HunkLinesHighlighter;
+use crate::refiner::Formatter;
+
+pub(crate) struct FileHighlighter {
     /// May or may not end with one or more tabs + a timestamp string.
     old_name: String,
 
     /// May or may not end with one or more tabs + a timestamp string.
     new_name: String,
+
+    /// Used when spawning hunk highlighters
+    formatter: Formatter,
+
+    /// Current hunk highlighter, if any
+    sub_highlighter: Option<Box<dyn LinesHighlighter>>,
+
+    /// URL to the file we're currently highlighting, if any
+    url: Option<url::Url>,
 }
 
-impl LinesHighlighter for PlusMinusHeaderHighlighter {
-    fn consume_line(&mut self, line: &str, _thread_pool: &ThreadPool) -> Result<Response, String> {
-        assert!(!self.old_name.is_empty());
-        assert!(self.new_name.is_empty());
+/// Remove trailing diff timestamp from a string, retaining only the filename
+/// portion. Separator is either a tab or two spaces.
+fn without_timestamp(name: &str) -> &str {
+    if let Some(idx) = name.rfind('\t').or_else(|| name.rfind("  ")) {
+        return &name[..idx];
+    } else {
+        return name;
+    }
+}
 
-        if let Some(new_name) = line.strip_prefix("+++ ") {
-            self.new_name.push_str(new_name);
+impl LinesHighlighter for FileHighlighter {
+    fn consume_line(&mut self, line: &str, thread_pool: &ThreadPool) -> Result<Response, String> {
+        assert!(!self.old_name.is_empty());
+
+        if self.new_name.is_empty() {
+            // Header phase: waiting for +++
+            if let Some(new_name) = line.strip_prefix("+++ ") {
+                self.new_name.push_str(new_name);
+                self.url = hyperlink_filename(without_timestamp(new_name));
+                return Ok(Response {
+                    line_accepted: LineAcceptance::AcceptedWantMore,
+                    highlighted: vec![StringFuture::from_string(self.highlighted())],
+                });
+            }
+            return Err("--- was not followed by +++".to_string());
+        }
+
+        // We are now past the --- / +++ headers and are dealing with the body
+        let mut highlights: Vec<StringFuture> = Vec::new();
+        if let Some(ref mut highlighter) = self.sub_highlighter {
+            let resp = highlighter.consume_line(line, thread_pool)?;
+            highlights = resp.highlighted;
+            match resp.line_accepted {
+                LineAcceptance::AcceptedWantMore => {
+                    return Ok(Response {
+                        line_accepted: LineAcceptance::AcceptedWantMore,
+                        highlighted: highlights,
+                    });
+                }
+                LineAcceptance::AcceptedDone => {
+                    self.sub_highlighter = None;
+                    return Ok(Response {
+                        line_accepted: LineAcceptance::AcceptedWantMore,
+                        highlighted: highlights,
+                    });
+                }
+                LineAcceptance::RejectedDone => {
+                    self.sub_highlighter = None;
+
+                    // Fall through here and let the outer logic do its thing
+                }
+            }
+        }
+
+        // Not in a sub-highlighter: look for hunk header
+        if let Some(hunk_highlighter) =
+            HunkLinesHighlighter::from_line(line, self.formatter.clone(), &self.url)?
+        {
+            self.sub_highlighter = Some(Box::new(hunk_highlighter));
             return Ok(Response {
-                line_accepted: LineAcceptance::AcceptedDone,
-                highlighted: vec![StringFuture::from_string(self.highlighted())],
+                line_accepted: LineAcceptance::AcceptedWantMore,
+                highlighted: highlights,
             });
         }
 
-        return Err("--- was not followed by +++".to_string());
+        // Otherwise we're done
+        return Ok(Response {
+            line_accepted: LineAcceptance::RejectedDone,
+            highlighted: highlights,
+        });
     }
 
-    fn consume_eof(&mut self, _thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
-        return Err("Input ended early, --- should have been followed by +++".to_string());
+    fn consume_eof(&mut self, thread_pool: &ThreadPool) -> Result<Vec<StringFuture>, String> {
+        if self.new_name.is_empty() {
+            return Err("Input ended early, --- should have been followed by +++".to_string());
+        }
+        if let Some(ref mut sub) = self.sub_highlighter {
+            return sub.consume_eof(thread_pool);
+        }
+        Ok(vec![])
     }
 }
 
-impl PlusMinusHeaderHighlighter {
+impl FileHighlighter {
     /// Create a new LinesHighlighter from a line of input.
     ///
     /// Returns None if this line doesn't start a new LinesHighlighter.
-    pub(crate) fn from_line(line: &str) -> Option<Self>
+    pub(crate) fn from_line(line: &str, formatter: Formatter) -> Option<Self>
     where
         Self: Sized,
     {
@@ -51,9 +125,12 @@ impl PlusMinusHeaderHighlighter {
             return None;
         }
 
-        let highlighter = PlusMinusHeaderHighlighter {
+        let highlighter = FileHighlighter {
             old_name: line.strip_prefix("--- ").unwrap().to_string(),
             new_name: String::new(),
+            formatter,
+            sub_highlighter: None,
+            url: None, // Will be set in consume_line() based on the +++ line
         };
 
         return Some(highlighter);
@@ -111,7 +188,49 @@ impl PlusMinusHeaderHighlighter {
     }
 }
 
-fn hyperlink_filename(just_path: &mut [StyledToken], just_filename: &mut [StyledToken]) {
+/// This function will try to find the file, either by the passed-in name or by
+/// stripping a/ or b/ prefixes.
+fn hyperlink_filename(filename: &str) -> Option<url::Url> {
+    let mut raw_candidates: Vec<&str> = Vec::new();
+    raw_candidates.push(filename);
+    if let Some(no_a_prefix) = filename.strip_prefix("a/") {
+        raw_candidates.push(no_a_prefix);
+    }
+    if let Some(no_b_prefix) = filename.strip_prefix("b/") {
+        raw_candidates.push(no_b_prefix);
+    }
+
+    for candidate in raw_candidates {
+        if candidate == "/dev/null" {
+            continue;
+        }
+
+        let mut path = std::path::PathBuf::from(candidate);
+        if !path.is_absolute() {
+            if let Ok(cwd) = std::env::current_dir() {
+                path = cwd.join(&path);
+            }
+        }
+
+        if !path.exists() {
+            continue;
+        }
+
+        // Try canonicalize for nicer / realpath output, fall back if it fails.
+        let canonical = path.canonicalize().unwrap_or(path);
+        if canonical == std::path::Path::new("/dev/null") {
+            continue;
+        }
+
+        if let Ok(url) = url::Url::from_file_path(&canonical) {
+            return Some(url);
+        }
+    }
+
+    return None;
+}
+
+fn hyperlink_tokenized(just_path: &mut [StyledToken], just_filename: &mut [StyledToken]) {
     // Convert filename_tokens into a String
     let mut filename = String::new();
     for token in just_path.iter() {
@@ -121,43 +240,14 @@ fn hyperlink_filename(just_path: &mut [StyledToken], just_filename: &mut [Styled
         filename.push_str(&token.token);
     }
 
-    if filename == "/dev/null" {
-        // Hyperlinking /dev/null would just be confusing
-        return;
-    }
-
-    let mut path = std::path::PathBuf::from(filename);
-
-    // from_file_path() below requires an absolute path
-    if !path.is_absolute() {
-        let maybe_current_dir = std::env::current_dir();
-        if let Ok(current_dir) = maybe_current_dir {
-            path = current_dir.join(path);
-        } else {
-            // Getting the current directory failed, we can't hyperlink
-            return;
+    if let Some(url) = hyperlink_filename(&filename) {
+        // Actually link the tokens
+        for token in just_path.iter_mut() {
+            token.url = Some(url.clone());
         }
-    }
-
-    if !path.exists() {
-        return;
-    }
-
-    let url = url::Url::from_file_path(&path).ok();
-    if url.is_none() {
-        // If we get here, maybe the absolutization under path.isAbsolute() a
-        // few lines up failed?
-        return;
-    }
-
-    let url = url.unwrap();
-
-    // Actually link the tokens
-    for token in just_path.iter_mut() {
-        token.url = Some(url.clone());
-    }
-    for token in just_filename.iter_mut() {
-        token.url = Some(url.clone());
+        for token in just_filename.iter_mut() {
+            token.url = Some(url.clone());
+        }
     }
 }
 
@@ -335,9 +425,9 @@ pub(crate) fn decorate_paths(old_tokens: &mut [StyledToken], new_tokens: &mut [S
     if old_split.just_path == new_split.just_path
         && old_split.just_filename == new_split.just_filename
     {
-        hyperlink_filename(old_split.just_path, old_split.just_filename);
+        hyperlink_tokenized(old_split.just_path, old_split.just_filename);
     }
-    hyperlink_filename(new_split.just_path, new_split.just_filename);
+    hyperlink_tokenized(new_split.just_path, new_split.just_filename);
 
     lowlight_dev_null(old_split.just_path, old_split.just_filename);
     lowlight_dev_null(new_split.just_path, new_split.just_filename);
@@ -379,13 +469,20 @@ mod tests {
     const NOT_INVERSE_VIDEO: &str = "\x1b[27m";
     const DEFAULT_COLOR: &str = "\x1b[39m";
 
+    use crate::refiner::tests::FORMATTER;
     fn highlight_header_lines(old_line: &str, new_line: &str) -> String {
-        let mut test_me = PlusMinusHeaderHighlighter::from_line(old_line).unwrap();
-        let mut response = test_me.consume_line(new_line, &ThreadPool::new(1)).unwrap();
-        assert_eq!(LineAcceptance::AcceptedDone, response.line_accepted);
+        let mut test_me = FileHighlighter::from_line(old_line, FORMATTER.clone()).unwrap();
+        let response = test_me.consume_line(new_line, &ThreadPool::new(1)).unwrap();
+        assert_eq!(LineAcceptance::AcceptedWantMore, response.line_accepted);
         assert_eq!(1, response.highlighted.len());
 
-        let highlighted = response.highlighted[0].get().to_string();
+        let highlighted = response
+            .highlighted
+            .into_iter()
+            .next()
+            .unwrap()
+            .get()
+            .to_string();
         return highlighted;
     }
 
@@ -403,6 +500,28 @@ mod tests {
              +++ /Users/johan/xsrc/riff/README.md  2024-01-29 14:56:40\n",
             plain.as_str()
         );
+    }
+
+    #[test]
+    fn test_header_with_timestamp_should_hyperlink() {
+        // Desired behavior: timestamps in --- / +++ lines should NOT block
+        // hyperlink creation. Currently this will FAIL because url stays None.
+        let mut test_me =
+            FileHighlighter::from_line("--- README.md\t2024-01-01 12:00:00", FORMATTER.clone())
+                .unwrap();
+        let response = test_me
+            .consume_line("+++ README.md\t2024-01-02 12:00:00", &ThreadPool::new(1))
+            .unwrap();
+        assert_eq!(LineAcceptance::AcceptedWantMore, response.line_accepted);
+
+        let path = test_me
+            .url
+            .unwrap()
+            .to_file_path()
+            .expect("Hyperlink should be a file path");
+        let canonical = std::fs::canonicalize(&path).expect("Path should canonicalize");
+        let expected = std::fs::canonicalize("README.md").expect("README.md should exist");
+        assert_eq!(canonical, expected, "Hyperlink should point to README.md");
     }
 
     #[test]
@@ -476,7 +595,7 @@ mod tests {
         let mut row = vec![StyledToken::new("README.md".to_string(), Style::Context)];
 
         // Act: call the function
-        hyperlink_filename(&mut [], &mut row);
+        hyperlink_tokenized(&mut [], &mut row);
 
         // Assert: the file:/// URL points to our README.md file
         let url = row[0].url.as_ref().expect("Token should have a URL");
@@ -484,6 +603,70 @@ mod tests {
         let url_canon = std::fs::canonicalize(&url_path).expect("URL file should exist");
         let readme_canon = std::fs::canonicalize("README.md").expect("README.md should exist");
         assert_eq!(url_canon, readme_canon, "Canonicalized paths should match");
+    }
+
+    #[test]
+    fn test_hyperlink_filename_happy_path() {
+        // Arrange: ensure the relative path exists (defensive check)
+        assert!(
+            std::path::Path::new("README.md").exists(),
+            "README.md should exist in crate root"
+        );
+
+        // Act: call the function directly
+        let url_opt = super::hyperlink_filename("README.md");
+
+        // Assert: we got Some(url) and it resolves back to the same file
+        assert!(
+            url_opt.is_some(),
+            "Expected Some(url::Url) for existing relative path"
+        );
+        let url = url_opt.unwrap();
+        assert_eq!(url.scheme(), "file", "Scheme should be file");
+        let path_from_url = url.to_file_path().expect("Should convert URL back to path");
+        assert!(path_from_url.exists(), "Path from URL should exist");
+
+        let expected = std::fs::canonicalize("README.md").expect("Canonicalize README.md");
+        let actual = std::fs::canonicalize(&path_from_url).expect("Canonicalize URL path");
+        assert_eq!(actual, expected, "Canonical paths must match");
+    }
+
+    #[test]
+    fn test_hyperlink_filename_missing_file() {
+        // Act: call the function directly
+        let url_opt = super::hyperlink_filename("does-not-exist.txt");
+
+        // Assert: we got Some(url) and it resolves back to the same file
+        assert!(
+            url_opt.is_none(),
+            "Expected None for non-existing relative path"
+        );
+    }
+
+    #[test]
+    fn test_hyperlink_filename_git_prefix() {
+        // Arrange: ensure the relative path exists (defensive check)
+        assert!(
+            std::path::Path::new("README.md").exists(),
+            "README.md should exist in crate root"
+        );
+
+        // Act: call the function with git-style prefix
+        let url_opt = super::hyperlink_filename("a/README.md");
+
+        // Assert: we got Some(url) and it resolves back to the same file
+        assert!(
+            url_opt.is_some(),
+            "Expected Some(url::Url) for git-style prefixed path"
+        );
+        let url = url_opt.unwrap();
+        assert_eq!(url.scheme(), "file", "Scheme should be file");
+        let path_from_url = url.to_file_path().expect("Should convert URL back to path");
+        assert!(path_from_url.exists(), "Path from URL should exist");
+
+        let expected = std::fs::canonicalize("README.md").expect("Canonicalize README.md");
+        let actual = std::fs::canonicalize(&path_from_url).expect("Canonicalize URL path");
+        assert_eq!(actual, expected, "Canonical paths must match");
     }
 
     #[test]
