@@ -146,7 +146,12 @@ impl HunkHeader {
             rendered.push(' ');
             rendered.push_str(BOLD);
             if let Some(last_start) = self.starts.last().cloned() {
-                rendered.push_str(&hyperlink(title, url, last_start));
+                // Skip this number of context lines to end up at the first
+                // modified line. There are usually three context lines. If
+                // people start complaining we'll have to detect the actual
+                // number.
+                let context_lines_skip = 3;
+                rendered.push_str(&hyperlink(title, url, last_start + context_lines_skip));
             } else {
                 return Err(format!(
                     "HunkHeader has no start lines when rendering title: {:?}",
