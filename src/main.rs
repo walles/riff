@@ -138,15 +138,12 @@ impl ColorOption {
 /// How will unchanged line parts be styled?
 #[derive(ValueEnum, Clone, Default, Debug)]
 pub(crate) enum UnchangedStyle {
-    /// No special styling, just red / green like the rest of the line
+    /// Unchanged text is yellow, old unchanged is faint
     #[default]
-    None,
-
-    /// Old unchanged faint yellow, new unchanged plain yellow
     Yellow,
 
-    /// Try it and report back! Same as yellow for now.
-    Experimental,
+    /// Legacy mode
+    RedGreen,
 }
 
 fn format_error(message: String, line_number: usize, line: &[u8]) -> String {
@@ -515,10 +512,9 @@ fn main() {
         panic!("Panicking on purpose");
     }
 
-    let formatter = match options.unchanged_style.unwrap_or(UnchangedStyle::None) {
-        UnchangedStyle::None => Formatter::default(),
+    let formatter = match options.unchanged_style.unwrap_or(UnchangedStyle::Yellow) {
+        UnchangedStyle::RedGreen => Formatter::default(),
         UnchangedStyle::Yellow => Formatter::yellow(),
-        UnchangedStyle::Experimental => Formatter::yellow(),
     };
 
     if let (Some(file1), Some(file2)) = (options.fd1, options.fd2) {
