@@ -150,40 +150,59 @@ pub fn without_ansi_escape_codes(line: &[u8]) -> Vec<u8> {
         Normal,
         Escape,
         EscapeBracket,
+        Osc,
+        OscSequence,
     }
 
     let mut state = State::Normal;
     let mut without_ansi = Vec::with_capacity(line.len());
-
-    for byte in line {
+    let mut i = 0;
+    while i < line.len() {
+        let byte = line[i];
         match state {
             State::Normal => {
-                if *byte == b'\x1b' {
+                if byte == b'\x1b' {
                     state = State::Escape;
                 } else {
-                    without_ansi.push(*byte);
+                    without_ansi.push(byte);
                 }
             }
             State::Escape => {
-                if *byte == b'[' {
+                if byte == b'[' {
                     state = State::EscapeBracket;
+                } else if byte == b']' {
+                    state = State::Osc;
                 } else {
                     // Not an ANSI sequence
                     state = State::Normal;
-
-                    // Push the characters that we thought were the escape
-                    // sequence's opening
                     without_ansi.push(b'\x1b');
-                    without_ansi.push(*byte);
+                    without_ansi.push(byte);
                 }
             }
             State::EscapeBracket => {
-                if !byte.is_ascii_digit() && *byte != b';' {
-                    // Neither digit nor semicolon, this marks the end of the sequence
+                if !byte.is_ascii_digit() && byte != b';' {
+                    // End of SGR sequence
                     state = State::Normal;
                 }
             }
+            State::Osc => {
+                // OSC sequence, look for the next '\x1b\\' (ST)
+                // OSC 8 is hyperlink, but we strip all OSC for now
+                // Find the next '\x1b' followed by '\\'
+                // We are at the ']' after '\x1b', so skip until we see '\x1b\\'
+                state = State::OscSequence;
+            }
+            State::OscSequence => {
+                // Look for '\x1b\\' (ST)
+                if byte == b'\x1b' && i + 1 < line.len() && line[i + 1] == b'\\' {
+                    // End of OSC sequence
+                    state = State::Normal;
+                    i += 1; // Skip the '\\' as well
+                }
+                // Otherwise, keep skipping
+            }
         }
+        i += 1;
     }
 
     return without_ansi;
@@ -212,6 +231,18 @@ mod tests {
     fn test_multi_sgr() {
         let line = b"hel\x1b[33;34mlo".to_vec();
         assert_eq!(without_ansi_escape_codes(&line), b"hello");
+    }
+
+    #[test]
+    fn test_strip_hyperlink() {
+        // OSC 8 hyperlink: \x1b]8;;https://example.com\x1b\\
+        let line = b"foo\x1b]8;;https://example.com\x1b\\bar".to_vec();
+        // Expect "foobar" after removing OSC 8 hyperlink
+        assert_eq!(without_ansi_escape_codes(&line), b"foobar");
+
+        // OSC 8 hyperlink removal: \x1b]8;;\x1b\\
+        let line2 = b"foo\x1b]8;;\x1b\\bar".to_vec();
+        assert_eq!(without_ansi_escape_codes(&line2), b"foobar");
     }
 
     #[test]
