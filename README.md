@@ -55,10 +55,10 @@ unchanged line parts.
 brew install riff
 ```
 
-## With [Archlinux User Repository (AUR)](https://aur.archlinux.org/packages/riffdiff)
+## With [Archlinux User Repository (AUR)](https://aur.archlinux.org/packages/riffdiff-bin)
 
 ```
-paru -S riffdiff
+paru -S riffdiff-bin
 ```
 
 ## From [the Rust Crate](https://crates.io/crates/riffdiff)
