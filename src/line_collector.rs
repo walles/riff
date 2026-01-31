@@ -111,12 +111,8 @@ impl Drop for LineCollector {
         // Flush outstanding lines
         self.drain_plain();
 
-        if self.lines_highlighter.is_some() {
-            let result = self
-                .lines_highlighter
-                .as_mut()
-                .unwrap()
-                .consume_eof(&self.thread_pool);
+        if let Some(lines_highlighter) = self.lines_highlighter.as_mut() {
+            let result = lines_highlighter.consume_eof(&self.thread_pool);
             if let Err(error) = result {
                 self.lines_highlighter = None;
                 eprintln!("ERROR at end of input: {error}");
