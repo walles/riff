@@ -524,6 +524,32 @@ mod tests {
         assert_eq!(canonical, expected, "Hyperlink should point to README.md");
     }
 
+    /// Clicking the `--- ` / `+++ ` header should land in the same place as
+    /// clicking the first section header below it.
+    #[test]
+    fn test_header_links_to_first_hunk_line() {
+        let thread_pool = ThreadPool::new(1);
+        let mut test_me = FileHighlighter::from_line("--- README.md", FORMATTER.clone()).unwrap();
+
+        test_me.consume_line("+++ README.md", &thread_pool).unwrap();
+        let response = test_me
+            .consume_line("@@ -10,3 +10,3 @@ Some section", &thread_pool)
+            .unwrap();
+
+        let mut highlighted = String::new();
+        for mut future in response.highlighted {
+            highlighted.push_str(future.get());
+        }
+
+        // The section header links to the start line plus three context lines,
+        // and the file header should agree with it.
+        assert!(
+            highlighted.contains("README.md#13"),
+            "Expected a hyperlink to line 13 of README.md, got: {:?}",
+            highlighted
+        );
+    }
+
     #[test]
     fn test_brighten_filename() {
         let highlighted = highlight_header_lines("--- a/x/y/z.txt", "+++ b/x/y/z.txt");
