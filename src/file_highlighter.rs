@@ -71,10 +71,35 @@ impl LinesHighlighter for FileHighlighter {
         let mut highlights: Vec<StringFuture> = Vec::new();
 
         if !self.header_rendered {
-            let first_hunk_line =
-                HunkHeader::parse(line).and_then(|h| h.first_modified_line().ok());
+            // This is the first body line. Parse it as a hunk header once,
+            // both to pick the header's link line and, if it is one, to
+            // become the hunk sub-highlighter below (avoiding parsing it
+            // twice).
+            let parsed_hunk_header = HunkHeader::parse(line);
+            let first_hunk_line = match &parsed_hunk_header {
+                Some(hunk_header) => Some(hunk_header.first_modified_line()?),
+                None => None,
+            };
             highlights.push(StringFuture::from_string(self.highlighted(first_hunk_line)));
             self.header_rendered = true;
+
+            return match parsed_hunk_header {
+                Some(hunk_header) => {
+                    self.sub_highlighter = Some(Box::new(HunkLinesHighlighter::from_parsed(
+                        hunk_header,
+                        self.formatter.clone(),
+                        &self.url,
+                    )?));
+                    Ok(Response {
+                        line_accepted: LineAcceptance::AcceptedWantMore,
+                        highlighted: highlights,
+                    })
+                }
+                None => Ok(Response {
+                    line_accepted: LineAcceptance::RejectedDone,
+                    highlighted: highlights,
+                }),
+            };
         }
 
         if let Some(ref mut highlighter) = self.sub_highlighter {
@@ -127,8 +152,8 @@ impl LinesHighlighter for FileHighlighter {
 
         let mut return_me = vec![];
         if !self.header_rendered {
-            // No hunk ever showed up, e.g. a pure rename / mode change /
-            // binary file diff. Fall back to a plain, line-less link.
+            // No hunk ever showed up, e.g. an empty file being added/deleted,
+            // or a truncated diff. Fall back to a plain, line-less link.
             return_me.push(StringFuture::from_string(self.highlighted(None)));
             self.header_rendered = true;
         }

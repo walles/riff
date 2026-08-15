@@ -122,11 +122,10 @@ impl HunkHeader {
 
     /// The first modified line in the new file, i.e. the line a click on this
     /// hunk's title should land on.
-    ///
-    /// FIXME: Skips a guessed number of leading context lines. There are
-    /// usually three context lines. If people start complaining we'll have to
-    /// detect the actual number.
     pub fn first_modified_line(&self) -> Result<usize, String> {
+        // Skip this number of leading context lines. There are usually three
+        // context lines. If people start complaining we'll have to detect the
+        // actual number.
         let context_lines_skip = 3;
         if let Some(last_start) = self.starts.last().cloned() {
             return Ok(last_start + context_lines_skip);
