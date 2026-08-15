@@ -120,6 +120,20 @@ impl HunkHeader {
         })
     }
 
+    /// The first modified line in the new file, i.e. the line a click on this
+    /// hunk's title should land on.
+    pub fn first_modified_line(&self) -> Result<usize, String> {
+        // Skip this number of leading context lines. There are usually three
+        // context lines. If people start complaining we'll have to detect the
+        // actual number.
+        let context_lines_skip = 3;
+        if let Some(last_start) = self.starts.last().cloned() {
+            return Ok(last_start + context_lines_skip);
+        }
+
+        return Err(format!("HunkHeader has no start lines: {:?}", self));
+    }
+
     /// Render into an ANSI highlighted string, not ending in a newline.
     pub fn render(&self, url: &Option<url::Url>) -> Result<String, String> {
         let mut rendered = String::new();
@@ -145,19 +159,7 @@ impl HunkHeader {
         if let Some(title) = &self.title {
             rendered.push(' ');
             rendered.push_str(BOLD);
-            if let Some(last_start) = self.starts.last().cloned() {
-                // Skip this number of context lines to end up at the first
-                // modified line. There are usually three context lines. If
-                // people start complaining we'll have to detect the actual
-                // number.
-                let context_lines_skip = 3;
-                rendered.push_str(&hyperlink(title, url, last_start + context_lines_skip));
-            } else {
-                return Err(format!(
-                    "HunkHeader has no start lines when rendering title: {:?}",
-                    self
-                ));
-            }
+            rendered.push_str(&hyperlink(title, url, self.first_modified_line()?));
         }
 
         rendered.push_str(NORMAL);

@@ -60,7 +60,7 @@ impl RenameHighlighter {
         let old_filename = render(&LINE_STYLE_OLD_FILENAME, "", &old_tokens);
         let new_filename = render(&LINE_STYLE_NEW_FILENAME, "", &new_tokens);
 
-        decorate_paths(&mut old_tokens, &mut new_tokens);
+        decorate_paths(&mut old_tokens, &mut new_tokens, None);
 
         return format!(
             "rename from {old_filename}{NORMAL}\n{BOLD}rename to {new_filename}{NORMAL}\n"

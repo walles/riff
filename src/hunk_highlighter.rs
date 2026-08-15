@@ -98,16 +98,26 @@ impl HunkLinesHighlighter {
         Self: Sized,
     {
         if let Some(hunk_header) = HunkHeader::parse(line) {
-            return Ok(Some(HunkLinesHighlighter {
-                hunk_header: Some(hunk_header.render(file_url)?),
-                remaining_line_counts: hunk_header.linecounts.clone(),
-                initial_line_counts: hunk_header.linecounts,
-                lines_highlighter: None,
-                formatter,
-            }));
+            return Ok(Some(Self::from_parsed(hunk_header, formatter, file_url)?));
         }
 
         return Ok(None);
+    }
+
+    /// Like `from_line()`, but for a hunk header the caller has already
+    /// parsed, so the same line doesn't get parsed twice.
+    pub(crate) fn from_parsed(
+        hunk_header: HunkHeader,
+        formatter: Formatter,
+        file_url: &Option<url::Url>,
+    ) -> Result<Self, String> {
+        return Ok(HunkLinesHighlighter {
+            hunk_header: Some(hunk_header.render(file_url)?),
+            remaining_line_counts: hunk_header.linecounts.clone(),
+            initial_line_counts: hunk_header.linecounts,
+            lines_highlighter: None,
+            formatter,
+        });
     }
 
     fn consume_line_internal(

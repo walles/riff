@@ -10,6 +10,7 @@ use crate::token_collector::{
     render, Style, StyledToken, LINE_STYLE_NEW_FILENAME, LINE_STYLE_OLD_FILENAME,
 };
 
+use crate::hunk_header::HunkHeader;
 use crate::hunk_highlighter::HunkLinesHighlighter;
 use crate::refiner::Formatter;
 
@@ -28,6 +29,13 @@ pub(crate) struct FileHighlighter {
 
     /// URL to the file we're currently highlighting, if any
     url: Option<url::Url>,
+
+    /// Set once the `--- ` / `+++ ` header has been emitted.
+    ///
+    /// Emitting the header is deferred by one line so that, if that next
+    /// line is a hunk header, the header's own hyperlink can point at the
+    /// same line as the hunk header's hyperlink.
+    header_rendered: bool,
 }
 
 /// Remove trailing diff timestamp from a string, retaining only the filename
@@ -51,7 +59,9 @@ impl LinesHighlighter for FileHighlighter {
                 self.url = hyperlink_filename(without_timestamp(new_name));
                 return Ok(Response {
                     line_accepted: LineAcceptance::AcceptedWantMore,
-                    highlighted: vec![StringFuture::from_string(self.highlighted())],
+                    // The header itself is rendered from the next line, once
+                    // we know whether it's a hunk header to link to.
+                    highlighted: vec![],
                 });
             }
             return Err("--- was not followed by +++".to_string());
@@ -59,9 +69,42 @@ impl LinesHighlighter for FileHighlighter {
 
         // We are now past the --- / +++ headers and are dealing with the body
         let mut highlights: Vec<StringFuture> = Vec::new();
+
+        if !self.header_rendered {
+            // This is the first body line. Parse it as a hunk header once,
+            // both to pick the header's link line and, if it is one, to
+            // become the hunk sub-highlighter below (avoiding parsing it
+            // twice).
+            let parsed_hunk_header = HunkHeader::parse(line);
+            let first_hunk_line = match &parsed_hunk_header {
+                Some(hunk_header) => Some(hunk_header.first_modified_line()?),
+                None => None,
+            };
+            highlights.push(StringFuture::from_string(self.highlighted(first_hunk_line)));
+            self.header_rendered = true;
+
+            return match parsed_hunk_header {
+                Some(hunk_header) => {
+                    self.sub_highlighter = Some(Box::new(HunkLinesHighlighter::from_parsed(
+                        hunk_header,
+                        self.formatter.clone(),
+                        &self.url,
+                    )?));
+                    Ok(Response {
+                        line_accepted: LineAcceptance::AcceptedWantMore,
+                        highlighted: highlights,
+                    })
+                }
+                None => Ok(Response {
+                    line_accepted: LineAcceptance::RejectedDone,
+                    highlighted: highlights,
+                }),
+            };
+        }
+
         if let Some(ref mut highlighter) = self.sub_highlighter {
             let resp = highlighter.consume_line(line, thread_pool)?;
-            highlights = resp.highlighted;
+            highlights.extend(resp.highlighted);
             match resp.line_accepted {
                 LineAcceptance::AcceptedWantMore => {
                     return Ok(Response {
@@ -106,10 +149,20 @@ impl LinesHighlighter for FileHighlighter {
         if self.new_name.is_empty() {
             return Err("Input ended early, --- should have been followed by +++".to_string());
         }
-        if let Some(ref mut sub) = self.sub_highlighter {
-            return sub.consume_eof(thread_pool);
+
+        let mut return_me = vec![];
+        if !self.header_rendered {
+            // No hunk ever showed up, e.g. an empty file being added/deleted,
+            // or a truncated diff. Fall back to a plain, line-less link.
+            return_me.push(StringFuture::from_string(self.highlighted(None)));
+            self.header_rendered = true;
         }
-        Ok(vec![])
+
+        if let Some(ref mut sub) = self.sub_highlighter {
+            return_me.extend(sub.consume_eof(thread_pool)?);
+        }
+
+        Ok(return_me)
     }
 }
 
@@ -131,12 +184,13 @@ impl FileHighlighter {
             formatter,
             sub_highlighter: None,
             url: None, // Will be set in consume_line() based on the +++ line
+            header_rendered: false,
         };
 
         return Some(highlighter);
     }
 
-    fn highlighted(&self) -> String {
+    fn highlighted(&self, first_hunk_line: Option<usize>) -> String {
         let (mut old_tokens, mut new_tokens) = diff(&self.old_name, &self.new_name);
 
         // New file
@@ -165,7 +219,7 @@ impl FileHighlighter {
             None
         };
 
-        decorate_paths(&mut old_tokens, &mut new_tokens);
+        decorate_paths(&mut old_tokens, &mut new_tokens, first_hunk_line);
 
         if let Some(prefix) = new_prefix {
             new_tokens.insert(0, prefix);
@@ -230,7 +284,11 @@ fn hyperlink_filename(filename: &str) -> Option<url::Url> {
     return None;
 }
 
-fn hyperlink_tokenized(just_path: &mut [StyledToken], just_filename: &mut [StyledToken]) {
+fn hyperlink_tokenized(
+    just_path: &mut [StyledToken],
+    just_filename: &mut [StyledToken],
+    fragment_line: Option<usize>,
+) {
     // Convert filename_tokens into a String
     let mut filename = String::new();
     for token in just_path.iter() {
@@ -240,7 +298,11 @@ fn hyperlink_tokenized(just_path: &mut [StyledToken], just_filename: &mut [Style
         filename.push_str(&token.token);
     }
 
-    if let Some(url) = hyperlink_filename(&filename) {
+    if let Some(mut url) = hyperlink_filename(&filename) {
+        if let Some(fragment_line) = fragment_line {
+            url.set_fragment(Some(&fragment_line.to_string()));
+        }
+
         // Actually link the tokens
         for token in just_path.iter_mut() {
             token.url = Some(url.clone());
@@ -401,7 +463,11 @@ fn have_git_prefixes(old_tokens: &[StyledToken], new_tokens: &[StyledToken]) -> 
     return (old_has_git_prefix || old_is_absolute) && (new_has_git_prefix || new_is_absolute);
 }
 
-pub(crate) fn decorate_paths(old_tokens: &mut [StyledToken], new_tokens: &mut [StyledToken]) {
+pub(crate) fn decorate_paths(
+    old_tokens: &mut [StyledToken],
+    new_tokens: &mut [StyledToken],
+    fragment_line: Option<usize>,
+) {
     let look_for_git_prefixes = have_git_prefixes(old_tokens, new_tokens);
 
     let old_split = split_row(look_for_git_prefixes, old_tokens);
@@ -425,9 +491,9 @@ pub(crate) fn decorate_paths(old_tokens: &mut [StyledToken], new_tokens: &mut [S
     if old_split.just_path == new_split.just_path
         && old_split.just_filename == new_split.just_filename
     {
-        hyperlink_tokenized(old_split.just_path, old_split.just_filename);
+        hyperlink_tokenized(old_split.just_path, old_split.just_filename, fragment_line);
     }
-    hyperlink_tokenized(new_split.just_path, new_split.just_filename);
+    hyperlink_tokenized(new_split.just_path, new_split.just_filename, fragment_line);
 
     lowlight_dev_null(old_split.just_path, old_split.just_filename);
     lowlight_dev_null(new_split.just_path, new_split.just_filename);
@@ -471,13 +537,18 @@ mod tests {
 
     use crate::refiner::tests::FORMATTER;
     fn highlight_header_lines(old_line: &str, new_line: &str) -> String {
+        let thread_pool = ThreadPool::new(1);
         let mut test_me = FileHighlighter::from_line(old_line, FORMATTER.clone()).unwrap();
-        let response = test_me.consume_line(new_line, &ThreadPool::new(1)).unwrap();
+        let response = test_me.consume_line(new_line, &thread_pool).unwrap();
         assert_eq!(LineAcceptance::AcceptedWantMore, response.line_accepted);
-        assert_eq!(1, response.highlighted.len());
+        assert_eq!(0, response.highlighted.len());
 
-        let highlighted = response
-            .highlighted
+        // The header is rendered once we know whether the next line is a
+        // hunk header. These tests have no next line, so EOF flushes it.
+        let eof_highlighted = test_me.consume_eof(&thread_pool).unwrap();
+        assert_eq!(1, eof_highlighted.len());
+
+        let highlighted = eof_highlighted
             .into_iter()
             .next()
             .unwrap()
@@ -522,6 +593,32 @@ mod tests {
         let canonical = std::fs::canonicalize(&path).expect("Path should canonicalize");
         let expected = std::fs::canonicalize("README.md").expect("README.md should exist");
         assert_eq!(canonical, expected, "Hyperlink should point to README.md");
+    }
+
+    /// Clicking the `--- ` / `+++ ` header should land in the same place as
+    /// clicking the first section header below it.
+    #[test]
+    fn test_header_links_to_first_hunk_line() {
+        let thread_pool = ThreadPool::new(1);
+        let mut test_me = FileHighlighter::from_line("--- README.md", FORMATTER.clone()).unwrap();
+
+        test_me.consume_line("+++ README.md", &thread_pool).unwrap();
+        let response = test_me
+            .consume_line("@@ -10,3 +10,3 @@ Some section", &thread_pool)
+            .unwrap();
+
+        let mut highlighted = String::new();
+        for mut future in response.highlighted {
+            highlighted.push_str(future.get());
+        }
+
+        // The section header links to the start line plus three context lines,
+        // and the file header should agree with it.
+        assert!(
+            highlighted.contains("README.md#13"),
+            "Expected a hyperlink to line 13 of README.md, got: {:?}",
+            highlighted
+        );
     }
 
     #[test]
@@ -595,7 +692,7 @@ mod tests {
         let mut row = vec![StyledToken::new("README.md".to_string(), Style::Context)];
 
         // Act: call the function
-        hyperlink_tokenized(&mut [], &mut row);
+        hyperlink_tokenized(&mut [], &mut row, None);
 
         // Assert: the file:/// URL points to our README.md file
         let url = row[0].url.as_ref().expect("Token should have a URL");
