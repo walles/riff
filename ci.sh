@@ -16,7 +16,7 @@ fi
 rustup component add clippy rustfmt
 
 # Settings are at the top of main.rs
-cargo clippy
+cargo clippy --all-targets
 
 # Copied from here:
 # <https://docs.travis-ci.com/user/languages/rust/#default-build-script>

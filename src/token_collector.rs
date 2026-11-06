@@ -252,7 +252,7 @@ mod tests {
     #[test]
     fn test_basic() {
         let rendered = render(
-            &*LINE_STYLE_NEW,
+            &LINE_STYLE_NEW,
             "+",
             &[
                 StyledToken {
@@ -274,7 +274,7 @@ mod tests {
     fn test_removed_trailing_whitespace() {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
-            &*LINE_STYLE_OLD,
+            &LINE_STYLE_OLD,
             "-",
             &[StyledToken::new(" ".to_string(), Style::DiffPartMidlighted)],
         );
@@ -286,7 +286,7 @@ mod tests {
     fn test_removed_nonleading_tab() {
         // It shouldn't be highlighted, just added ones should
         let actual = render(
-            &*LINE_STYLE_OLD,
+            &LINE_STYLE_OLD,
             "-",
             &[
                 StyledToken::new("x".to_string(), Style::DiffPartMidlighted),
