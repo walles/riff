@@ -14,6 +14,13 @@ use crate::hunk_header::HunkHeader;
 use crate::hunk_highlighter::HunkLinesHighlighter;
 use crate::refiner::Formatter;
 
+/// Old / new path prefixes we lowlight in file headers, and strip when looking
+/// for files to hyperlink.
+///
+/// - `a` / `b` are from `git diff`
+/// - `left` / `right` are from `jj diff --tool riff`
+const PATH_PREFIX_PAIRS: &[(&str, &str)] = &[("a", "b"), ("left", "right")];
+
 pub(crate) struct FileHighlighter {
     /// May or may not end with one or more tabs + a timestamp string.
     old_name: String,
@@ -243,15 +250,17 @@ impl FileHighlighter {
 }
 
 /// This function will try to find the file, either by the passed-in name or by
-/// stripping a/ or b/ prefixes.
+/// stripping any of the `PATH_PREFIX_PAIRS` prefixes.
 fn hyperlink_filename(filename: &str) -> Option<url::Url> {
     let mut raw_candidates: Vec<&str> = Vec::new();
     raw_candidates.push(filename);
-    if let Some(no_a_prefix) = filename.strip_prefix("a/") {
-        raw_candidates.push(no_a_prefix);
-    }
-    if let Some(no_b_prefix) = filename.strip_prefix("b/") {
-        raw_candidates.push(no_b_prefix);
+    for prefix in PATH_PREFIX_PAIRS.iter().flat_map(|(old, new)| [old, new]) {
+        if let Some(without_prefix) = filename
+            .strip_prefix(prefix)
+            .and_then(|rest| rest.strip_prefix('/'))
+        {
+            raw_candidates.push(without_prefix);
+        }
     }
 
     for candidate in raw_candidates {
@@ -379,7 +388,7 @@ struct SplitRow<'a> {
 
 /// Splits a row into (prefix, just_path, full_path, just_filename, timestamp) slices.
 ///
-/// Let's say we have a row like this and `look_for_git_prefixes` is true:
+/// Let's say we have a row like this and `look_for_path_prefixes` is true:
 /// ```
 /// a/doc/c.txt\t2023-12-15 15:43:29
 /// ```
@@ -390,13 +399,14 @@ struct SplitRow<'a> {
 /// - `just_filename`: `c.txt`
 /// - `time_space`: `\t`
 /// - `timestamp`: `2023-12-15 15:43:29`
-fn split_row<'a>(look_for_git_prefixes: bool, row: &'a mut [StyledToken]) -> SplitRow<'a> {
-    let path_start = if look_for_git_prefixes
-        && row.len() >= 2
-        && row[0].token.len() == 1 // "a" or "b"
-        && (row[1].token == "/" || row[1].token == std::path::MAIN_SEPARATOR.to_string())
-    {
-        // If we have a git prefix, the path starts after the first two tokens
+fn split_row<'a>(look_for_path_prefixes: bool, row: &'a mut [StyledToken]) -> SplitRow<'a> {
+    let is_any_prefix = |tokens: &[StyledToken]| {
+        PATH_PREFIX_PAIRS
+            .iter()
+            .any(|(old, new)| starts_with_prefix(tokens, old) || starts_with_prefix(tokens, new))
+    };
+    let path_start = if look_for_path_prefixes && is_any_prefix(row) {
+        // If we have a path prefix, the path starts after the first two tokens
         2
     } else {
         // Otherwise, it starts at the first token
@@ -443,24 +453,26 @@ fn split_row<'a>(look_for_git_prefixes: bool, row: &'a mut [StyledToken]) -> Spl
     };
 }
 
-fn have_git_prefixes(old_tokens: &[StyledToken], new_tokens: &[StyledToken]) -> bool {
-    // Both "a/..." and "/dev/null" count as having a git prefix.
+fn is_separator(token: &StyledToken) -> bool {
+    return token.token == "/" || token.token == std::path::MAIN_SEPARATOR.to_string();
+}
 
-    let old_has_git_prefix = old_tokens.len() >= 2
-        && old_tokens[0].token == "a"
-        && (old_tokens[1].token == "/"
-            || old_tokens[1].token == std::path::MAIN_SEPARATOR.to_string());
-    let old_is_absolute = !old_tokens.is_empty() && old_tokens[0].token == "/"
-        || old_tokens[0].token == std::path::MAIN_SEPARATOR.to_string();
+/// True if `tokens` start with `prefix` followed by a path separator
+fn starts_with_prefix(tokens: &[StyledToken], prefix: &str) -> bool {
+    return tokens.len() >= 2 && tokens[0].token == prefix && is_separator(&tokens[1]);
+}
 
-    let new_has_git_prefix = new_tokens.len() >= 2
-        && new_tokens[0].token == "b"
-        && (new_tokens[1].token == "/"
-            || new_tokens[1].token == std::path::MAIN_SEPARATOR.to_string());
-    let new_is_absolute = !new_tokens.is_empty() && new_tokens[0].token == "/"
-        || new_tokens[0].token == std::path::MAIN_SEPARATOR.to_string();
+/// True if both paths have matching prefixes from `PATH_PREFIX_PAIRS`, like
+/// "a/..." and "b/...". An absolute path, like "/dev/null", matches any
+/// prefix.
+fn have_path_prefixes(old_tokens: &[StyledToken], new_tokens: &[StyledToken]) -> bool {
+    let old_is_absolute = old_tokens.first().is_some_and(is_separator);
+    let new_is_absolute = new_tokens.first().is_some_and(is_separator);
 
-    return (old_has_git_prefix || old_is_absolute) && (new_has_git_prefix || new_is_absolute);
+    return PATH_PREFIX_PAIRS.iter().any(|(old_prefix, new_prefix)| {
+        (old_is_absolute || starts_with_prefix(old_tokens, old_prefix))
+            && (new_is_absolute || starts_with_prefix(new_tokens, new_prefix))
+    });
 }
 
 pub(crate) fn decorate_paths(
@@ -468,10 +480,10 @@ pub(crate) fn decorate_paths(
     new_tokens: &mut [StyledToken],
     fragment_line: Option<usize>,
 ) {
-    let look_for_git_prefixes = have_git_prefixes(old_tokens, new_tokens);
+    let look_for_path_prefixes = have_path_prefixes(old_tokens, new_tokens);
 
-    let old_split = split_row(look_for_git_prefixes, old_tokens);
-    let new_split = split_row(look_for_git_prefixes, new_tokens);
+    let old_split = split_row(look_for_path_prefixes, old_tokens);
+    let new_split = split_row(look_for_path_prefixes, new_tokens);
 
     // Brighten file names
     old_split.just_filename.iter_mut().for_each(|token| {
@@ -514,7 +526,7 @@ pub(crate) fn decorate_paths(
         token.style = Style::Lowlighted;
     });
 
-    // Lowlight git prefixes
+    // Lowlight path prefixes
     old_split.prefix.iter_mut().for_each(|token| {
         token.style = Style::Lowlighted;
     });
@@ -629,6 +641,35 @@ mod tests {
                 "\
                 {BOLD}--- {NORMAL_INTENSITY}{FAINT}a/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n\
                 {BOLD}+++ {NORMAL_INTENSITY}{FAINT}b/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
+
+    #[test]
+    fn test_brighten_filename_left_right_prefixes() {
+        // jj uses left/ and right/ when running riff as its diff tool:
+        // https://github.com/walles/riff/issues/82
+        let highlighted = highlight_header_lines("--- left/x/y/z.txt", "+++ right/x/y/z.txt");
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- {NORMAL_INTENSITY}{FAINT}left/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n\
+                {BOLD}+++ {NORMAL_INTENSITY}{FAINT}right/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
+
+    #[test]
+    fn test_mismatched_prefixes_are_highlighted() {
+        // a/ only goes with b/, and left/ only goes with right/
+        let highlighted = highlight_header_lines("--- a/z.txt", "+++ right/z.txt");
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- {INVERSE_VIDEO}{NORMAL_INTENSITY}{OLD}a{NORMAL}/{BOLD}z.txt{NORMAL}\n\
+                {BOLD}+++ {INVERSE_VIDEO}{NORMAL_INTENSITY}{GREEN}right{NORMAL}/{BOLD}z.txt{NORMAL}\n"
             ),
             highlighted
         );
@@ -764,6 +805,36 @@ mod tests {
         let expected = std::fs::canonicalize("README.md").expect("Canonicalize README.md");
         let actual = std::fs::canonicalize(&path_from_url).expect("Canonicalize URL path");
         assert_eq!(actual, expected, "Canonical paths must match");
+    }
+
+    #[test]
+    fn test_hyperlink_filename_right_prefix() {
+        let url_opt = super::hyperlink_filename("right/README.md");
+
+        let path_from_url = url_opt
+            .expect("Expected Some(url::Url) for right/ prefixed path")
+            .to_file_path()
+            .expect("Should convert URL back to path");
+        let expected = std::fs::canonicalize("README.md").expect("Canonicalize README.md");
+        let actual = std::fs::canonicalize(&path_from_url).expect("Canonicalize URL path");
+        assert_eq!(actual, expected, "Canonical paths must match");
+    }
+
+    #[test]
+    fn test_split_row_with_multi_character_prefix() {
+        let mut tokens: Vec<StyledToken> = ["left", "/", "doc", "/", "c.txt"]
+            .iter()
+            .map(|s| StyledToken::new(s.to_string(), Style::Context))
+            .collect();
+        let split = split_row(true, &mut tokens);
+        assert_eq!(
+            split.prefix.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["left", "/"]
+        );
+        assert_eq!(
+            split.just_path.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["doc", "/"]
+        );
     }
 
     #[test]
