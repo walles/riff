@@ -249,8 +249,36 @@ impl FileHighlighter {
     }
 }
 
+/// Directories to resolve relative paths against, in order of preference.
+///
+/// `$PWD` goes first because `jj diff --tool riff` runs us with cwd in a
+/// temporary directory that jj deletes when we exit, while leaving `$PWD`
+/// pointing at the user's directory. Linking into the temporary directory
+/// would give dead links.
+///
+/// The cwd is the fallback for when `$PWD` is unset, or has gone stale for some
+/// other reason. `cargo test` from a subdirectory does that for example.
+fn base_dirs() -> Vec<std::path::PathBuf> {
+    let mut base_dirs = Vec::new();
+
+    if let Some(pwd) = std::env::var_os("PWD") {
+        let pwd = std::path::PathBuf::from(pwd);
+        if pwd.is_absolute() {
+            base_dirs.push(pwd);
+        }
+    }
+
+    // Empty means relative to the cwd, even if we can't tell what it is
+    base_dirs.push(std::env::current_dir().unwrap_or_default());
+
+    return base_dirs;
+}
+
 /// This function will try to find the file, either by the passed-in name or by
 /// stripping any of the `PATH_PREFIX_PAIRS` prefixes.
+///
+/// Relative paths are looked up in each of the `base_dirs()`, trying all
+/// candidates in one directory before moving on to the next.
 fn hyperlink_filename(filename: &str) -> Option<url::Url> {
     let mut raw_candidates: Vec<&str> = Vec::new();
     raw_candidates.push(filename);
@@ -263,18 +291,16 @@ fn hyperlink_filename(filename: &str) -> Option<url::Url> {
         }
     }
 
-    for candidate in raw_candidates {
-        if candidate == "/dev/null" {
-            continue;
-        }
+    let base_dirs = base_dirs();
+    let paths = base_dirs.iter().flat_map(|base_dir| {
+        raw_candidates
+            .iter()
+            .filter(|candidate| **candidate != "/dev/null")
+            // Joining an absolute path just returns that absolute path
+            .map(move |candidate| base_dir.join(candidate))
+    });
 
-        let mut path = std::path::PathBuf::from(candidate);
-        if !path.is_absolute() {
-            if let Ok(cwd) = std::env::current_dir() {
-                path = cwd.join(&path);
-            }
-        }
-
+    for path in paths {
         if !path.exists() {
             continue;
         }
