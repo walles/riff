@@ -291,8 +291,7 @@ fn hyperlink_filename(filename: &str) -> Option<url::Url> {
         }
     }
 
-    let base_dirs = base_dirs();
-    let paths = base_dirs.iter().flat_map(|base_dir| {
+    let paths = base_dirs().into_iter().flat_map(|base_dir| {
         raw_candidates
             .iter()
             .filter(|candidate| **candidate != "/dev/null")
