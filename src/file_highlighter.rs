@@ -635,6 +635,35 @@ mod tests {
     }
 
     #[test]
+    fn test_brighten_filename_left_right_prefixes() {
+        // jj uses left/ and right/ when running riff as its diff tool:
+        // https://github.com/walles/riff/issues/82
+        let highlighted = highlight_header_lines("--- left/x/y/z.txt", "+++ right/x/y/z.txt");
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- {NORMAL_INTENSITY}{FAINT}left/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n\
+                {BOLD}+++ {NORMAL_INTENSITY}{FAINT}right/{NORMAL}x/y/{BOLD}z.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
+
+    #[test]
+    fn test_mismatched_prefixes_are_highlighted() {
+        // a/ only goes with b/, and left/ only goes with right/
+        let highlighted = highlight_header_lines("--- a/z.txt", "+++ right/z.txt");
+        assert_eq!(
+            format!(
+                "\
+                {BOLD}--- {INVERSE_VIDEO}{NORMAL_INTENSITY}{OLD}a{NORMAL}/{BOLD}z.txt{NORMAL}\n\
+                {BOLD}+++ {INVERSE_VIDEO}{NORMAL_INTENSITY}{GREEN}right{NORMAL}/{BOLD}z.txt{NORMAL}\n"
+            ),
+            highlighted
+        );
+    }
+
+    #[test]
     fn test_brighten_filename_without_path() {
         let highlighted = highlight_header_lines("--- z.txt", "+++ z.txt");
         assert_eq!(
@@ -764,6 +793,36 @@ mod tests {
         let expected = std::fs::canonicalize("README.md").expect("Canonicalize README.md");
         let actual = std::fs::canonicalize(&path_from_url).expect("Canonicalize URL path");
         assert_eq!(actual, expected, "Canonical paths must match");
+    }
+
+    #[test]
+    fn test_hyperlink_filename_right_prefix() {
+        let url_opt = super::hyperlink_filename("right/README.md");
+
+        let path_from_url = url_opt
+            .expect("Expected Some(url::Url) for right/ prefixed path")
+            .to_file_path()
+            .expect("Should convert URL back to path");
+        let expected = std::fs::canonicalize("README.md").expect("Canonicalize README.md");
+        let actual = std::fs::canonicalize(&path_from_url).expect("Canonicalize URL path");
+        assert_eq!(actual, expected, "Canonical paths must match");
+    }
+
+    #[test]
+    fn test_split_row_with_multi_character_prefix() {
+        let mut tokens: Vec<StyledToken> = ["left", "/", "doc", "/", "c.txt"]
+            .iter()
+            .map(|s| StyledToken::new(s.to_string(), Style::Context))
+            .collect();
+        let split = split_row(true, &mut tokens);
+        assert_eq!(
+            split.prefix.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["left", "/"]
+        );
+        assert_eq!(
+            split.just_path.iter().map(|t| &t.token).collect::<Vec<_>>(),
+            ["doc", "/"]
+        );
     }
 
     #[test]

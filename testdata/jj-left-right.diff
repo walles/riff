@@ -1,0 +1,7 @@
+diff -ur --show-c-function --new-file left/docs/greeting.txt right/docs/greeting.txt
+--- left/docs/greeting.txt	2026-11-05 19:26:54.000000000 +0100
++++ right/docs/greeting.txt	2026-11-05 19:26:54.000000000 +0100
+@@ -1,2 +1,2 @@
+ Hello
+-World
++there

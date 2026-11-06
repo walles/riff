@@ -1,0 +1,7 @@
+[2mdiff -ur --show-c-function --new-file left/docs/greeting.txt right/docs/greeting.txt[0m
+[1m--- [22m[2mleft/[0mdocs/[1mgreeting.txt[0m   [2m2026-11-05 19:26:54.000000000 +0100[0m
+[1m+++ [22m[2mright/[0mdocs/[1mgreeting.txt[0m  [2m2026-11-05 19:26:54.000000000 +0100[0m
+[36m@@ -1,2 +1,2 @@[0m
+ Hello
+[31m-[7mWorld[0m
+[32m+[7mthere[0m
