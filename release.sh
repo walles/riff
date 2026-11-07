@@ -188,8 +188,9 @@ rustup target add x86_64-pc-windows-gnu
 cargo build --release --target=x86_64-pc-windows-gnu
 $LIVE && cp "target/x86_64-pc-windows-gnu/release/riff.exe" "riff-$NEW_VERSION_NUMBER-x86_64-windows.exe"
 
-# Mark new release on Github. This implicitly triggers Homebrew deployment and
-# cargo publishing through deployment.yml.
+# Mark new release on Github. This implicitly triggers cargo publishing through
+# deployment.yml. Homebrew picks up new releases by itself through autobump:
+# https://github.com/Homebrew/homebrew-core/pull/323932
 $LIVE && git push && git push --tags
 
 cat <<EOM
